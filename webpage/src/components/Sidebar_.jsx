@@ -11,7 +11,7 @@ function Sidebar_() {
 
   const Menus = [
     { title: "Dashboard", icon: <MoreVertical size={24} />, page: "dashboard" },
-    { title: "พนักงาน", icon: <MoreVertical size={24} />, page: "user" },
+    { title: "พนักงาน", icon: <MoreVertical size={24} />, page: "employee" },
     { title: "ลูกค้า", icon: <MoreVertical size={24} />, page: "customer" },
     {
       title: "เอกสารขาย",

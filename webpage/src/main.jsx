@@ -12,12 +12,12 @@ import Sidebar from "./components/Sidebar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Testimg from "./components/testimg.jsx";
 import All from "./All.jsx";
-import Insert_emp from "./components/insert/insert_emp.jsx";
 import E_dep from "./components/edit/e_dep.jsx";
 import I_dep from "./components/insert/I_dep.jsx";
 import Department from "./components/Department.jsx";
-import Edit_emp from "./components/edit/Edit_emp.jsx";
 import Employee from "./components/Employee.jsx";
+import I_emp from "./components/insert/I_emp.jsx";
+import Edit_emp from "./components/edit/Edit_emp.jsx";
 import Position from "./components/Position.jsx";
 import E_posit from "./components/edit/E_posit.jsx";
 import I_posit from "./components/insert/I_posit.jsx";
@@ -69,7 +69,11 @@ const router = createBrowserRouter([
       },
       {
         path: "employee/insert",
-        element: <Insert_emp />,
+        element: <I_emp />,
+      },
+      {
+        path: "employee/edit/:id",
+        element: <Edit_emp />,
       },
       {
         path: "customer",
@@ -82,10 +86,6 @@ const router = createBrowserRouter([
       {
         path: "customer/edit/:id",
         element: <E_customer />,
-      },
-      {
-        path: "employee/edit/:id",
-        element: <Edit_emp />,
       },
       {
         path: "department",
