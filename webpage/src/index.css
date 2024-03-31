@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: "IBM Plex Sans Thai", sans-serif;
+  font-family: "Noto Sans", sans-serif;
+  font-family: "Noto Sans Thai", sans-serif;
+}
