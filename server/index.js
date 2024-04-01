@@ -189,93 +189,6 @@ app.post("/register", uploadAvatar.single("img"), async (req, res) => {
   }
 });
 
-app.post("/employee/insert", uploadAvatar.single("img"), async (req, res) => {
-  try {
-    console.log("Received POST request at /register");
-    const {
-      commit,
-      salary,
-      email,
-      password,
-      fname,
-      lname,
-      bdate,
-      hiredate,
-      line,
-      sex,
-      username,
-      nid,
-      address,
-      img,
-      phone,
-    } = req.body;
-    const imageName = req.file.filename;
-    console.log(`
-      commit: ${commit}
-      salary: ${salary}
-      Email: ${email}
-      Password: ${password}
-      First Name: ${fname}
-      Last Name: ${lname}
-      Birth Date: ${bdate}
-      Hire Date: ${hiredate}
-      Line: ${line}
-      Sex: ${sex}
-      Username: ${username}
-      NID: ${nid}
-      Address: ${address}
-      phone: ${phone}
-      Image: ${imageName}
-    `);
-
-    const [rows] = await db
-      .promise()
-      .query(
-        "SELECT employee_username FROM employee WHERE employee_username = ?",
-        [username]
-      );
-
-    if (rows.length === 0) {
-      const hash = await bcrypt.hash(password, saltRounds);
-      const employee_id = await getNextID("EMP", "employee");
-
-      await db
-        .promise()
-        .query(
-          "INSERT INTO employee (employee_salary,employee_commit,employee_id, employee_email, employee_password, employee_fname, employee_lname, employee_bdate, employee_hiredate, employee_line, employee_sex, employee_username, employee_nid, employee_address, employee_img) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-          [
-            salary,
-            commit,
-            employee_id,
-            email,
-            hash,
-            fname,
-            lname,
-            bdate,
-            hiredate,
-            line,
-            sex,
-            username,
-            nid,
-            address,
-            img,
-          ]
-        );
-
-      res.status(201).json({
-        msg: "เพิ่มพนักงานเรียบร้อยแล้ว",
-      });
-    } else {
-      res.status(409).json({
-        msg: "มี Username นี้อยู่ในระบบแล้ว",
-      });
-    }
-  } catch (error) {
-    console.error("Error during registration:", error);
-    res.status(500).json({ msg: "Internal Server Error" });
-  }
-});
-
 app.get("/department", function (req, res) {
   let fetch = "select dep_id,dep_name from dep";
   let fetchValue = [];
@@ -412,7 +325,6 @@ app.delete("/department/delete/:id", (req, res) => {
   const values = ["1", id];
   db.execute(sql, values, (err, result) => {
     if (err) {
-      console.error("Error delete employee:", err);
       res.status(500).json({
         msg: "Error delete department",
       });
@@ -1431,9 +1343,9 @@ app.get("/customer", function (req, res) {
   if (sort_by && sort_type) {
     fetch += " ORDER BY " + sort_by + " " + sort_type;
   }
-  fetch += " WHERE customer_del ='0' ";
+  fetch += " WHERE customer.customer_del ='0' ";
   if (search) {
-    fetch += "AND customer_name LIKE ? ";
+    fetch += "AND customer.customer_name LIKE ? ";
     fetchValue.push("%" + search + "%");
   }
   fetch += " GROUP BY customer.customer_id"; // รวมข้อมูลที่มี customer_id เหมือนกัน
@@ -1543,34 +1455,6 @@ app.post("/customer/insert", async (req, res) => {
   }
 });
 
-// app.get("/getcustomer/:id", (req, res) => {
-//   const id = req.params.id;
-//   const sql = `
-//   SELECT c.*, co.le_type, co.le_name, co.le_tax, co.b_name, co.b_num, GROUP_CONCAT(ct.tel) as phone,
-//   p.code as province, d.code as district
-//   FROM customer c
-//   LEFT JOIN corporation co ON c.customer_id = co.customer_id
-//   LEFT JOIN customer_tel ct ON c.customer_id = ct.customer_id
-//   LEFT JOIN subdistrict s ON c.subdistrict_code = s.code
-//   LEFT JOIN district d ON s.district_code = d.code
-//   LEFT JOIN provinces p ON d.province_code = p.code
-//   WHERE c.customer_id = ?
-//   GROUP BY c.customer_id;
-//   `;
-//   db.query(sql, [id], (err, data) => {
-//     if (err) {
-//       return res
-//         .status(500)
-//         .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลลูกค้า" });
-//     }
-//     if (data.length === 0) {
-//       return res.status(404).json({ msg: "ไม่พบข้อมูลลูกค้าที่ระบุ" });
-//     }
-//     console.log(data);
-//     return res.json(data);
-//   });
-// });
-
 app.get("/getcustomer/:id", (req, res) => {
   const id = req.params.id;
   const sql = `
@@ -1612,7 +1496,7 @@ app.put("/customer/edit/:id", async (req, res) => {
   const [rows] = await db
     .promise()
     .query(
-      "SELECT customer_id FROM customer WHERE customer_fname = ? AND customer_lname=? AND customer_nid=?",
+      "SELECT customer_id FROM customer WHERE customer_fname = ? AND customer_lname=? AND customer_nid=? and customer_id",
       [req.body.customer_fname, req.body.customer_lname, req.body.customer_nid]
     );
 
@@ -1755,7 +1639,7 @@ app.delete("/customer/delete/:id", (req, res) => {
 });
 app.get("/employee", function (req, res, next) {
   let fetchUser =
-    "select employee_id,CONCAT(employee_fname, ' ', employee_lname) AS name, employee_email from employee";
+    "select e.employee_id,CONCAT(e.employee_fname, ' ', e.employee_lname) AS name, GROUP_CONCAT(t.tel) AS tel, e.employee_email from employee e LEFT JOIN employee_tel t ON e.employee_id=t.employee_id";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -1767,11 +1651,12 @@ app.get("/employee", function (req, res, next) {
   if (sort_by && sort_type) {
     fetchUser += " ORDER BY " + sort_by + " " + sort_type;
   }
-  fetchUser += " Where employee_del ='0' ";
+  fetchUser += " Where e.employee_del ='0' ";
   if (search) {
-    fetchUser += "and name LIKE ? ";
+    fetchUser += "and e.employee_name LIKE ? ";
     fetchValue.push("%" + search + "%");
   }
+  fetchUser += " GROUP BY e.employee_id"; // รวมข้อมูลที่มี customer_id เหมือนกัน
   fetchUser += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
@@ -1794,72 +1679,365 @@ app.get("/employee", function (req, res, next) {
   });
 });
 
-app.put("/employee/edit/:id", (req, res) => {
-  const sql = `
-    UPDATE employee 
-    SET 
-      employee_fname = ?,
-      employee_lname = ?,
-      employee_bdate = ?,
-      employee_username = ?,
-      employee_password = ?,
-      employee_nid = ?,
-      employee_address = ?,
-      employee_email = ?,
-      employee_line = ?,
-      employee_img = ?,
-      employee_commit = ?,
-      employee_hire = ?,
-      employee_salary = ?,
-      employee_sex = ?
-    WHERE employee_id = ?;
-  `;
-  const values = [
-    req.body.fname,
-    req.body.lname,
-    req.body.bdate,
-    req.body.username,
-    req.body.password,
-    req.body.nid,
-    req.body.address,
-    req.body.email,
-    req.body.line,
-    req.body.img,
-    req.body.commit,
-    req.body.hire,
-    req.body.salary,
-    req.body.sex,
-  ];
+app.post("/employee/insert", uploadAvatar.single("img"), async (req, res) => {
+  try {
+    const {
+      commit,
+      salary,
+      email,
+      password,
+      fname,
+      lname,
+      bdate,
+      hiredate,
+      line,
+      sex,
+      username,
+      nid,
+      address,
+      phone,
+      position,
+      subdistrict,
+    } = req.body;
+    const imageName = req.file.filename;
+    console.log(`
+      commit: ${commit}
+      salary: ${salary}
+      Email: ${email}
+      Password: ${password}
+      First Name: ${fname}
+      Last Name: ${lname}
+      Birth Date: ${bdate}
+      Hire Date: ${hiredate}
+      Line: ${line}
+      Sex: ${sex}
+      Username: ${username}
+      NID: ${nid}
+      Address: ${address}
+      phone: ${phone}
+      Image: ${imageName}
+    `);
+
+    const [rows] = await db
+      .promise()
+      .query(
+        "SELECT employee_id FROM employee WHERE employee_nid=? or employee_username=?",
+        [nid, username]
+      );
+    if (rows.length === 0) {
+      const hash = await bcrypt.hash(password, saltRounds);
+      const employee_id = await getNextID("EMP", "employee");
+
+      db.query(
+        `INSERT INTO employee (
+            employee_salary,
+            employee_commit,
+            employee_id, 
+            employee_email, 
+            employee_password, 
+            employee_fname, 
+            employee_lname, 
+            employee_bdate, 
+            employee_hiredate, 
+            employee_line, 
+            employee_sex, 
+            employee_username, 
+            employee_nid, 
+            employee_address, 
+            employee_img,
+            employee_del,
+            posit_id,
+            subdistrict_code) 
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          salary,
+          commit,
+          employee_id,
+          email,
+          hash,
+          fname,
+          lname,
+          bdate,
+          hiredate,
+          line,
+          sex,
+          username,
+          nid,
+          address,
+          imageName,
+          0,
+          position,
+          subdistrict,
+        ],
+        (err) => {
+          if (err) {
+            return res.status(500).json({ msg: "insert ผิด" });
+          }
+          if (phone && phone.length > 0) {
+            phone.forEach((tel) => {
+              db.query(
+                "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+                [employee_id, tel],
+                (err) => {
+                  if (err) {
+                    return res.status(500).json({
+                      msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                    });
+                  }
+                }
+              );
+            });
+          }
+          res.status(201).json({
+            msg: "เพิ่มพนักงานเรียบร้อยแล้ว",
+          });
+        }
+      );
+    } else {
+      res.status(409).json({
+        msg: "มี Username นี้อยู่ในระบบแล้ว",
+      });
+    }
+  } catch (error) {
+    console.error("Error during registration:", error);
+    res.status(500).json({ msg: "Internal Server Error" });
+  }
+});
+
+app.get("/getemployee/:id", (req, res) => {
   const id = req.params.id;
+  const sql = `
+  SELECT c.*, GROUP_CONCAT(ct.tel) as phone,
+  p.code as province, d.code as district,po.dep_id
+  FROM employee c
+  LEFT JOIN employee_tel ct ON c.employee_id = ct.employee_id
+  LEFT JOIN posit po ON c.posit_id = po.posit_id
+  LEFT JOIN subdistrict s ON c.subdistrict_code = s.code
+  LEFT JOIN district d ON s.district_code = d.code
+  LEFT JOIN provinces p ON d.province_code = p.code
+  WHERE c.employee_id = ?
+  GROUP BY c.employee_id;
+  `;
+  db.query(sql, [id], (err, data) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลลูกค้า" });
+    } else {
+      const sql = `
+    SELECT zip_code from subdistrict where code =?;
+    `;
+      db.query(sql, data[0].subdistrict_code, (err, zip_code) => {
+        res.json({
+          data: data,
+          zip_code: zip_code,
+        });
+      });
+    }
+  });
+});
+
+app.get("/getempselectposit/:id", (req, res) => {
+  const id = req.params.id;
+  const sql = "select posit_id,posit_name from posit where dep_id =?";
+  db.query(sql, [id], (err, data) => {
+    if (err) {
+      return res.json(err);
+    }
+    return res.json(data);
+  });
+});
+
+app.put("/employee/edit/:id", uploadAvatar.single("img"), async (req, res) => {
+  const employeeId = req.params.id;
+  const {
+    commit,
+    salary,
+    email,
+    password,
+    fname,
+    lname,
+    bdate,
+    hiredate,
+    line,
+    sex,
+    username,
+    nid,
+    address,
+    phone,
+    position,
+    subdistrict,
+  } = req.body;
+  const imageName = req.file ? req.file.filename : "";
+
+  // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
+  const [rows] = await db
+    .promise()
+    .query(
+      "SELECT employee_id FROM employee WHERE employee_fname = ? and employee_lname = ? and employee_nid = ? or employee_username=?",
+      [fname, lname, nid, username]
+    );
+  if (rows.length > 1) {
+    return res
+      .status(409)
+      .json({ msg: "มีพนักที่มีข้อมูล หรือ username ซ้ำกันอยู่ในระบบแล้ว" });
+  }
+
+  let sql = `
+  UPDATE employee 
+  SET 
+  employee_salary = ?,
+  employee_commit = ?,
+  employee_id = ?, 
+  employee_email = ?, 
+  employee_fname = ?, 
+  employee_lname = ?, 
+  employee_bdate = ?, 
+  employee_hiredate = ?, 
+  employee_line = ?, 
+  employee_sex = ?, 
+  employee_username = ?, 
+  employee_nid = ?, 
+  employee_address = ?, 
+  posit_id = ?,
+  subdistrict_code = ?
+`;
+  let values = [
+    salary,
+    commit,
+    employeeId,
+    email,
+    fname,
+    lname,
+    bdate,
+    hiredate,
+    line,
+    sex,
+    username,
+    nid,
+    address,
+    position,
+    subdistrict,
+  ];
+
+  if (password.length > 0) {
+    sql += ", employee_password = ?";
+    const hash = await bcrypt.hash(password, saltRounds);
+    values.push(hash);
+  }
+  if (imageName.length > 0) {
+    sql += ", employee_img = ?";
+    values.push(imageName);
+  }
+  sql += " WHERE employee_id = ?;";
+  values.push(employeeId);
+
   db.execute(sql, values, (err, result) => {
     if (err) {
-      console.error("Error updating employee:", err);
+      return res.status(500).json({ msg: "insert ผิด" });
+    }
+
+    db.query(
+      "SELECT tel FROM employee_tel WHERE employee_id=?",
+      [employeeId],
+      (err, rows) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลโทรศัพท์พนักงาน" });
+        }
+        if (phone && Array.isArray(phone)) {
+          phone.forEach((tel, index) => {
+            if (rows[index] && rows[index].tel !== tel) {
+              db.query(
+                "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
+                [tel, employeeId, rows[index].tel],
+                (err) => {
+                  if (err) {
+                    console.log(err);
+                    return res.status(500).json({
+                      msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
+                    });
+                  }
+                }
+              );
+            } else if (rows[index] && rows[index].tel === tel) {
+              return; // ข้ามการดำเนินการถ้าหมายเลขโทรศัพท์ในฐานข้อมูลเท่ากับหมายเลขโทรศัพท์ที่ส่งมา
+            } else {
+              db.query(
+                "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+                [employeeId, tel],
+                (err) => {
+                  if (err) {
+                    console.log(err);
+                    return res.status(500).json({
+                      msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                    });
+                  }
+                }
+              );
+            }
+          });
+          return res
+            .status(201)
+            .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
+        } else {
+          if (rows[0].tel && rows.tel !== phone) {
+            db.query(
+              "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
+              [phone, employeeId, rows[0].tel],
+              (err) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(500).json({
+                    msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
+                  });
+                }
+              }
+            );
+          }
+          return res
+            .status(201)
+            .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
+        }
+        // ตอบกลับเมื่อเสร็จสิ้นการทำงานของลูป
+      }
+    );
+  });
+});
+
+app.delete("/employeephone/delete/:id/:tel", (req, res) => {
+  const sql = `
+  DELETE FROM employee_tel WHERE employee_id= ? and tel =? ;
+  `;
+  const values = [req.params.id, req.params.tel];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      console.error("Error delete phone employee:", err);
       res.status(500).json({
-        msg: "Error updating employee",
+        msg: "Error delete phone employee",
       });
       return;
     }
-    console.log("Employee updated successfully");
+    console.log("delete successfully");
     res.status(201).json({
-      msg: "เพิ่มพนักงานเรียบร้อยแล้ว",
-      data: result,
+      msg: "ลบเบอร์โทรศัพท์พนักงานเรียบร้อยแล้ว",
     });
     return;
   });
 });
 
-app.put("employee/delete/:id", (req, res) => {
+app.delete("/employee/delete/:id", (req, res) => {
   const sql = `
     UPDATE employee 
     SET 
       employee_del = ?
     WHERE employee_id = ?;
   `;
-  const values = [req.body.del];
   const id = req.params.id;
+  const values = ["1", id];
   db.execute(sql, values, (err, result) => {
     if (err) {
-      console.error("Error delete employee:", err);
       res.status(500).json({
         msg: "Error delete employee",
       });
@@ -1905,6 +2083,13 @@ app.get("/getsubdistrict/:id", (req, res) => {
   });
 });
 
+app.get("/img/avatar/:imageName", (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(__dirname, "img", "avatar", imageName);
+
+  // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
+  res.sendFile(imagePath);
+});
 app.listen(3001, () => {
   console.log("Hello World this from Server");
 });

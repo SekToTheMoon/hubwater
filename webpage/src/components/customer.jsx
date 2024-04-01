@@ -16,11 +16,11 @@ function Customer() {
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
   const fetchCustomers = async () => {
-    let url = `http://localhost:3001/customer?page=${currentPage}&per_page=${perPage}`;
-    if (search != "") {
-      url += `&search=${search}`;
-    }
     try {
+      let url = `http://localhost:3001/customer?page=${currentPage}&per_page=${perPage}`;
+      if (search != "") {
+        url += `&search=${search}`;
+      }
       const response = await axios.get(url);
       setCustomer(response.data.data);
       setTotalRows(response.data.total);
@@ -78,19 +78,19 @@ function Customer() {
 
   useEffect(() => {
     fetchCustomers();
-    // if (messageSuccess) {
-    //   toast.success(messageSuccess, {
-    //     position: "top-right",
-    //     autoClose: 3000,
-    //     hideProgressBar: false,
-    //     closeOnClick: true,
-    //     pauseOnHover: true,
-    //     draggable: true,
-    //     progress: undefined,
-    //     theme: "dark",
-    //   });
-    //   navigate("/all/Customer");
-    // }
+    if (messageSuccess) {
+      toast.success(messageSuccess, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      navigate("/all/Customer");
+    }
   }, [currentPage, perPage]);
 
   return (

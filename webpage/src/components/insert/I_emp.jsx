@@ -5,51 +5,56 @@ import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function I_emp() {
-  const [image, setImage] = useState(null);
   const [values, setValues] = useState({
-    dep: "",
-    position: "",
-    hiredate: new Date(),
     fname: "",
     lname: "",
-    sex: "",
     bdate: new Date(),
-    nid: "",
-    address: "",
-    province: "",
+    sex: "",
     salary: "",
-    commit: "",
-    email: "",
-    line: "",
+    hiredate: new Date(),
     username: "",
     password: "",
+    nid: "",
+    address: "",
+    email: "",
+    line: "",
+    commit: "",
+    position: "",
+    province: "",
     confirmation: "",
     phone: [""],
+    dep: "",
+    subdistrict: "",
+    zip_code: "",
   });
   const [errors, setErrors] = useState({});
   const [selectprovince, setSelectProvince] = useState([]);
   const [selectdistrict, setSelectDistrict] = useState([]);
   const [selectsubdistrict, setSelectSubdistrict] = useState([]);
+  const [selectdep, setSelectdep] = useState([]);
+  const [selectposit, setSelectposit] = useState([]);
+  const [images, setImage] = useState([]);
+  const [imageURL, setImageURL] = useState(null);
   const validationSchema = Yup.object({});
 
+  //จัดการไฟล์รูปภาพ
   const handleFileChange = (e) => {
-    setImage(e.target.files[0]);
+    if (e.target.files.length === 1) {
+      setImage([e.target.files[0]]);
+    } else {
+      console.log("เลือกรูปได้เพียง 1 รูป");
+    }
   };
 
-  const handlePhoneChange = (e, i) => {
-    const phoneData = [...values.phone];
-    phoneData[i] = e.target.value;
-    setValues({ ...values, phone: phoneData });
+  const handleChangePhone = (e, i) => {
+    const inputdata = [...values.phone];
+    inputdata[i] = e.target.value;
+    setValues({ ...values, phone: inputdata });
   };
-
-  const handleAddPhone = () => {
-    setValues({ ...values, phone: [...values.phone, ""] });
-  };
-
-  const handleDeletePhone = (i) => {
-    const phoneData = [...values.phone];
-    phoneData.splice(i, 1);
-    setValues({ ...values, phone: phoneData });
+  const handleDelete = (i) => {
+    const deletVal = [...values.phone];
+    deletVal.splice(i, 1);
+    setValues({ ...values, phone: deletVal });
   };
 
   const fetchProvince = async () => {
@@ -57,7 +62,6 @@ function I_emp() {
       .get("http://localhost:3001/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
-        console.log(selectprovince);
       })
       .catch((err) => console.log(err));
   };
@@ -66,7 +70,6 @@ function I_emp() {
       .get(`http://localhost:3001/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
-        console.log(selectdistrict);
       })
       .catch((err) => console.log(err));
   };
@@ -75,14 +78,41 @@ function I_emp() {
       .get(`http://localhost:3001/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
-        console.log(selectsubdistrict);
       })
       .catch((err) => console.log(err));
   };
-
+  const fetchDep = async () => {
+    await axios
+      .get("http://localhost:3001/getdep/all")
+      .then((res) => {
+        setSelectdep(res.data);
+      })
+      .catch((err) => console.log(err));
+  };
+  const fetchPosit = async (dep) => {
+    await axios
+      .get(`http://localhost:3001/getempselectposit/${dep}`)
+      .then((res) => {
+        setSelectposit(res.data);
+      })
+      .catch((err) => console.log(err));
+  };
   useEffect(() => {
     fetchProvince();
+    fetchDep();
   }, []);
+  useEffect(() => {
+    if (images.length !== 1) return;
+
+    const newImageURL = URL.createObjectURL(images[0]);
+    setImageURL(newImageURL);
+    console.log(images);
+
+    return () => {
+      // Cleanup เมื่อ Component ถูก unmount
+      URL.revokeObjectURL(newImageURL);
+    };
+  }, [images]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,7 +133,6 @@ function I_emp() {
 
   const handleInsert = async () => {
     const formData = new FormData();
-    formData.append("dep", values.dep);
     formData.append("position", values.position);
     formData.append("hiredate", values.hiredate);
     formData.append("fname", values.fname);
@@ -112,20 +141,17 @@ function I_emp() {
     formData.append("bdate", values.bdate);
     formData.append("nid", values.nid);
     formData.append("address", values.address);
-    formData.append("province", values.province);
     formData.append("salary", values.salary);
     formData.append("commit", values.commit);
     formData.append("email", values.email);
     formData.append("line", values.line);
     formData.append("username", values.username);
     formData.append("password", values.password);
-    formData.append("confirmation", values.confirmation);
+    formData.append("img", images[0]);
+    formData.append("subdistrict", values.subdistrict);
     values.phone.forEach((phone) => {
       formData.append("phone", phone);
     });
-    if (image) {
-      formData.append("img", image);
-    }
 
     try {
       const response = await axios.post(
@@ -180,15 +206,21 @@ function I_emp() {
                 </label>
                 <select
                   className="select select-bordered w-full"
-                  name="dep"
                   value={values.dep}
-                  onChange={(e) =>
-                    setValues({ ...values, dep: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const selectedDep = e.target.value;
+                    setValues({ ...values, dep: selectedDep, position: "" });
+                    fetchPosit(selectedDep);
+                  }}
                 >
                   <option value="" disabled>
                     เลือก
                   </option>
+                  {selectdep.map((op) => (
+                    <option key={op.dep_id} value={op.dep_id}>
+                      {op.dep_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="flex-1 mb-5">
@@ -202,13 +234,18 @@ function I_emp() {
                   className="select select-bordered w-full"
                   name="position"
                   value={values.position}
-                  onChange={(e) =>
-                    setValues({ ...values, position: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setValues({ ...values, position: e.target.value });
+                  }}
                 >
                   <option value="" disabled>
                     เลือก
                   </option>
+                  {selectposit.map((op) => (
+                    <option key={op.posit_id} value={op.posit_id}>
+                      {op.posit_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className=" flex-1 mb-5">
@@ -240,7 +277,11 @@ function I_emp() {
                 <input
                   type="text"
                   name="fname"
-                  className="input input-bordered w-full "
+                  value={values.fname}
+                  onChange={(e) =>
+                    setValues({ ...values, fname: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="ชื่อจริง"
                 />
               </div>
@@ -254,7 +295,11 @@ function I_emp() {
                 <input
                   type="text"
                   name="lname"
-                  className="input input-bordered w-full "
+                  value={values.lname}
+                  onChange={(e) =>
+                    setValues({ ...values, lname: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="นามสกุลจริง"
                 />
               </div>
@@ -307,9 +352,12 @@ function I_emp() {
                   เลขประจำตัวประชาชน
                 </label>
                 <input
-                  type="nid"
+                  type="text"
                   name="nid"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, nid: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="รหัส 12 หลัก"
                 />
               </div>
@@ -324,7 +372,10 @@ function I_emp() {
               <input
                 type="text"
                 name="address"
-                className="input input-bordered w-full "
+                onChange={(e) =>
+                  setValues({ ...values, address: e.target.value })
+                }
+                className="input input-bordered w-full"
                 placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
               />
             </div>
@@ -455,7 +506,10 @@ function I_emp() {
                 <input
                   type="text"
                   name="salary"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, salary: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="เงินเดือน"
                 />
               </div>
@@ -469,7 +523,10 @@ function I_emp() {
                 <input
                   type="text"
                   name="commit"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, commit: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="เปอร์เซ็นต์"
                 />
               </div>
@@ -485,7 +542,10 @@ function I_emp() {
                 <input
                   type="email"
                   name="email"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, email: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="ชืออีเมล@gemail.com"
                 />
               </div>
@@ -499,7 +559,10 @@ function I_emp() {
                 <input
                   type="text"
                   name="line"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, line: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                 />
               </div>
             </div>
@@ -515,16 +578,12 @@ function I_emp() {
                   type="file"
                   name="img"
                   accept="image/*"
-                  className="file-input file-input-bordered w-full "
                   onChange={handleFileChange}
+                  className="file-input file-input-bordered w-full"
                 />
-                {values.imageURL && (
+                {imageURL && (
                   <div className="w-100 flex justify-center h-40 bg-base-200">
-                    <img
-                      className="w-100"
-                      src={values.imageURL}
-                      alt="uploaded"
-                    />
+                    <img className="w-100" src={imageURL} alt="uploaded" />
                   </div>
                 )}
               </div>
@@ -586,7 +645,10 @@ function I_emp() {
                 <input
                   type="text"
                   name="username"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, username: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="Username"
                 />
               </div>
@@ -600,7 +662,10 @@ function I_emp() {
                 <input
                   type="password"
                   name="password"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, password: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="Password"
                 />
               </div>
@@ -614,7 +679,10 @@ function I_emp() {
                 <input
                   type="password"
                   name="confirmation"
-                  className="input input-bordered w-full "
+                  onChange={(e) =>
+                    setValues({ ...values, confirmation: e.target.value })
+                  }
+                  className="input input-bordered w-full"
                   placeholder="Confirm Password"
                 />
               </div>

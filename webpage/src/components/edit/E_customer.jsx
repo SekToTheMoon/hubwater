@@ -226,7 +226,7 @@ function E_customer() {
             <div className="mt-5 2xl:flex gap-x-5">
               <div className="flex-1 mb-5 ">
                 <label htmlFor="bdate" className="block mb-2  font-medium">
-                  ว/ด/ป ปีเกิด
+                  วัน/เดือน/ปี เกิด
                 </label>
                 <input
                   type="date"

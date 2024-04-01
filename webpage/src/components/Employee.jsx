@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 function Employee() {
   const [employees, setEmployees] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
-
   const totalPages = Math.ceil(totalRows / perPage);
-
+  const location = useLocation();
+  const { state } = location;
+  const navigate = useNavigate();
+  let messageSuccess = state && state.msg;
   const fetchEmployees = async () => {
     try {
       let url = `http://localhost:3001/employee?page=${currentPage}&per_page=${perPage}`;
@@ -26,6 +29,39 @@ function Employee() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const response = await axios.delete(
+        "http://localhost:3001/employee/delete/" + id
+      );
+      fetchEmployees();
+      if (response.data && response.data.msg) {
+        toast.info(response.data.msg, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      }
+    } catch (error) {
+      // Handle network errors or other issues
+      console.error("Error during registration:", error);
+      toast.error("Error during registration", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
+  };
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
@@ -41,7 +77,20 @@ function Employee() {
 
   useEffect(() => {
     fetchEmployees();
-  }, [currentPage, perPage, search]);
+    if (messageSuccess) {
+      toast.success(messageSuccess, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      navigate("/all/Employee");
+    }
+  }, [currentPage, perPage]);
 
   return (
     <>
@@ -84,6 +133,7 @@ function Employee() {
               <tr className="text-base">
                 <th>รหัสพนักงาน</th>
                 <th>ชื่อ-นามสกุล</th>
+                <th>เบอร์โทร</th>
                 <th>อีเมล</th>
                 <th>สถานะ</th>
               </tr>
@@ -94,10 +144,11 @@ function Employee() {
                   <tr key={emp.employee_id}>
                     <td>{emp.employee_id}</td>
                     <td>{emp.name}</td>
+                    <td>{emp.tel}</td>
                     <td>{emp.employee_email}</td>
                     <td>
                       <Link
-                        to={`/employee/edit/${emp.employee_id}`}
+                        to={`edit/${emp.employee_id}`}
                         className="btn btn-primary mr-3"
                       >
                         แก้ไข
