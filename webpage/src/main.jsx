@@ -42,6 +42,8 @@ import I_customer from "./components/insert/I_customer.jsx";
 import E_customer from "./components/edit/E_customer.jsx";
 import Product from "./components/product.jsx";
 import I_product from "./components/insert/I_product.jsx";
+import E_product from "./components/edit/E_product.jsx";
+import Stock from "./components/stock/Stock.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -179,6 +181,14 @@ const router = createBrowserRouter([
       {
         path: "product/insert",
         element: <I_product />,
+      },
+      {
+        path: "product/edit/:id",
+        element: <E_product />,
+      },
+      {
+        path: "product/stock/:id",
+        element: <Stock />,
       },
       {
         path: "quotation",

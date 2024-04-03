@@ -20,11 +20,21 @@ function I_product() {
   const [selectUnit_m, setSelectunit_m] = useState([]);
   const [selectBrand, setSelectbrand] = useState([]);
   const [selectType, setSelecttype] = useState([]);
+  const [images, setImage] = useState([]);
+  const [imageURL, setImageURL] = useState(null);
 
   const validationSchema = Yup.object({
     product_name: Yup.string().required("กรุณากรอกชื่อ แผนก"),
     type_id: Yup.string().required("กรุณาเลือกแผนกด้วย"),
   });
+
+  const handleFileChange = (e) => {
+    if (e.target.files.length === 1) {
+      setImage([e.target.files[0]]);
+    } else {
+      console.log("เลือกรูปได้เพียง 1 รูป");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,10 +54,24 @@ function I_product() {
   };
 
   const handleInsert = async () => {
+    const formData = new FormData();
+    formData.append("product_name", values.product_name);
+    formData.append("product_price", values.product_price);
+    formData.append("product_amount", values.product_amount);
+    formData.append("product_reorder", values.product_reorder);
+    formData.append("product_detail", values.product_detail);
+    formData.append("unit_m_id", values.unit_m_id);
+    formData.append("unit_id", values.unit_id);
+    formData.append("brand_id", values.brand_id);
+    formData.append("type_id", values.type_id);
+    formData.append("img", images[0]);
     try {
       const response = await axios.post(
         "http://localhost:3001/product/insert",
-        values
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
       toast.info(response.data.msg, {
         product: "top-right",
@@ -112,16 +136,47 @@ function I_product() {
     fetchUnit();
     fetchUnit_m();
   }, []);
+
+  useEffect(() => {
+    if (images.length !== 1) return;
+
+    const newImageURL = URL.createObjectURL(images[0]);
+    setImageURL(newImageURL);
+    console.log(images);
+
+    return () => {
+      // Cleanup เมื่อ Component ถูก unmount
+      URL.revokeObjectURL(newImageURL);
+    };
+  }, [images]);
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
         <h1 className="text-2xl ">เพิ่มสินค้า</h1>
         <hr className="my-4" />
         <div className="flex items-center">
-          <form onSubmit={handleSubmit}>
-            <div className="flex gap-2">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-sm mx-auto 2xl:max-w-7xl"
+          >
+            <div className="flex-1 mb-5 ">
+              <label className="block mb-2  font-medium ">ชื่อสินค้า</label>
+              <input
+                type="text"
+                placeholder=""
+                name="product_name"
+                className="input input-bordered w-full mb-1"
+                onChange={(e) => {
+                  setValues({ ...values, product_name: e.target.value });
+                }}
+              />
+              {errors.product_name && (
+                <span className="text-error">{errors.product_name}</span>
+              )}
+            </div>
+            <div className="mt-5 2xl:flex gap-x-5">
               {" "}
-              <div>
+              <div className="flex-1 mb-5 ">
                 <label className="block mb-2  font-medium ">ประเภทสินค้า</label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
@@ -143,30 +198,8 @@ function I_product() {
                   <span className="text-error">{errors.type_id}</span>
                 )}
               </div>
-              <div>
-                <label className="block mb-2  font-medium ">ประเภทสินค้า</label>
-                <select
-                  className="select select-bordered w-full max-w-xs mb-1"
-                  value={values.unit_id}
-                  onChange={(e) =>
-                    setValues({ ...values, unit_id: e.target.value })
-                  }
-                >
-                  <option value="" disabled>
-                    เลือก
-                  </option>
-                  {selectUnit.map((op) => (
-                    <option key={op.unit_id} value={op.unit_id}>
-                      {op.unit_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.unit_id && (
-                  <span className="text-error">{errors.unit_id}</span>
-                )}
-              </div>
-              <div>
-                <label className="block mb-2  font-medium ">ประเภทสินค้า</label>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">หน่วยวัด</label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
                   value={values.unit_m_id}
@@ -187,8 +220,8 @@ function I_product() {
                   <span className="text-error">{errors.unit_m_id}</span>
                 )}
               </div>
-              <div>
-                <label className="block mb-2  font-medium ">ประเภทสินค้า</label>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">แบรนด์</label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
                   value={values.brand_id}
@@ -209,19 +242,100 @@ function I_product() {
                   <span className="text-error">{errors.brand_id}</span>
                 )}
               </div>
-              <div>
-                <label className="block mb-2  font-medium ">ชื่อสินค้า</label>
+            </div>
+            <div className="mt-5 2xl:flex gap-x-5">
+              {" "}
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">ราคา</label>
                 <input
                   type="text"
                   placeholder=""
-                  name="product_name"
+                  name="product_price"
                   className="input input-bordered w-full mb-1"
                   onChange={(e) => {
-                    setValues({ ...values, product_name: e.target.value });
+                    setValues({ ...values, product_price: e.target.value });
                   }}
                 />
-                {errors.product_name && (
-                  <span className="text-error">{errors.product_name}</span>
+                {errors.product_price && (
+                  <span className="text-error">{errors.product_price}</span>
+                )}
+              </div>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">
+                  จุดสั่งซื้อสินค้า
+                </label>
+                <input
+                  type="text"
+                  placeholder=""
+                  name="product_reorder"
+                  className="input input-bordered w-full mb-1"
+                  onChange={(e) => {
+                    setValues({ ...values, product_reorder: e.target.value });
+                  }}
+                />
+                {errors.product_reorder && (
+                  <span className="text-error">{errors.product_reorder}</span>
+                )}
+              </div>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">
+                  หน่วยของสินค้า
+                </label>
+                <select
+                  className="select select-bordered w-full max-w-xs mb-1"
+                  value={values.unit_id}
+                  onChange={(e) => {
+                    setValues({ ...values, unit_id: e.target.value });
+                  }}
+                >
+                  <option value="" disabled>
+                    เลือก
+                  </option>
+                  {selectUnit.map((op) => (
+                    <option key={op.unit_id} value={op.unit_id}>
+                      {op.unit_name}
+                    </option>
+                  ))}
+                </select>
+                {errors.unit_id && (
+                  <span className="text-error">{errors.unit_id}</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-5 2xl:flex gap-x-5">
+              <div className=" flex-1 mb-5">
+                <label
+                  htmlFor="img"
+                  className="block mb-2 text-sm font-medium  "
+                >
+                  รูปสินค้า
+                </label>
+                <input
+                  type="file"
+                  name="img"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="file-input file-input-bordered w-full"
+                />
+                {imageURL && (
+                  <div className="w-100 flex justify-center h-40 bg-base-200">
+                    <img className="w-100" src={imageURL} alt="uploaded" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">รายละเอียด</label>
+                <textarea
+                  type="text"
+                  placeholder=""
+                  name="product_detail"
+                  className="textarea textarea-bordered w-full mb-1 h-52"
+                  onChange={(e) => {
+                    setValues({ ...values, product_detail: e.target.value });
+                  }}
+                />
+                {errors.product_detail && (
+                  <span className="text-error">{errors.product_detail}</span>
                 )}
               </div>
             </div>

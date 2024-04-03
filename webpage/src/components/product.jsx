@@ -136,6 +136,7 @@ function product() {
                 <th>ชื่อสินค้า</th>
                 <th>ราคา</th>
                 <th>จำนวนคงเหลือ</th>
+                <th>จุดสั่งซื้อสินค้า</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -147,7 +148,14 @@ function product() {
                     <td>{product.product_name}</td>
                     <td>{product.product_price}</td>
                     <td>{product.product_amount}</td>
+                    <td>{product.product_reorder}</td>
                     <td>
+                      <Link
+                        to={`stock/${product.product_id}`}
+                        className="btn btn-primary mr-3"
+                      >
+                        สต๊อก
+                      </Link>
                       <Link
                         to={`edit/${product.product_id}`}
                         className="btn btn-primary mr-3"
