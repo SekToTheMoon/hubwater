@@ -9,7 +9,7 @@ function All() {
   return (
     <div className="flex">
       <Sidebar_ />
-      <div className="detail w-full h-screen bg-neutral p-5 overflow-y-auto text-base ">
+      <div className="detail w-full h-screen bg-neutral p-3 overflow-y-auto text-base ">
         <Outlet />
       </div>
       <label className="flex cursor-pointer gap-2 absolute top-3 right-5 ">

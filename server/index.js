@@ -2155,15 +2155,27 @@ app.post("/product/insert", uploadProduct.single("img"), async (req, res) => {
 //ดึงข้องมูล product ไปแก้ไข
 app.get("/getproduct/:id", (req, res) => {
   const id = req.params.id;
-  const sql = `SELECT product_id, product_name, product_price, product_amount, product_reorder, product_detail, product_img, unit_m_id, unit_id, brand_id, type_id
+  if (id === "all") {
+    const sql = `SELECT product_id, product_name, product_price, product_img, unit_name
+    FROM product
+    JOIN unit u ON product.unit_id = u.unit_id;`;
+    db.query(sql, [id], (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  } else {
+    const sql = `SELECT product_id, product_name, product_price, product_amount, product_reorder, product_detail, product_img, unit_m_id, unit_id, brand_id, type_id
   FROM product
   WHERE product_id =? ;`;
-  db.query(sql, [id], (err, data) => {
-    if (err) {
-      return res.json(err);
-    }
-    return res.json(data);
-  });
+    db.query(sql, [id], (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  }
 });
 
 app.put("/product/edit/:id", uploadProduct.single("img"), async (req, res) => {
@@ -2304,7 +2316,8 @@ app.post("/stock/insert", async (req, res) => {
   const next = await db
     .promise()
     .query(
-      `select LPAD(IFNULL(Max(SUBSTR(lot_number, 13, 4)),0)+1,4,'0') as next from lot;`
+      `select LPAD(IFNULL(Max(SUBSTR(lot_number, 13, 4)),0)+1,4,'0') as next from lot where product_id =?;`,
+      [req.body.product_id]
     );
   const idnext =
     "LOT" + moment(Date.now()).format("YYYYMMDD") + "-" + next[0][0].next;
@@ -2332,6 +2345,125 @@ app.post("/stock/insert", async (req, res) => {
       });
     }
   );
+});
+
+app.get("/quotation", function (req, res) {
+  let fetch =
+    "SELECT q.quotation_id, q.quotation_date, e.employee_fname, q.quotation_total FROM quotation q JOIN employee e ON q.employee_id = e.employee_id ;";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+  fetch += " Where quotation_del ='0' ";
+  if (search) {
+    fetch += "and quotation_name LIKE ? ";
+    fetchValue.push("%" + search + "%");
+  }
+  fetch += " limit ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "select count(quotation_id) as total from quotation where quotation_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/quotation/insert", async (req, res) => {
+  const sql = `insert into quotation (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,quotation_total,quotation_del,quotation_detail,quotation_vat,quotation_tax,employee_id,customer_id,quotation_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const next = await db
+    .promise()
+    .query(
+      `select LPAD(IFNULL(Max(SUBSTR(quotation_id, 12, 5)),0)+1,5,'0') as next from quotation ;`
+    );
+  const idnext =
+    "QT" + moment(Date.now()).format("YYYYMMDD") + "-" + next[0][0].next;
+  db.query(
+    sql,
+    [
+      idnext,
+      1,
+      req.body.quotation_date,
+      "รอดำเนินการ",
+      req.body.quotation_credit,
+      req.body.quotation_total,
+      "0",
+      req.body.quotation_detail,
+      req.body.quotation_vat,
+      req.body.quotation_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      req.body.quotation_dateend,
+    ],
+    (err, data) => {
+      if (err) {
+        return res.status(500).json({ msg: "insert ผิด" });
+      }
+      if (req.body.listq && req.body.listq.length > 0) {
+        req.body.listq.forEach((item, index) => {
+          db.query(
+            `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
+            [
+              index,
+              item.listq_price,
+              item.listq_amount,
+              item.listq_total,
+              item.product_id,
+              item.lot_number,
+              idnext,
+              1,
+            ],
+            (err) => {
+              if (err) {
+                return res.status(500).json({
+                  msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
+                });
+              }
+            }
+          );
+        });
+      }
+      res.status(201).json({
+        msg: "เพิ่มใบเสนอราคาแล้ว",
+      });
+    }
+  );
+});
+
+app.get("/getcustomers", function (req, res) {
+  const sql = `select customer_id, CONCAT(customer_fname,' ',customer_lname) AS customer_name FROM customer WHERE customer_del = '0';
+  `;
+  db.query(sql, (err, data) => {
+    if (err) {
+      return res.json(err);
+    }
+    return res.json(data);
+  });
 });
 
 app.get("/getprovince", (req, res) => {

@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { useRef } from "react";
-import { MoreVertical, ChevronLast, ChevronFirst } from "lucide-react";
+import {
+  MoreVertical,
+  ChevronLast,
+  ChevronFirst,
+  Gauge,
+  PackageSearch,
+  Files,
+  PackageOpen,
+  Landmark,
+  UsersRound,
+  Contact,
+  Home,
+  UserRoundCog,
+  DollarSign,
+} from "lucide-react";
 import SubMenu from "./SubMenu";
 import { NavLink, useLocation, useRoutes, Link } from "react-router-dom";
 function Sidebar_() {
@@ -10,12 +24,12 @@ function Sidebar_() {
   const [openSub, setOpensub] = useState(false);
 
   const Menus = [
-    { title: "Dashboard", icon: <MoreVertical size={24} />, page: "dashboard" },
-    { title: "พนักงาน", icon: <MoreVertical size={24} />, page: "employee" },
-    { title: "ลูกค้า", icon: <MoreVertical size={24} />, page: "customer" },
+    { title: "Dashboard", icon: <Gauge size={20} />, page: "dashboard" },
+    { title: "พนักงาน", icon: <Contact size={20} />, page: "employee" },
+    { title: "ลูกค้า", icon: <UsersRound size={20} />, page: "customer" },
     {
       title: "เอกสารขาย",
-      icon: <MoreVertical size={24} />,
+      icon: <Files size={20} />,
       submenu: true,
       submenuItem: [
         {
@@ -40,46 +54,47 @@ function Sidebar_() {
         },
       ],
     },
-    { title: "สินค้า", icon: <MoreVertical size={24} />, page: "product" },
+    { title: "สินค้า", icon: <PackageSearch size={20} />, page: "product" },
     {
       title: "ค่าคงที่สินค้า",
-      icon: <MoreVertical size={24} />,
+      icon: <PackageOpen size={20} />,
       submenu: true,
       submenuItem: [
         {
           title: "ยี่ห้อสินค้า",
-          icon: <MoreVertical size={24} />,
+          icon: <MoreVertical size={20} />,
           page: "brand",
         },
         {
           title: "ประเภทค่าใช้จ่าย",
-          icon: <MoreVertical size={24} />,
+          icon: <MoreVertical size={20} />,
           page: "expensetype",
         },
         {
           title: "ประเภทสินค้า",
-          icon: <MoreVertical size={24} />,
+          icon: <MoreVertical size={20} />,
           page: "type",
         },
         {
           title: "ประเภทหน่วยวัด",
-          icon: <MoreVertical size={24} />,
+          icon: <MoreVertical size={20} />,
           page: "unit_m",
         },
         {
           title: "ประเภทหน่วยนับ",
-          icon: <MoreVertical size={24} />,
+          icon: <MoreVertical size={20} />,
           page: "unit",
         },
       ],
     },
     {
       title: "ขายหน้าร้าน",
-      icon: <MoreVertical size={24} />,
+      icon: <DollarSign size={20} />,
       page: "receiptcash",
     },
-    { title: "แผนก", icon: <MoreVertical size={24} />, page: "department" },
-    { title: "ตำแหน่ง", icon: <MoreVertical size={24} />, page: "position" },
+    { title: "แผนก", icon: <Home size={20} />, page: "department" },
+    { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "position" },
+    { title: "บัญชี", icon: <Landmark size={20} />, page: "bank" },
   ];
 
   return (

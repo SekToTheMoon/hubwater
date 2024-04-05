@@ -36,7 +36,8 @@ import E_unit_m from "./components/edit/E_unit_m.jsx";
 import Expensetype from "./components/Expensetype.jsx";
 import I_expensetype from "./components/insert/I_expensetype.jsx";
 import E_expensetype from "./components/edit/E_expensetype.jsx";
-import Quotation from "./components/quotation.jsx";
+import Quotation from "./components/Quotation.jsx";
+import I_quotation from "./components/insert/I_quotation.jsx";
 import Customer from "./components/customer.jsx";
 import I_customer from "./components/insert/I_customer.jsx";
 import E_customer from "./components/edit/E_customer.jsx";
@@ -193,6 +194,10 @@ const router = createBrowserRouter([
       {
         path: "quotation",
         element: <Quotation />,
+      },
+      {
+        path: "quotation/insert",
+        element: <I_quotation />,
       },
     ],
   },

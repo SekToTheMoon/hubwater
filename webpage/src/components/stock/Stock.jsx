@@ -57,8 +57,6 @@ function Stock() {
   };
 
   const handleSubmit = async (e) => {
-    console.log("submit ");
-    e.preventDefault();
     try {
       await validationSchema.validate(values, { abortEarly: false });
       await handleInsert();

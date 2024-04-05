@@ -77,11 +77,11 @@ function I_posit() {
       <div className="rounded-box bg-base-100 p-8">
         <h1 className="text-2xl ">เพิ่มตำแหน่ง</h1>
         <hr className="my-4" />
-        <div className="flex items-center">
-          <form onSubmit={handleSubmit}>
-            <div className="flex gap-2">
+        <div className="flex items-center w-75">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
+            <div className="flex gap-2 ">
               {" "}
-              <div>
+              <div className="w-2/12">
                 <label className="block mb-2  font-medium ">แผนก</label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
@@ -103,7 +103,7 @@ function I_posit() {
                   <span className="text-error">{errors.dep_id}</span>
                 )}
               </div>
-              <div>
+              <div className="w-10/12">
                 <label className="block mb-2  font-medium ">ชื่อตำแหน่ง</label>
                 <input
                   type="text"
@@ -117,6 +117,71 @@ function I_posit() {
                 {errors.posit_name && (
                   <span className="text-error">{errors.posit_name}</span>
                 )}
+              </div>
+            </div>
+            <span>สิทธิ์การเข้าใช้งาน</span>
+            <hr />
+            <div className="form-control max-w-64">
+              <label className="label cursor-pointer">
+                <span className="label-text">เลือกทั้งหมด</span>
+                <input type="checkbox" className="checkbox" />
+              </label>
+            </div>
+            <hr />
+            <div className="grid grid-cols-5 gap-x-32">
+              <div className="form-control">
+                <label className="label cursor-pointer">
+                  <span className="label-text ">Dashbord</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text ">พนักงานขาย</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text ">ลูกค้า</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text ">เอกสารขาย</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text">สินค้า</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text">ค่าคงที่สินค้า</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text">ขายหน้าร้าน</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text">แผนก</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
+              </div>
+              <div className="form-control ">
+                <label className="label cursor-pointer">
+                  <span className="label-text">บัญชีธนาคาร</span>
+                  <input type="checkbox" className="checkbox" />
+                </label>
               </div>
             </div>
 
