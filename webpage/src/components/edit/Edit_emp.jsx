@@ -121,7 +121,7 @@ function Edit_emp() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getemployee/" + id)
+      .get(`http://localhost:3001/getemployee/${id}`)
       .then((res) => {
         const employeeData = res.data.data[0];
         const bdate = moment(employeeData.employee_bdate).format("YYYY-MM-DD");
@@ -233,7 +233,7 @@ function Edit_emp() {
     });
     try {
       const response = await axios.put(
-        "http://localhost:3001/employee/edit/" + id,
+        `http://localhost:3001/employee/edit/${id}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

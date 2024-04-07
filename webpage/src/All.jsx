@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar, { SidebarItem } from "./components/Sidebar";
 import Sidebar_ from "./components/Sidebar_";
 import { Outlet } from "react-router-dom";
-import { LayoutDashboard } from "lucide-react";
-import { Receipt, BarChart2, ArrowBigLeft, ArrowBigRight } from "lucide-react";
+import axios from "axios";
 
 function All() {
   return (
@@ -12,7 +11,7 @@ function All() {
       <div className="detail w-full h-screen bg-neutral p-3 overflow-y-auto text-base ">
         <Outlet />
       </div>
-      <label className="flex cursor-pointer gap-2 absolute top-3 right-5 ">
+      <label className="flex cursor-pointer gap-2 absolute top-5 right-10 ">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="20"

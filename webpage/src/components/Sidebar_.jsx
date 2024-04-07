@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useRef } from "react";
 import {
   MoreVertical,
   ChevronLast,
@@ -14,16 +13,45 @@ import {
   Home,
   UserRoundCog,
   DollarSign,
+  LogOut,
 } from "lucide-react";
-import SubMenu from "./SubMenu";
-import { NavLink, useLocation, useRoutes, Link } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
+import axios from "axios";
+
 function Sidebar_() {
+  useEffect(() => {
+    const checkTokenValidity = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.post(
+          "http://localhost:3001/auth",
+          {},
+          {
+            headers: { Authorization: "Bearer " + token },
+          }
+        );
+
+        if (response.status === 200) {
+        } else {
+          window.location = "/";
+        }
+      } catch (error) {
+        console.error("Error occurred:", error);
+        window.location = "/";
+      }
+    };
+
+    checkTokenValidity();
+  }, []);
+
   const baseClasses =
     "text-base-content  relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group";
   const [open, setOpen] = useState(true);
   const [openSub, setOpensub] = useState(false);
-
+  const permission = localStorage.getItem("posit_permission");
+  const permissionArray = permission.split("");
   const Menus = [
+    { title: "หน้าแรก", icon: <Gauge size={20} />, page: "home" },
     { title: "Dashboard", icon: <Gauge size={20} />, page: "dashboard" },
     { title: "พนักงาน", icon: <Contact size={20} />, page: "employee" },
     { title: "ลูกค้า", icon: <UsersRound size={20} />, page: "customer" },
@@ -99,12 +127,13 @@ function Sidebar_() {
 
   return (
     <aside className="h-screen  flex flex-col bg-base-100  shadow-sm">
-      <div className="p-4 pb-2 flex justify-between items-center">
+      <div className="p-4 pb-2 flex justify-between items-center  ">
         <img
-          src="https://img.logoipsum.com/243.svg"
-          className={`overflow-hidden transition-all ${open ? "w-32" : "w-0"}`}
+          src="https://www.creativefabrica.com/wp-content/uploads/2018/11/Water-Logo-by-Acongraphic-47-580x386.jpg"
+          className={`overflow-hidden transition-all ${open ? "w-12" : "w-0"}`}
           alt=""
         />
+        <span>HubWaterTECH</span>
         <button
           onClick={() => setOpen(!open)}
           className="p-1.5 rounded-lg  hover:bg-primary/20"
@@ -114,115 +143,121 @@ function Sidebar_() {
       </div>
       <ul className="menu">
         {Menus.map((menu, index) => {
-          return (
-            <li key={index}>
-              {menu.submenu ? (
-                open ? (
-                  <details>
-                    <summary>
-                      {menu.icon}
-                      <span
-                        className={`overflow-hidden transition-all ml-3 ${
-                          !open && "hidden"
-                        }`}
-                      >
-                        {menu.title}
-                      </span>
-                    </summary>
-                    <ul>
-                      {menu.submenuItem.map((menusub, subIndex) => {
-                        return (
-                          <li key={subIndex}>
-                            <NavLink
-                              to={menusub.page}
-                              className={`relative transition-colors group`}
-                            >
-                              <span
-                                className={`overflow-hidden transition-all ml-3 ${
-                                  !open && "hidden"
-                                }`}
+          if (permissionArray[index + 1] === "1") {
+            return (
+              <li key={index}>
+                {menu.submenu ? (
+                  open ? (
+                    <details>
+                      <summary>
+                        {menu.icon}
+                        <span
+                          className={`overflow-hidden transition-all ml-3 ${
+                            !open && "hidden"
+                          }`}
+                        >
+                          {menu.title}
+                        </span>
+                      </summary>
+                      <ul>
+                        {menu.submenuItem.map((menusub, subIndex) => {
+                          return (
+                            <li key={subIndex}>
+                              <NavLink
+                                to={menusub.page}
+                                className={`relative transition-colors group`}
                               >
-                                {menusub.title}
-                              </span>
-                              {alert && (
-                                <div
-                                  className={`absolute right-2 w-2 h-2 rounded  ${
-                                    open ? "" : "top-2"
+                                <span
+                                  className={`overflow-hidden transition-all ml-3 ${
+                                    !open && "hidden"
                                   }`}
-                                />
-                              )}
-                            </NavLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </details>
-                ) : (
-                  <nav className={`relative transition-colors group `}>
-                    {menu.icon}
-                    {menu.submenuItem.map((menusub, subIndex) => {
-                      const topPosition = (subIndex + 1) * 2 - 2 + "rem"; // Adjust the top position as needed
-                      return (
-                        <NavLink
-                          key={subIndex}
-                          to={menusub.page}
-                          className={`${!openSub && "visible"}
+                                >
+                                  {menusub.title}
+                                </span>
+                                {alert && (
+                                  <div
+                                    className={`absolute right-2 w-2 h-2 rounded  ${
+                                      open ? "" : "top-2"
+                                    }`}
+                                  />
+                                )}
+                              </NavLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </details>
+                  ) : (
+                    <nav className={`relative transition-colors group `}>
+                      {menu.icon}
+                      {menu.submenuItem.map((menusub, subIndex) => {
+                        const topPosition = (subIndex + 1) * 2 - 2 + "rem"; // Adjust the top position as needed
+                        return (
+                          <NavLink
+                            key={subIndex}
+                            to={menusub.page}
+                            className={`${!openSub && "visible"}
                              absolute left-full rounded-md px-2 ml-6 h-full flex items-center 
                              bg-indigo-100 text-sm 
                              invisible -translate-x-3 -translate-y-full transition-all 
                               group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
                            `}
-                          style={{ whiteSpace: "nowrap", top: topPosition }}
-                        >
-                          {menusub.title}
-                        </NavLink>
-                      );
-                    })}
-                  </nav>
-                )
-              ) : (
-                <NavLink
-                  to={menu.page}
-                  className={`relative transition-colors group`}
-                >
-                  {menu.icon}
-                  <span
-                    className={`overflow-hidden transition-all ml-3 ${
-                      !open && "hidden"
-                    }`}
+                            style={{ whiteSpace: "nowrap", top: topPosition }}
+                          >
+                            {menusub.title}
+                          </NavLink>
+                        );
+                      })}
+                    </nav>
+                  )
+                ) : (
+                  <NavLink
+                    to={menu.page}
+                    className={`relative transition-colors group`}
                   >
-                    {menu.title}
-                  </span>
-                  {alert && (
-                    <div
-                      className={`absolute right-2 w-2 h-2 rounded  ${
-                        open ? "" : "top-2"
+                    {menu.icon}
+                    <span
+                      className={`overflow-hidden transition-all ml-3 ${
+                        !open && "hidden"
                       }`}
-                    />
-                  )}
-                  {!open && (
-                    <div
-                      className={`
+                    >
+                      {menu.title}
+                    </span>
+                    {alert && (
+                      <div
+                        className={`absolute right-2 w-2 h-2 rounded  ${
+                          open ? "" : "top-2"
+                        }`}
+                      />
+                    )}
+                    {!open && (
+                      <div
+                        className={`
                   absolute left-full rounded-md px-2 ml-6 h-full flex items-center 
                   bg-indigo-100 text-sm 
                   invisible opacity-20 -translate-x-3 transition-all
                   group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
                 `}
-                      style={{ whiteSpace: "nowrap" }}
-                    >
-                      {menu.title}
-                    </div>
-                  )}
-                </NavLink>
-              )}
-            </li>
-          );
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        {menu.title}
+                      </div>
+                    )}
+                  </NavLink>
+                )}
+              </li>
+            );
+          } else {
+            return null;
+          }
         })}
       </ul>
       ;
       <div className="border-t flex p-4 mt-auto ">
         <img
-          src="https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true"
+          src={`http://localhost:3001/img/avatar/${localStorage.getItem(
+            "employee_img"
+          )}`}
           alt=""
           className="w-10 h-10 rounded-md"
         />
@@ -236,7 +271,17 @@ function Sidebar_() {
             <h4 className="font-semibold">John Doe</h4>
             <span className="text-xs">johndoe@gmail.com</span>
           </div>
-          <MoreVertical size={20} />
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              axios.post("http://localhost:3001/logout");
+
+              localStorage.clear();
+              window.location = "/";
+            }}
+          >
+            <LogOut size={20} />
+          </div>
         </div>
       </div>
     </aside>

@@ -3,8 +3,13 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
+
 function I_posit() {
-  const [values, setValues] = useState({ posit_name: "", dep_id: "" });
+  const [values, setValues] = useState({
+    posit_name: "",
+    dep_id: "",
+    permission: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  });
   const [errors, setErrors] = useState({});
   const [selectdep, setSelectdep] = useState([]);
 
@@ -17,7 +22,12 @@ function I_posit() {
     e.preventDefault();
     try {
       await validationSchema.validate(values, { abortEarly: false });
-      handleInsert();
+      // Convert permission array to string before inserting
+      const valuesWithPermissionString = {
+        ...values,
+        permission: values.permission.join(""),
+      };
+      handleInsert(valuesWithPermissionString);
       setErrors({});
     } catch (error) {
       console.log(error.inner);
@@ -30,7 +40,7 @@ function I_posit() {
     }
   };
 
-  const handleInsert = async () => {
+  const handleInsert = async (values) => {
     try {
       const response = await axios.post(
         "http://localhost:3001/position/insert",
@@ -59,31 +69,48 @@ function I_posit() {
       });
     }
   };
-  //เอาแผนกท้ังหมด
-  const fetchDep = async () => {
-    await axios
-      .get("http://localhost:3001/getdep/all")
-      .then((res) => {
-        setSelectdep(res.data);
-        console.log(selectdep);
-      })
-      .catch((err) => console.log(err));
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    if (name === "selectAll") {
+      const updatedPermission = checked ? Array(10).fill(1) : Array(10).fill(0);
+      setValues({ ...values, permission: updatedPermission });
+    } else {
+      const index = parseInt(name);
+      const updatedPermission = [...values.permission];
+      updatedPermission[index] = checked ? 1 : 0;
+      setValues({ ...values, permission: updatedPermission });
+    }
   };
+
+  const fetchDep = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/getdep/all");
+      setSelectdep(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   useEffect(() => {
     fetchDep();
   }, []);
+
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
-        <h1 className="text-2xl ">เพิ่มตำแหน่ง</h1>
+        <h1 className="text-2xl">เพิ่มตำแหน่ง</h1>
         <hr className="my-4" />
         <div className="flex items-center w-75">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
-            <div className="flex gap-2 ">
-              {" "}
+            <div className="flex gap-2">
               <div className="w-2/12">
-                <label className="block mb-2  font-medium ">แผนก</label>
+                <label htmlFor="dep_id" className="block mb-2 font-medium">
+                  แผนก
+                </label>
                 <select
+                  id="dep_id"
+                  name="dep_id"
                   className="select select-bordered w-full max-w-xs mb-1"
                   value={values.dep_id}
                   onChange={(e) =>
@@ -104,15 +131,18 @@ function I_posit() {
                 )}
               </div>
               <div className="w-10/12">
-                <label className="block mb-2  font-medium ">ชื่อตำแหน่ง</label>
+                <label htmlFor="posit_name" className="block mb-2 font-medium">
+                  ชื่อตำแหน่ง
+                </label>
                 <input
+                  id="posit_name"
                   type="text"
                   placeholder=""
                   name="posit_name"
                   className="input input-bordered w-full mb-1"
-                  onChange={(e) => {
-                    setValues({ ...values, posit_name: e.target.value });
-                  }}
+                  onChange={(e) =>
+                    setValues({ ...values, posit_name: e.target.value })
+                  }
                 />
                 {errors.posit_name && (
                   <span className="text-error">{errors.posit_name}</span>
@@ -124,64 +154,42 @@ function I_posit() {
             <div className="form-control max-w-64">
               <label className="label cursor-pointer">
                 <span className="label-text">เลือกทั้งหมด</span>
-                <input type="checkbox" className="checkbox" />
+                <input
+                  type="checkbox"
+                  className="checkbox"
+                  name="selectAll"
+                  onChange={handleCheckboxChange}
+                />
               </label>
             </div>
             <hr />
             <div className="grid grid-cols-5 gap-x-32">
-              <div className="form-control">
-                <label className="label cursor-pointer">
-                  <span className="label-text ">Dashbord</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text ">พนักงานขาย</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text ">ลูกค้า</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text ">เอกสารขาย</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text">สินค้า</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text">ค่าคงที่สินค้า</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text">ขายหน้าร้าน</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text">แผนก</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </div>
-              <div className="form-control ">
-                <label className="label cursor-pointer">
-                  <span className="label-text">บัญชีธนาคาร</span>
-                  <input type="checkbox" className="checkbox" />
-                </label>
+              <div className="grid grid-cols-5 gap-x-32">
+                {[
+                  "Dashboard",
+                  "พนักงานขาย",
+                  "ลูกค้า",
+                  "เอกสารขาย",
+                  "สินค้า",
+                  "ค่าคงที่สินค้า",
+                  "ขายหน้าร้าน",
+                  "แผนก",
+                  "ตำแหน่ง",
+                  "บัญชีธนาคาร",
+                ].map((permission, index) => (
+                  <div className="form-control" key={index}>
+                    <label className="label cursor-pointer">
+                      <span className="label-text">{permission}</span>
+                      <input
+                        type="checkbox"
+                        className="checkbox"
+                        name={index.toString()}
+                        checked={values.permission[index] === 1}
+                        onChange={handleCheckboxChange}
+                      />
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 

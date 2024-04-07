@@ -11,6 +11,9 @@ const { connect } = require("http2");
 const moment = require("moment");
 app.use(express.json());
 app.use(cors());
+const jwt = require("jsonwebtoken");
+const { decode } = require("punycode");
+const secret = "JustTestDontWorry";
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -61,20 +64,28 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+app.post("/auth", (req, res) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, secret);
+    console.log(token);
+    return res.status(200).json(decoded);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 
-  db.promise.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email],
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  db.query(
+    "SELECT employee_username, employee_password FROM employee WHERE employee_username = ?",
+    [username],
     (err, result) => {
       if (err) {
         return res.status(500).json({ msg: err });
       }
-
       if (result.length > 0) {
-        const hashedPassword = result[0].password;
+        const hashedPassword = result[0].employee_password; // แก้ไขนี้ให้ตรงกับชื่อคอลัมน์ในฐานข้อมูล
 
         bcrypt.compare(password, hashedPassword, (err, isMatch) => {
           if (err) {
@@ -82,11 +93,34 @@ app.post("/login", (req, res) => {
           }
 
           if (isMatch) {
-            // You might want to generate a token here or send user details
-            return res.json({
-              msg: "Login successful!",
-              // Include any relevant user details or token here
-            });
+            // ทำการ query ข้อมูล employee ที่ล็อกอินเพื่อสร้าง token
+            db.query(
+              "SELECT employee_id, employee_img,employee_fname, employee_lname, posit_permission, posit_name FROM employee JOIN posit on employee.posit_id = posit.posit_id WHERE employee_username = ?",
+              [username],
+              (err, emp) => {
+                if (err) {
+                  return res.status(500).json({ msg: err });
+                }
+
+                const token = jwt.sign(
+                  {
+                    username: username,
+                  },
+                  secret
+                );
+                console.log(emp);
+                return res.status(200).json({
+                  msg: "Login successful!",
+                  employee_id: emp[0].employee_id,
+                  employee_fname: emp[0].employee_fname,
+                  employee_lname: emp[0].employee_lname,
+                  posit_permission: emp[0].posit_permission,
+                  posit_name: emp[0].posit_name,
+                  employee_img: emp[0].employee_img,
+                  token,
+                });
+              }
+            );
           } else {
             return res.status(401).json({
               msg: "Incorrect email or password",
@@ -101,15 +135,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  // Destroy the session to log the user out
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ message: "Error during logout" });
-    }
-
-    // Clear localStorage on the client side
-    res.json({ message: "Logout successful", clearLocalStorage: true });
-  });
+  res.json({ message: "Logout successful", clearLocalStorage: true });
 });
 
 app.post("/register", uploadAvatar.single("img"), async (req, res) => {
@@ -1193,11 +1219,11 @@ app.post("/position/insert", async (req, res) => {
     ]);
   if (rows.length === 0) {
     const sql =
-      "insert into posit (posit_id,posit_name,dep_id,posit_del) values (?,?,?,?)";
+      "insert into posit (posit_id,posit_name,posit_permission,dep_id,posit_del) values (?,?,?,?,?)";
     const idnext = await getNextID("POS", "posit");
     db.query(
       sql,
-      [idnext, req.body.posit_name, req.body.dep_id, "0"],
+      [idnext, req.body.posit_name, req.body.permission, req.body.dep_id, "0"],
       (err, data) => {
         if (err) {
           res.status(500).json({ msg: "insert ผิด" });
@@ -1218,7 +1244,8 @@ app.post("/position/insert", async (req, res) => {
 //ดึงข้องมูล posit ไปแก้ไข
 app.get("/getposit/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "select posit_name ,dep_id from posit where posit_id =?";
+  const sql =
+    "select posit_name ,posit_permission,dep_id from posit where posit_id =?";
   db.query(sql, [id], (err, data) => {
     if (err) {
       return res.json(err);
@@ -1240,11 +1267,12 @@ app.put("/position/edit/:id", async (req, res) => {
     UPDATE posit 
     SET 
       posit_name = ?,
+      posit_permission = ?,
       dep_id = ?
     WHERE posit_id = ?;
   `;
 
-    const values = [req.body.posit_name, req.body.dep_id];
+    const values = [req.body.posit_name, req.body.permission, req.body.dep_id];
     const id = req.params.id;
     console.log(id);
     db.execute(sql, [...values, id], (err, result) => {
@@ -1989,26 +2017,7 @@ app.put("/employee/edit/:id", uploadAvatar.single("img"), async (req, res) => {
           return res
             .status(201)
             .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
-        } else {
-          if (rows[0].tel && rows.tel !== phone) {
-            db.query(
-              "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
-              [phone, employeeId, rows[0].tel],
-              (err) => {
-                if (err) {
-                  console.log(err);
-                  return res.status(500).json({
-                    msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
-                  });
-                }
-              }
-            );
-          }
-          return res
-            .status(201)
-            .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
         }
-        // ตอบกลับเมื่อเสร็จสิ้นการทำงานของลูป
       }
     );
   });
@@ -2156,7 +2165,7 @@ app.post("/product/insert", uploadProduct.single("img"), async (req, res) => {
 app.get("/getproduct/:id", (req, res) => {
   const id = req.params.id;
   if (id === "all") {
-    const sql = `SELECT product_id, product_name, product_price, product_img, unit_name
+    const sql = `SELECT product_id, product_name, product_price, product_img , product_amount, unit_name
     FROM product
     JOIN unit u ON product.unit_id = u.unit_id;`;
     db.query(sql, [id], (err, data) => {
@@ -2308,6 +2317,20 @@ app.get("/stock", function (req, res) {
       );
     } else {
       res.json({ msg: err });
+    }
+  });
+});
+app.get("/selectstock/:id", function (req, res) {
+  const id = req.params.id;
+  let fetch = "SELECT lot_number, lot_amount FROM lot WHERE product_id= ?";
+
+  let fetchValue = [id];
+  console.log(fetchValue);
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      res.json(result);
+    } else {
+      res.json({ msg: "query น่าจะผิด" });
     }
   });
 });

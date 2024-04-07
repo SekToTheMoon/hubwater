@@ -11,7 +11,7 @@ function E_brand() {
   const { id } = useParams();
 
   const validationSchema = Yup.object({
-    brand_name: Yup.string().required("กรุณากรอกชื่อ แผนก"),
+    brand_name: Yup.string().required("กรุณากรอกชื่อ ยี่ห้อ"),
   });
 
   const handleSubmit = async (e) => {
@@ -59,14 +59,14 @@ function E_brand() {
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
-        <h1 className="text-2xl ">แก้ไขแผนก</h1>
+        <h1 className="text-2xl ">แก้ไขยี่ห้อ</h1>
         <hr className="my-4" />
         <div className="flex items-center">
           <form onSubmit={handleSubmit}>
-            <label className="block mb-2  font-medium ">ชื่อแผนก</label>
+            <label className="block mb-2  font-medium ">ชื่อยี่ห้อ</label>
             <input
               type="text"
-              placeholder="กรอกชื่อแผนก"
+              placeholder="กรอกชื่อยี่ห้อ"
               value={values.brand_name}
               className="input input-bordered w-full mb-2"
               onChange={(e) => setValues({ brand_name: e.target.value })}
