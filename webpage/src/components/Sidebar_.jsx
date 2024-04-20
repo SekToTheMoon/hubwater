@@ -19,37 +19,14 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import axios from "axios";
 
 function Sidebar_() {
-  useEffect(() => {
-    const checkTokenValidity = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.post(
-          "http://localhost:3001/auth",
-          {},
-          {
-            headers: { Authorization: "Bearer " + token },
-          }
-        );
-
-        if (response.status === 200) {
-        } else {
-          window.location = "/";
-        }
-      } catch (error) {
-        console.error("Error occurred:", error);
-        window.location = "/";
-      }
-    };
-
-    checkTokenValidity();
-  }, []);
-
   const baseClasses =
     "text-base-content  relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group";
   const [open, setOpen] = useState(true);
   const [openSub, setOpensub] = useState(false);
   const permission = localStorage.getItem("posit_permission");
-  const permissionArray = permission.split("");
+  const permissionArray = permission ? permission.split("") : [];
+  permissionArray.splice(0, 0, "1");
+  console.log(permissionArray);
   const Menus = [
     { title: "หน้าแรก", icon: <Gauge size={20} />, page: "home" },
     { title: "Dashboard", icon: <Gauge size={20} />, page: "dashboard" },
@@ -130,10 +107,16 @@ function Sidebar_() {
       <div className="p-4 pb-2 flex justify-between items-center  ">
         <img
           src="https://www.creativefabrica.com/wp-content/uploads/2018/11/Water-Logo-by-Acongraphic-47-580x386.jpg"
-          className={`overflow-hidden transition-all ${open ? "w-12" : "w-0"}`}
+          className={`overflow-hidden transition-all ${
+            open ? "w-12" : "hidden"
+          }`}
           alt=""
         />
-        <span>HubWaterTECH</span>
+        <span
+          className={`overflow-hidden transition-all ${open ? "" : "hidden"}`}
+        >
+          HubWaterTECH
+        </span>
         <button
           onClick={() => setOpen(!open)}
           className="p-1.5 rounded-lg  hover:bg-primary/20"
@@ -143,7 +126,7 @@ function Sidebar_() {
       </div>
       <ul className="menu">
         {Menus.map((menu, index) => {
-          if (permissionArray[index + 1] === "1") {
+          if (permissionArray[index] === "1") {
             return (
               <li key={index}>
                 {menu.submenu ? (
@@ -197,14 +180,16 @@ function Sidebar_() {
                             key={subIndex}
                             to={menusub.page}
                             className={`${!openSub && "visible"}
-                             absolute left-full rounded-md px-2 ml-6 h-full flex items-center 
-                             bg-indigo-100 text-sm 
+                             absolute left-full  pl-6  h-full 
+                              text-sm 
                              invisible -translate-x-3 -translate-y-full transition-all 
                               group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
                            `}
                             style={{ whiteSpace: "nowrap", top: topPosition }}
                           >
-                            {menusub.title}
+                            <div className="px-2 bg-indigo-100 w-full h-full rounded-md flex items-center ">
+                              {menusub.title}
+                            </div>
                           </NavLink>
                         );
                       })}
@@ -252,29 +237,40 @@ function Sidebar_() {
           }
         })}
       </ul>
-      ;
+
       <div className="border-t flex p-4 mt-auto ">
-        <img
-          src={`http://localhost:3001/img/avatar/${localStorage.getItem(
-            "employee_img"
-          )}`}
-          alt=""
-          className="w-10 h-10 rounded-md"
-        />
+        <div className="avatar">
+          <div className={`${open ? "w-10 rounded-full" : "hidden"}`}>
+            <img
+              src={`http://localhost:3001/img/avatar/${localStorage.getItem(
+                "employee_img"
+              )}`}
+              alt=""
+            />
+          </div>
+        </div>
         <div
           className={`
               flex justify-between items-center
-              overflow-hidden transition-all ${open ? "w-52 ml-3" : "w-0"}
+              overflow-hidden transition-all ${open ? "w-52 ml-3" : "m-auto"}
           `}
         >
-          <div className="leading-4">
-            <h4 className="font-semibold">John Doe</h4>
-            <span className="text-xs">johndoe@gmail.com</span>
+          <div
+            className={`leading-4  ${open ? "" : "hidden"}
+          `}
+          >
+            <h1 className="font-semibold">
+              {localStorage.getItem("employee_fname") +
+                " " +
+                localStorage.getItem("employee_lname")}
+            </h1>
           </div>
           <div
             className="cursor-pointer"
-            onClick={() => {
-              axios.post("http://localhost:3001/logout");
+            onClick={async () => {
+              await axios.post("http://localhost:3001/logout", {
+                refreshToken: localStorage.getItem("refreshToken"),
+              });
 
               localStorage.clear();
               window.location = "/";

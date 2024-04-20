@@ -13,8 +13,7 @@ app.use(express.json());
 app.use(cors());
 const jwt = require("jsonwebtoken");
 const { decode } = require("punycode");
-const secret = "JustTestDontWorry";
-
+require("dotenv").config();
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -47,6 +46,38 @@ const storageProduct = multer.diskStorage({
 const uploadAvatar = multer({ storage: storageAvatar });
 const uploadProduct = multer({ storage: storageProduct });
 
+function generateAccessToken(user) {
+  return jwt.sign(
+    {
+      username: user,
+    },
+    process.env.ACCESS_TOKEN_SECRET
+    // { expiresIn: "59s" }
+  );
+}
+function generateRefreshToken(user) {
+  return jwt.sign(
+    {
+      username: user,
+    },
+    process.env.REFRESH_TOKEN_SECRET
+    // { expiresIn: "59s" }
+  );
+}
+let refreshTokens = [];
+app.post("/token", (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  if (refreshToken === null) return res.status(401).send("ไม่มีการส่งมา");
+  if (!refreshTokens.includes(refreshToken))
+    return res.status(401).send("ไม่มี refreshtoken นี้ในระบบ");
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    const token = generateAccessToken(user.username);
+    console.log("/token is work and this is new accesstoken " + token);
+    res.json({ token: token });
+  });
+});
+
 async function getNextID(prefix, tableselect) {
   const next = await db
     .promise()
@@ -64,10 +95,11 @@ app.get("/", (req, res) => {
   });
 });
 
+//อยู๋หน้า all ตรวจสอบผู้ใช้ต้องมี token
 app.post("/auth", (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     console.log(token);
     return res.status(200).json(decoded);
   } catch (err) {
@@ -101,14 +133,10 @@ app.post("/login", (req, res) => {
                 if (err) {
                   return res.status(500).json({ msg: err });
                 }
-
-                const token = jwt.sign(
-                  {
-                    username: username,
-                  },
-                  secret
-                );
-                console.log(emp);
+                const token = generateAccessToken(username);
+                const refreshToken = generateRefreshToken(username);
+                refreshTokens.push(refreshToken);
+                // console.log(refreshTokens); เอาไว้ดูว่ามี refreshtoken กี่ตัวแล้ว
                 return res.status(200).json({
                   msg: "Login successful!",
                   employee_id: emp[0].employee_id,
@@ -118,6 +146,7 @@ app.post("/login", (req, res) => {
                   posit_name: emp[0].posit_name,
                   employee_img: emp[0].employee_img,
                   token,
+                  refreshToken,
                 });
               }
             );
@@ -135,6 +164,11 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
+  console.log("this is logout " + req.body.refreshToken);
+  refreshTokens = refreshTokens.filter(
+    (token) => token !== req.body.refreshToken
+  );
+  console.log(refreshTokens);
   res.json({ message: "Logout successful", clearLocalStorage: true });
 });
 
@@ -837,6 +871,180 @@ app.delete("/expensetype/delete/:id", (req, res) => {
     console.log(" delete successfully");
     res.status(201).json({
       msg: "ลบประเภทค่าใช้จ่ายเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+app.get("/bank", function (req, res) {
+  let fetch =
+    "select bank_id,bank_name,bank_num,bank_name,bank_owner from bank";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+  fetch += " Where bank_del ='0' ";
+  if (search) {
+    fetch += "and bank_name LIKE ? ";
+    fetchValue.push("%" + search + "%");
+  }
+  fetch += " limit ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "select count(bank_id) as total from bank where bank_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+app.post("/bank/insert", async (req, res) => {
+  const [rows] = await db
+    .promise()
+    .query("SELECT bank_id FROM bank WHERE bank_name = ? and bank_owner = ?", [
+      req.body.bank_name,
+      req.body.bank_owner,
+    ]);
+
+  if (rows.length === 0) {
+    const sql =
+      "INSERT INTO bank (bank_id, bank_name, bank_branch, bank_owner, bank_type, bank_num, bank_del) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const idnext = await getNextID("BAK", "bank");
+    db.query(
+      sql,
+      [
+        idnext,
+        req.body.bank_name,
+        req.body.bank_branch,
+        req.body.bank_owner,
+        req.body.bank_type,
+        req.body.bank_num,
+        "0",
+      ],
+      (err, data) => {
+        if (err) {
+          res.status(500).json({ msg: err });
+          return;
+        }
+        res.status(201).json({
+          msg: "เพิ่มบัญชีธนาคารสำเร็จ",
+        });
+      }
+    );
+  } else {
+    res.status(409).json({
+      msg: "มี บัญชีธนาคาร นี้อยู่ในระบบแล้ว",
+    });
+  }
+});
+
+app.put("/bank/edit/:id", async (req, res) => {
+  const [rows] = await db
+    .promise()
+    .query(
+      "SELECT bank_id FROM bank WHERE bank_name = ? and bank_owner = ? and bank_id != ?",
+      [req.body.bank_name, req.body.bank_owner, req.params.id]
+    );
+
+  if (rows.length === 0) {
+    const sql = `
+  UPDATE bank 
+  SET 
+    bank_name = ?,bank_branch = ?,bank_owner = ?,bank_type = ?,bank_num = ?
+  WHERE bank_id = ?;
+`;
+
+    const values = [
+      req.body.bank_name,
+      req.body.bank_branch,
+      req.body.bank_owner,
+      req.body.bank_type,
+      req.body.bank_num,
+    ];
+    const id = req.params.id;
+    db.query(sql, [...values, id], (err, result) => {
+      if (err) {
+        res.status(500).json({ msg: "Error updating bank" });
+        return;
+      }
+      res.status(201).json({
+        msg: "แก้ไขบัญชีธนาคารสำเร็จ",
+      });
+    });
+  } else {
+    res.status(409).json({
+      msg: "มี บัญชีธนาคาร นี้อยู่ในระบบแล้ว",
+    });
+  }
+});
+
+app.get("/getbank/:id", (req, res) => {
+  const id = req.params.id;
+  if (id == "all") {
+    const sql = "select bank_id, bank_name from bank";
+    db.query(sql, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  } else {
+    const sql =
+      "select bank_name,bank_branch,bank_owner,bank_type,bank_num from bank where bank_id =?";
+    db.query(sql, [id], (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  }
+});
+
+app.delete("/bank/delete/:id", (req, res) => {
+  console.log("bank delete");
+  const sql = `
+    UPDATE bank 
+    SET 
+      bank_del = ?
+    WHERE bank_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      console.error("Error delete bank:", err);
+      res.status(500).json({
+        msg: "Error delete bank",
+      });
+      return;
+    }
+    console.log("bank delete successfully");
+    res.status(201).json({
+      msg: "ลบบัญชีธนาคารเรียบร้อยแล้ว",
       data: result,
     });
     return;
@@ -2534,6 +2742,6 @@ app.get("/img/product/:imageName", (req, res) => {
   // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
   res.sendFile(imagePath);
 });
-app.listen(3001, () => {
+app.listen(process.env.PORT, () => {
   console.log("Hello World this from Server");
 });

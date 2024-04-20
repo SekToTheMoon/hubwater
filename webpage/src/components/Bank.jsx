@@ -4,8 +4,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-function Expensetype() {
-  const [Expensetype, setExpensetype] = useState([]);
+function Bank() {
+  const [Bank, setBank] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,26 +15,26 @@ function Expensetype() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
-  const fetchExpensetypes = async () => {
-    let url = `http://localhost:3001/Expensetype?page=${currentPage}&per_page=${perPage}`;
+  const fetchBanks = async () => {
+    let url = `http://localhost:3001/Bank?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
     try {
       const response = await axios.get(url);
-      setExpensetype(response.data.data);
+      setBank(response.data.data);
       setTotalRows(response.data.total);
     } catch (error) {
-      console.error("Error fetching Expensetypes:", error);
+      console.error("Error fetching Banks:", error);
     }
   };
 
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(
-        "http://localhost:3001/Expensetype/delete/" + id
+        "http://localhost:3001/Bank/delete/" + id
       );
-      fetchExpensetypes();
+      fetchBanks();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
           position: "top-right",
@@ -64,7 +64,7 @@ function Expensetype() {
   };
 
   const handleSearch = () => {
-    fetchExpensetypes();
+    fetchBanks();
   };
 
   const handlePageChange = (newPage) => {
@@ -77,7 +77,7 @@ function Expensetype() {
   };
 
   useEffect(() => {
-    fetchExpensetypes();
+    fetchBanks();
     if (messageSuccess) {
       toast.success(messageSuccess, {
         position: "top-right",
@@ -89,7 +89,7 @@ function Expensetype() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Expensetype");
+      navigate("/all/Bank");
     }
   }, [currentPage, perPage]);
 
@@ -97,10 +97,10 @@ function Expensetype() {
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
-          <h1 className="text-2xl mb-5">ประเภทค่าใช้จ่าย</h1>
+          <h1 className="text-2xl mb-5">บัญชีธนาคาร</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มประเภทค่าใช้จ่าย
+              เพิ่มบัญชีธนาคาร
             </Link>
             <div className="flex">
               {" "}
@@ -129,23 +129,27 @@ function Expensetype() {
               </button>
             </div>
           </div>
-          <table className="w-full">
-            <thead className="bg-base-200 text-left">
-              <tr className="border-b">
-                <th className="pl-5 py-3 ">รหัสประเภทค่าใช้จ่าย</th>
-                <th>ชื่อประเภทค่าใช้จ่าย</th>
+          <table className="table text-base">
+            <thead>
+              <tr className=" text-base">
+                <th>รหัส</th>
+                <th>เลขบัญชีธนาคาร</th>
+                <th>ธนาคาร</th>
+                <th>ชื่อเจ้าของบัญชี</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
             <tbody>
-              {Expensetype && Expensetype.length !== 0 ? (
-                Expensetype.map((Typ) => (
-                  <tr key={Typ.expensetype_id} className="border-b">
-                    <td className="pl-5 ">{Typ.expensetype_id}</td>
-                    <td>{Typ.expensetype_name}</td>
+              {Bank && Bank.length !== 0 ? (
+                Bank.map((brd) => (
+                  <tr key={brd.bank_id}>
+                    <td>{brd.bank_id}</td>
+                    <td>{brd.bank_num}</td>
+                    <td>{brd.bank_name}</td>
+                    <td>{brd.bank_owner}</td>
                     <td>
                       <Link
-                        to={`edit/${Typ.expensetype_id}`}
+                        to={`edit/${brd.bank_id}`}
                         className="btn btn-primary mr-3"
                       >
                         แก้ไข
@@ -154,29 +158,29 @@ function Expensetype() {
                         className="btn btn-error"
                         onClick={() =>
                           document
-                            .getElementById("my_modal_" + Typ.expensetype_id)
+                            .getElementById("my_modal_" + brd.bank_id)
                             .showModal()
                         }
                       >
                         ลบ
                       </button>
                       <dialog
-                        id={`my_modal_${Typ.expensetype_id}`}
+                        id={`my_modal_${brd.bank_id}`}
                         className="modal"
+                        key={`modal_${brd.bank_id}`}
                       >
                         <div className="modal-box">
                           <h3 className="font-bold text-lg">
-                            ลบข้อมูลประเภทค่าใช้จ่าย
+                            ลบข้อมูลบัญชีธนาคาร
                           </h3>
                           <p className="py-4">
-                            ต้องการลบข้อมูลประเภทค่าใช้จ่าย{" "}
-                            {Typ.expensetype_name} หรือไม่
+                            ต้องการลบข้อมูลบัญชีธนาคาร {brd.bank_name} หรือไม่
                           </p>
                           <div className="modal-action">
                             <form method="dialog">
                               <button
                                 className="btn btn-primary"
-                                onClick={() => handleDelete(Typ.expensetype_id)}
+                                onClick={() => handleDelete(brd.bank_id)}
                               >
                                 ยืนยัน
                               </button>
@@ -208,7 +212,7 @@ function Expensetype() {
               <option value="30">30</option>
               {/* Add more options if needed */}
             </select>
-            {Expensetype && Expensetype.length !== 0 ? (
+            {Bank && Bank.length !== 0 ? (
               <div className="flex justify-between items-center">
                 <span className="mr-5">
                   {`Showing ${(currentPage - 1) * perPage + 1}-${Math.min(
@@ -241,4 +245,4 @@ function Expensetype() {
   );
 }
 
-export default Expensetype;
+export default Bank;

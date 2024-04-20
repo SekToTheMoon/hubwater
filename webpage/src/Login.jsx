@@ -15,8 +15,8 @@ function Login() {
       });
 
       if (response.status === 200) {
-        console.log(response);
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
         localStorage.setItem("employee_id", response.data.employee_id);
         localStorage.setItem("employee_fname", response.data.employee_fname);
         localStorage.setItem("employee_lname", response.data.employee_lname);
@@ -26,6 +26,7 @@ function Login() {
           response.data.posit_permission
         );
         localStorage.setItem("posit_name", response.data.posit_name);
+
         window.location = "/all/home";
       } else {
         console.error("Login failed");
@@ -55,7 +56,7 @@ function Login() {
               <form className="card-body" onSubmit={(e) => e.preventDefault()}>
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Username</span>
+                    <span className="label-text">ชื่อบัญชี</span>
                   </label>
                   <input
                     type="text"
@@ -68,7 +69,7 @@ function Login() {
                 </div>
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Password</span>
+                    <span className="label-text">รหัสผ่าน</span>
                   </label>
                   <input
                     type="password"
@@ -81,7 +82,7 @@ function Login() {
                 </div>
                 <div className="form-control mt-6">
                   <button className="btn btn-primary" onClick={handleLogin}>
-                    Login
+                    เข้าสู่ระบบ
                   </button>
                 </div>
               </form>

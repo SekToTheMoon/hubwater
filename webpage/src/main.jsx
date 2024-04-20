@@ -46,6 +46,9 @@ import Product from "./components/product.jsx";
 import I_product from "./components/insert/I_product.jsx";
 import E_product from "./components/edit/E_product.jsx";
 import Stock from "./components/stock/Stock.jsx";
+import Bank from "./components/Bank.jsx";
+import I_bank from "./components/insert/I_bank.jsx";
+import E_bank from "./components/edit/E_bank.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -179,6 +182,18 @@ const router = createBrowserRouter([
       {
         path: "expensetype/edit/:id",
         element: <E_expensetype />,
+      },
+      {
+        path: "bank",
+        element: <Bank />,
+      },
+      {
+        path: "bank/insert",
+        element: <I_bank />,
+      },
+      {
+        path: "bank/edit/:id",
+        element: <E_bank />,
       },
       {
         path: "product",
