@@ -13,7 +13,6 @@ function Stock() {
   const [values, setValues] = useState({
     lot_price: 0,
     lot_amount: 0,
-    lot_total: 0,
     lot_date: new Date(),
     lot_has_exp: "",
     lot_exp: new Date(),

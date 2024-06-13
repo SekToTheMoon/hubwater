@@ -28,6 +28,7 @@ db.connect((err) => {
     console.log("Connected to MySQL database");
   }
 });
+app.listen(process.env.PORT);
 
 const storageAvatar = multer.diskStorage({
   destination: path.join(__dirname, "img", "avatar"),
@@ -221,7 +222,7 @@ app.post("/register", uploadAvatar.single("img"), async (req, res) => {
       const next = db.execute(
         `SELECT 'EMP || LPAD(NVL(MAX(SUBSTR(employee_id, 3, 7)), 0) + 1, 7, '0') FROM employee;`
       );
-      console.log(next[0][0]);
+      console.log(next[0][0], " ไอดีของ พนักงานต่อไป");
       await db
         .promise()
         .query(
@@ -311,7 +312,6 @@ app.post("/department/insert", async (req, res) => {
   if (rows.length === 0) {
     const sql = "insert into dep (dep_id,dep_name,dep_del) values (?,?,?)";
     const idnext = await getNextID("DEP", "dep");
-    console.log(req.body.dep_name);
     db.query(sql, [idnext, req.body.dep_name, "0"], (err, data) => {
       if (err) {
         res.status(500).json({ msg: err });
@@ -343,7 +343,6 @@ app.put("/department/edit/:id", async (req, res) => {
 
     const values = [req.body.dep_name];
     const id = req.params.id;
-    console.log(id);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating department" });
@@ -382,7 +381,6 @@ app.get("/getdep/:id", (req, res) => {
 });
 
 app.delete("/department/delete/:id", (req, res) => {
-  console.log("dep delete");
   const sql = `
     UPDATE dep 
     SET 
@@ -398,7 +396,6 @@ app.delete("/department/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log("Employee delete successfully");
     res.status(201).json({
       msg: "ลบแผนกเรียบร้อยแล้ว",
       data: result,
@@ -463,7 +460,6 @@ app.post("/unit/insert", async (req, res) => {
   if (rows.length === 0) {
     const sql = "insert into unit (unit_id,unit_name,unit_del) values (?,?,?)";
     const idnext = await getNextID("UNI", "unit");
-    console.log(req.body.unit_name);
     db.query(sql, [idnext, req.body.unit_name, "0"], (err, data) => {
       if (err) {
         res.status(500).json({ msg: err });
@@ -497,7 +493,6 @@ app.put("/unit/edit/:id", async (req, res) => {
 
     const values = [req.body.unit_name];
     const id = req.params.id;
-    console.log(id);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating unit" });
@@ -536,7 +531,6 @@ app.get("/getunit/:id", (req, res) => {
 });
 
 app.delete("/unit/delete/:id", (req, res) => {
-  console.log("unit delete");
   const sql = `
     UPDATE unit 
     SET 
@@ -553,7 +547,6 @@ app.delete("/unit/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log(" delete successfully");
     res.status(201).json({
       msg: "ลบหน่วยนับเรียบร้อยแล้ว",
       data: result,
@@ -619,7 +612,6 @@ app.post("/unit_m/insert", async (req, res) => {
     const sql =
       "insert into unit_m (unit_m_id,unit_m_name,unit_m_del) values (?,?,?)";
     const idnext = await getNextID("UNM", "unit_m");
-    console.log(req.body.unit_m_name);
     db.query(sql, [idnext, req.body.unit_m_name, "0"], (err, data) => {
       if (err) {
         res.status(500).json({ msg: err });
@@ -653,7 +645,6 @@ app.put("/unit_m/edit/:id", async (req, res) => {
 
     const values = [req.body.unit_m_name];
     const id = req.params.id;
-    console.log(id);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating unit_m" });
@@ -692,7 +683,6 @@ app.get("/getunit_m/:id", (req, res) => {
 });
 
 app.delete("/unit_m/delete/:id", (req, res) => {
-  console.log("unit_m delete");
   const sql = `
     UPDATE unit_m 
     SET 
@@ -709,7 +699,6 @@ app.delete("/unit_m/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log(" delete successfully");
     res.status(201).json({
       msg: "ลบหน่วยวัดเรียบร้อยแล้ว",
       data: result,
@@ -776,7 +765,6 @@ app.post("/expensetype/insert", async (req, res) => {
     const sql =
       "insert into expensetype (expensetype_id,expensetype_name,expensetype_del) values (?,?,?)";
     const idnext = await getNextID("EPT", "expensetype");
-    console.log(req.body.expensetype_name);
     db.query(sql, [idnext, req.body.expensetype_name, "0"], (err, data) => {
       if (err) {
         res.status(500).json({ msg: err });
@@ -811,7 +799,6 @@ app.put("/expensetype/edit/:id", async (req, res) => {
 
     const values = [req.body.expensetype_name];
     const id = req.params.id;
-    console.log(id);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating expensetype" });
@@ -851,7 +838,6 @@ app.get("/getexpensetype/:id", (req, res) => {
 });
 
 app.delete("/expensetype/delete/:id", (req, res) => {
-  console.log("expensetype delete");
   const sql = `
     UPDATE expensetype 
     SET 
@@ -868,7 +854,6 @@ app.delete("/expensetype/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log(" delete successfully");
     res.status(201).json({
       msg: "ลบประเภทค่าใช้จ่ายเรียบร้อยแล้ว",
       data: result,
@@ -1025,7 +1010,6 @@ app.get("/getbank/:id", (req, res) => {
 });
 
 app.delete("/bank/delete/:id", (req, res) => {
-  console.log("bank delete");
   const sql = `
     UPDATE bank 
     SET 
@@ -1042,7 +1026,6 @@ app.delete("/bank/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log("bank delete successfully");
     res.status(201).json({
       msg: "ลบบัญชีธนาคารเรียบร้อยแล้ว",
       data: result,
@@ -1108,7 +1091,6 @@ app.post("/brand/insert", async (req, res) => {
     const sql =
       "insert into brand (brand_id,brand_name,brand_del) values (?,?,?)";
     const idnext = await getNextID("BRD", "brand");
-    console.log(req.body.brand_name);
     db.query(sql, [idnext, req.body.brand_name, "0"], (err, data) => {
       if (err) {
         res.status(500).json({ msg: err });
@@ -1142,7 +1124,6 @@ app.put("/brand/edit/:id", async (req, res) => {
 
     const values = [req.body.brand_name];
     const id = req.params.id;
-    console.log(id);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating brand" });
@@ -1181,7 +1162,6 @@ app.get("/getbrand/:id", (req, res) => {
 });
 
 app.delete("/brand/delete/:id", (req, res) => {
-  console.log("brand delete");
   const sql = `
     UPDATE brand 
     SET 
@@ -1198,7 +1178,6 @@ app.delete("/brand/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log("Employee delete successfully");
     res.status(201).json({
       msg: "ลบแบรนด์เรียบร้อยแล้ว",
       data: result,
@@ -1265,7 +1244,6 @@ app.post("/type/insert", async (req, res) => {
     const sql =
       "insert into type (type_id,type_name,type_category,type_del) values (?,?,?,?)";
     const idnext = await getNextID("TYP", "type");
-    console.log(req.body.type_name, req.body.type_category);
     db.query(
       sql,
       [idnext, req.body.type_name, req.body.type_category, "0"],
@@ -1326,8 +1304,6 @@ app.put("/type/edit/:id", async (req, res) => {
 
     const values = [req.body.type_name, req.body.type_category];
     const id = req.params.id;
-    console.log(id);
-    console.log(values);
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating type" });
@@ -1345,7 +1321,6 @@ app.put("/type/edit/:id", async (req, res) => {
 });
 
 app.delete("/type/delete/:id", (req, res) => {
-  console.log("type delete");
   const sql = `
     UPDATE type 
     SET 
@@ -1362,7 +1337,6 @@ app.delete("/type/delete/:id", (req, res) => {
       });
       return;
     }
-    console.log(" delete successfully");
     res.status(201).json({
       msg: "ลบประเภทเรียบร้อยแล้ว",
       data: result,
@@ -1482,7 +1456,6 @@ app.put("/position/edit/:id", async (req, res) => {
 
     const values = [req.body.posit_name, req.body.permission, req.body.dep_id];
     const id = req.params.id;
-    console.log(id);
     db.execute(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating department" });
@@ -1502,7 +1475,6 @@ app.put("/position/edit/:id", async (req, res) => {
 });
 
 app.delete("/position/delete/:id", (req, res) => {
-  console.log("posit delete");
   const sql = `
     UPDATE posit 
     SET 
@@ -1723,7 +1695,6 @@ app.get("/getcustomer/:id", (req, res) => {
     SELECT zip_code from subdistrict where code =?;
     `;
       db.query(sql, data[0].subdistrict_code, (err, zip_code) => {
-        console.log(data[0].subdistrict_code);
         res.json({
           data: data,
           zip_code: zip_code,
@@ -1858,7 +1829,6 @@ app.put("/customer/edit/:id", async (req, res) => {
 });
 
 app.delete("/customer/delete/:id", (req, res) => {
-  console.log("customer delete");
   const sql = `
     UPDATE customer 
     SET 
@@ -1944,24 +1914,23 @@ app.post("/employee/insert", uploadAvatar.single("img"), async (req, res) => {
       subdistrict,
     } = req.body;
     const imageName = req.file.filename;
-    console.log(`
-      commit: ${commit}
-      salary: ${salary}
-      Email: ${email}
-      Password: ${password}
-      First Name: ${fname}
-      Last Name: ${lname}
-      Birth Date: ${bdate}
-      Hire Date: ${hiredate}
-      Line: ${line}
-      Sex: ${sex}
-      Username: ${username}
-      NID: ${nid}
-      Address: ${address}
-      phone: ${phone}
-      Image: ${imageName}
-    `);
-
+    // console.log(`
+    //   commit: ${commit}
+    //   salary: ${salary}
+    //   Email: ${email}
+    //   Password: ${password}
+    //   First Name: ${fname}
+    //   Last Name: ${lname}
+    //   Birth Date: ${bdate}
+    //   Hire Date: ${hiredate}
+    //   Line: ${line}
+    //   Sex: ${sex}
+    //   Username: ${username}
+    //   NID: ${nid}
+    //   Address: ${address}
+    //   phone: ${phone}
+    //   Image: ${imageName}
+    // `);
     const [rows] = await db
       .promise()
       .query(
@@ -2018,10 +1987,10 @@ app.post("/employee/insert", uploadAvatar.single("img"), async (req, res) => {
             return res.status(500).json({ msg: "insert ผิด" });
           }
           if (phone && phone.length > 0) {
-            phone.forEach((tel) => {
+            if (typeof phone === "string") {
               db.query(
                 "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
-                [employee_id, tel],
+                [employee_id, phone],
                 (err) => {
                   if (err) {
                     return res.status(500).json({
@@ -2030,7 +1999,22 @@ app.post("/employee/insert", uploadAvatar.single("img"), async (req, res) => {
                   }
                 }
               );
-            });
+            } else {
+              // กรณีที่ phone เป็นobject หรือ ส่งค่ามา 2 ตัว
+              phone.forEach((tel) => {
+                db.query(
+                  "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+                  [employee_id, tel],
+                  (err) => {
+                    if (err) {
+                      return res.status(500).json({
+                        msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                      });
+                    }
+                  }
+                );
+              });
+            }
           }
           res.status(201).json({
             msg: "เพิ่มพนักงานเรียบร้อยแล้ว",
@@ -2113,122 +2097,141 @@ app.put("/employee/edit/:id", uploadAvatar.single("img"), async (req, res) => {
     subdistrict,
   } = req.body;
   const imageName = req.file ? req.file.filename : "";
-
-  // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
-  const [rows] = await db
-    .promise()
-    .query(
-      "SELECT employee_id FROM employee WHERE employee_fname = ? and employee_lname = ? and employee_nid = ? or employee_username=?",
-      [fname, lname, nid, username]
-    );
-  if (rows.length > 1) {
-    return res
-      .status(409)
-      .json({ msg: "มีพนักที่มีข้อมูล หรือ username ซ้ำกันอยู่ในระบบแล้ว" });
-  }
-
-  let sql = `
-  UPDATE employee 
-  SET 
-  employee_salary = ?,
-  employee_commit = ?,
-  employee_id = ?, 
-  employee_email = ?, 
-  employee_fname = ?, 
-  employee_lname = ?, 
-  employee_bdate = ?, 
-  employee_hiredate = ?, 
-  employee_line = ?, 
-  employee_sex = ?, 
-  employee_username = ?, 
-  employee_nid = ?, 
-  employee_address = ?, 
-  posit_id = ?,
-  subdistrict_code = ?
-`;
-  let values = [
-    salary,
-    commit,
-    employeeId,
-    email,
-    fname,
-    lname,
-    bdate,
-    hiredate,
-    line,
-    sex,
-    username,
-    nid,
-    address,
-    position,
-    subdistrict,
-  ];
-
-  if (password.length > 0) {
-    sql += ", employee_password = ?";
-    const hash = await bcrypt.hash(password, saltRounds);
-    values.push(hash);
-  }
-  if (imageName.length > 0) {
-    sql += ", employee_img = ?";
-    values.push(imageName);
-  }
-  sql += " WHERE employee_id = ?;";
-  values.push(employeeId);
-
-  db.execute(sql, values, (err, result) => {
-    if (err) {
-      return res.status(500).json({ msg: "insert ผิด" });
+  // console.log(`
+  //     commit: ${commit}
+  //     salary: ${salary}
+  //     Email: ${email}
+  //     Password: ${password}
+  //     First Name: ${fname}
+  //     Last Name: ${lname}
+  //     Birth Date: ${bdate}
+  //     Hire Date: ${hiredate}
+  //     Line: ${line}
+  //     Sex: ${sex}
+  //     Username: ${username}
+  //     NID: ${nid}
+  //     Address: ${address}
+  //     phone: ${phone}
+  //     Image: ${imageName}
+  //   `);
+  try {
+    // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
+    const [rows] = await db
+      .promise()
+      .query(
+        "SELECT employee_id FROM employee WHERE employee_fname = ? and employee_lname = ? and employee_nid = ? or employee_username=?",
+        [fname, lname, nid, username]
+      );
+    if (rows.length > 1) {
+      return res
+        .status(409)
+        .json({ msg: "มีพนักที่มีข้อมูล หรือ username ซ้ำกันอยู่ในระบบแล้ว" });
     }
 
-    db.query(
-      "SELECT tel FROM employee_tel WHERE employee_id=?",
-      [employeeId],
-      (err, rows) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลโทรศัพท์พนักงาน" });
-        }
-        if (phone && Array.isArray(phone)) {
-          phone.forEach((tel, index) => {
-            if (rows[index] && rows[index].tel !== tel) {
-              db.query(
-                "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
-                [tel, employeeId, rows[index].tel],
-                (err) => {
-                  if (err) {
-                    console.log(err);
-                    return res.status(500).json({
-                      msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
-                    });
+    let sql = `
+UPDATE employee 
+SET 
+employee_salary = ?,
+employee_commit = ?,
+employee_email = ?, 
+employee_fname = ?, 
+employee_lname = ?, 
+employee_bdate = ?, 
+employee_hiredate = ?, 
+employee_line = ?, 
+employee_sex = ?, 
+employee_username = ?, 
+employee_nid = ?, 
+employee_address = ?, 
+posit_id = ?,
+subdistrict_code = ?
+`;
+    let values = [
+      salary,
+      commit,
+      email,
+      fname,
+      lname,
+      bdate,
+      hiredate,
+      line,
+      sex,
+      username,
+      nid,
+      address,
+      position,
+      subdistrict,
+    ];
+
+    if (password.length > 0) {
+      sql += ", employee_password = ?";
+      const hash = await bcrypt.hash(password, saltRounds);
+      values.push(hash);
+    }
+    if (imageName.length > 0) {
+      sql += ", employee_img = ?";
+      values.push(imageName);
+    }
+    sql += " WHERE employee_id = ?;";
+    values.push(employeeId);
+
+    db.execute(sql, values, (err, result) => {
+      if (err) {
+        return res.status(500).json({ msg: "อัพเดท ผิด" });
+      }
+
+      db.query(
+        "SELECT tel FROM employee_tel WHERE employee_id=?",
+        [employeeId],
+        (err, rows) => {
+          if (err) {
+            return res
+              .status(500)
+              .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลโทรศัพท์พนักงาน" });
+          }
+          if (phone && Array.isArray(phone)) {
+            phone.forEach((tel, index) => {
+              if (rows[index] && rows[index].tel !== tel) {
+                db.query(
+                  "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
+                  [tel, employeeId, rows[index].tel],
+                  (err) => {
+                    if (err) {
+                      console.log(err);
+                      return res.status(500).json({
+                        msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
+                      });
+                    }
                   }
-                }
-              );
-            } else if (rows[index] && rows[index].tel === tel) {
-              return; // ข้ามการดำเนินการถ้าหมายเลขโทรศัพท์ในฐานข้อมูลเท่ากับหมายเลขโทรศัพท์ที่ส่งมา
-            } else {
-              db.query(
-                "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
-                [employeeId, tel],
-                (err) => {
-                  if (err) {
-                    console.log(err);
-                    return res.status(500).json({
-                      msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
-                    });
+                );
+              } else if (rows[index] && rows[index].tel === tel) {
+                return; // ข้ามการดำเนินการถ้าหมายเลขโทรศัพท์ในฐานข้อมูลเท่ากับหมายเลขโทรศัพท์ที่ส่งมา
+              } else {
+                db.query(
+                  "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+                  [employeeId, tel],
+                  (err) => {
+                    if (err) {
+                      console.log(err);
+                      return res.status(500).json({
+                        msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                      });
+                    }
                   }
-                }
-              );
-            }
-          });
+                );
+              }
+            });
+          }
           return res
             .status(201)
             .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
         }
-      }
-    );
-  });
+      );
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send(err);
+  }
 });
 
 app.delete("/employeephone/delete/:id/:tel", (req, res) => {
@@ -2455,7 +2458,6 @@ app.put("/product/edit/:id", uploadProduct.single("img"), async (req, res) => {
 });
 
 app.delete("/product/delete/:id", (req, res) => {
-  console.log("product delete");
   const sql = `
     UPDATE product 
     SET 
@@ -2492,7 +2494,6 @@ app.get("/stock", function (req, res) {
   const search = req.query.search;
   const idx_start = (page - 1) * per_page;
 
-  console.log(id);
   if (sort_by && sort_type) {
     fetch += " ORDER BY " + sort_by + " " + sort_type;
   }
@@ -2530,10 +2531,9 @@ app.get("/stock", function (req, res) {
 });
 app.get("/selectstock/:id", function (req, res) {
   const id = req.params.id;
-  let fetch = "SELECT lot_number, lot_amount FROM lot WHERE product_id= ?";
-
+  let fetch =
+    "SELECT lot_number, lot_amount ,lot_price ,lot_date FROM lot WHERE product_id= ? and lot_amount > 0";
   let fetchValue = [id];
-  console.log(fetchValue);
   db.execute(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       res.json(result);
@@ -2552,7 +2552,7 @@ app.post("/stock/insert", async (req, res) => {
     );
   const idnext =
     "LOT" + moment(Date.now()).format("YYYYMMDD") + "-" + next[0][0].next;
-  console.log(idnext);
+  console.log(idnext, " ไอดีของ lot ");
   const sql = `insert into lot (product_id,lot_number,lot_price,lot_amount,lot_total,lot_date,lot_has_exp) values (?,?,?,?,?,?,?)`;
   db.query(
     sql,
@@ -2561,26 +2561,41 @@ app.post("/stock/insert", async (req, res) => {
       idnext,
       req.body.lot_price,
       req.body.lot_amount,
-      req.body.lot_total,
+      req.body.lot_amount,
       req.body.lot_date,
       req.body.lot_has_exp,
     ],
-    (err, data) => {
+    (err) => {
       if (err) {
-        res.status(500).json({ msg: "insert ผิด" });
+        res.status(500).json({ msg: "insert ผิด" + err });
         console.log(err);
         return;
+      } else {
+        db.query(
+          `UPDATE product
+           SET product_amount = product_amount + ?
+           WHERE product_id = ?;`,
+          [req.body.lot_amount, req.body.product_id],
+          (err) => {
+            if (err) {
+              res.status(404).json({
+                msg: "insert ผิด" + err,
+              });
+            } else {
+              res.status(201).json({
+                msg: "เพิ่มสินค้าสำเร็จ",
+              });
+            }
+          }
+        );
       }
-      res.status(201).json({
-        msg: "เพิ่มสินค้าสำเร็จ",
-      });
     }
   );
 });
 
 app.get("/quotation", function (req, res) {
   let fetch =
-    "SELECT q.quotation_id, q.quotation_date, e.employee_fname, q.quotation_total FROM quotation q JOIN employee e ON q.employee_id = e.employee_id ;";
+    "SELECT q.quotation_id, q.quotation_date, e.employee_fname, q.quotation_total,q.quotation_status FROM quotation q JOIN employee e ON q.employee_id = e.employee_id ";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -2632,8 +2647,12 @@ app.post("/quotation/insert", async (req, res) => {
     .query(
       `select LPAD(IFNULL(Max(SUBSTR(quotation_id, 12, 5)),0)+1,5,'0') as next from quotation ;`
     );
+  console.log(req.body.quotation_date);
   const idnext =
-    "QT" + moment(Date.now()).format("YYYYMMDD") + "-" + next[0][0].next;
+    "QT" +
+    moment(req.body.quotation_date).format("YYYYMMDD") +
+    "-" +
+    next[0][0].next;
   db.query(
     sql,
     [
@@ -2651,17 +2670,22 @@ app.post("/quotation/insert", async (req, res) => {
       req.body.customer_id,
       req.body.quotation_dateend,
     ],
-    (err, data) => {
+    (err) => {
       if (err) {
-        return res.status(500).json({ msg: "insert ผิด" });
+        console.log(err);
+        return res
+          .status(500)
+          .json({ msg: "insert ข้อมูลใบเสนอราคาผิด ไม่เกี่ยวกับรายการ" });
       }
-      if (req.body.listq && req.body.listq.length > 0) {
-        req.body.listq.forEach((item, index) => {
+      if (req.body.items && req.body.items.length > 0) {
+        let success = true; // ตั้งค่าเริ่มต้นเป็น true
+        req.body.items.forEach((item, index) => {
+          console.log(item);
           db.query(
             `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
             [
               index,
-              item.listq_price,
+              item.product_price,
               item.listq_amount,
               item.listq_total,
               item.product_id,
@@ -2671,17 +2695,29 @@ app.post("/quotation/insert", async (req, res) => {
             ],
             (err) => {
               if (err) {
-                return res.status(500).json({
-                  msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
-                });
+                console.log(err);
+                success = false; // ถ้าเกิดข้อผิดพลาดในการเพิ่มรายการสินค้า เปลี่ยนเป็น false
+              }
+              // ให้ส่งการตอบกลับไปยังไคลเอนต์เมื่อวนลูปเสร็จสิ้น
+              if (index === req.body.items.length - 1) {
+                if (success) {
+                  res.status(201).json({
+                    msg: "เพิ่มใบเสนอราคาแล้ว",
+                  });
+                } else {
+                  res.status(500).json({
+                    msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
+                  });
+                }
               }
             }
           );
         });
+      } else {
+        res.status(201).json({
+          msg: "เพิ่มใบเสนอราคาแล้ว",
+        });
       }
-      res.status(201).json({
-        msg: "เพิ่มใบเสนอราคาแล้ว",
-      });
     }
   );
 });
@@ -2741,7 +2777,4 @@ app.get("/img/product/:imageName", (req, res) => {
 
   // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
   res.sendFile(imagePath);
-});
-app.listen(process.env.PORT, () => {
-  console.log("Hello World this from Server");
 });

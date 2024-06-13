@@ -239,8 +239,8 @@ function Sidebar_() {
       </ul>
 
       <div className="border-t flex p-4 mt-auto ">
-        <div className="avatar">
-          <div className={`${open ? "w-10 rounded-full" : "hidden"}`}>
+        <div className={`${open ? "avatar" : "hidden"}`}>
+          <div className="w-10 rounded-full">
             <img
               src={`http://localhost:3001/img/avatar/${localStorage.getItem(
                 "employee_img"

@@ -10,6 +10,7 @@ function Quotation() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [quotationForDel, setQuotationfordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -34,6 +35,7 @@ function Quotation() {
       const response = await axios.delete(
         "http://localhost:3001/Quotation/delete/" + id
       );
+      setQuotationfordel(null);
       fetchQuotations();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -129,6 +131,37 @@ function Quotation() {
               </button>
             </div>
           </div>
+          {quotationForDel && (
+            <dialog open className="modal">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg">ลบข้อมูลใบเสนอราคา</h3>
+                <p className="py-4">
+                  ต้องการลบข้อมูลใบเสนอราคา {quotationForDel.quotation_id}{" "}
+                  หรือไม่
+                </p>
+                <div className="modal-action">
+                  <form method="dialog">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        handleDelete(quotationForDel.quotation_id);
+                        setQuotationfordel(null);
+                      }}
+                    >
+                      ยืนยัน
+                    </button>
+                    <button
+                      className="btn btn-error"
+                      onClick={() => setQuotationfordel(null)}
+                    >
+                      ยกเลิก
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </dialog>
+          )}
+
           <table className="table text-base">
             <thead>
               <tr className=" text-base">
@@ -141,73 +174,57 @@ function Quotation() {
             </thead>
             <tbody>
               {Quotation && Quotation.length !== 0 ? (
-                Quotation.map((quotation) => (
+                Quotation.map((quotation, index) => (
                   <tr key={quotation.quotation_id}>
-                    <td>{quotation.quotation_date}</td>
+                    <td>{quotation.quotation_date.substring(0, 10)}</td>
                     <td>{quotation.quotation_id}</td>
                     <td>{quotation.employee_fname}</td>
                     <td>{quotation.quotation_total}</td>
-                    <td>
-                      <div className="dropdown">
-                        <div tabIndex={0} role="button" className="btn m-1">
-                          Click
+                    <td className="flex gap-2">
+                      <select
+                        value={quotation.quotation_status}
+                        className="select select-bordered w-1/2 max-w-xs"
+                        onChange={(e) =>
+                          setQuotation((oldQuotation) => {
+                            let newQuotation = [...oldQuotation];
+                            newQuotation[index] = {
+                              ...newQuotation[index],
+                              quotation_status: e.target.value,
+                            };
+                            return newQuotation;
+                          })
+                        }
+                      >
+                        <option value={"รอดำเนินการ"}>รอดำเนินการ</option>
+                        <option value={"สร้างใบวางบิล"}>สร้างใบวางบิล</option>
+                        <option value={"สร้างใบแจ้งหนี้"}>
+                          สร้างใบแจ้งหนี้
+                        </option>
+                        <option value={"ดำเนินการแล้ว"}>ดำเนินการแล้ว</option>
+                        <option value={"อนุมัติ"}>อนุมัติ</option>
+                      </select>
+                      <div className="dropdown dropdown-hover ">
+                        <div tabIndex={0} role="button" className="p-2">
+                          ...
                         </div>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                         >
                           <li>
-                            <Link
-                              to={`edit/${quotation.quotation_id}`}
-                              className="btn btn-primary mr-3"
-                            >
+                            <Link to={`edit/${quotation.quotation_id}`}>
                               แก้ไข
                             </Link>
                           </li>
                           <li>
                             <button
-                              className="btn btn-error"
-                              onClick={() =>
-                                document
-                                  .getElementById(
-                                    "my_modal_" + quotation.quotation_id
-                                  )
-                                  .showModal()
-                              }
+                              onClick={() => setQuotationfordel(quotation)}
                             >
                               ลบ
                             </button>
                           </li>
                         </ul>
                       </div>
-
-                      <dialog
-                        id={`my_modal_${quotation.quotation_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">
-                            ลบข้อมูลใบเสนอราคา
-                          </h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลใบเสนอราคา {quotation.quotation_name}{" "}
-                            หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() =>
-                                  handleDelete(quotation.quotation_id)
-                                }
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
                     </td>
                   </tr>
                 ))

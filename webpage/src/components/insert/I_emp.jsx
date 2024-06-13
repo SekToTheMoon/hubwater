@@ -8,24 +8,26 @@ function I_emp() {
   const [values, setValues] = useState({
     fname: "",
     lname: "",
-    bdate: new Date(),
+    bdate: "",
+    hiredate: "",
     sex: "",
-    salary: "",
-    hiredate: new Date(),
+    salary: Number(),
     username: "",
     password: "",
+    confirmation: "",
     nid: "",
     address: "",
     email: "",
     line: "",
-    commit: "",
-    position: "",
-    province: "",
-    confirmation: "",
+    commit: Number(0),
     phone: [""],
     dep: "",
+    position: "",
+    province: "",
+    district: "",
     subdistrict: "",
     zip_code: "",
+    images: null,
   });
   const [errors, setErrors] = useState({});
   const [selectprovince, setSelectProvince] = useState([]);
@@ -33,16 +35,76 @@ function I_emp() {
   const [selectsubdistrict, setSelectSubdistrict] = useState([]);
   const [selectdep, setSelectdep] = useState([]);
   const [selectposit, setSelectposit] = useState([]);
-  const [images, setImage] = useState([]);
   const [imageURL, setImageURL] = useState(null);
-  const validationSchema = Yup.object({});
+  const validationSchema = Yup.object({
+    fname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกชื่อจริงไม่ถูกต้อง")
+      .required("ต้องกรอกชื่อ"),
+    lname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกนามสกุลไม่ถูกต้อง")
+      .required("ต้องกรอกนามสกุล"),
+
+    password: Yup.string()
+      .min(6, "กรอกรหัสผ่านไม่น้อยกว่า 6 หลัก")
+      // .matches(/[!@#$%^&*(),.?":{}|<>]/,"รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว")
+      // .matches(/[0-9]/,"รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
+      // .matches(/A-Z]/,"รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
+      // .matches(/a-z]/,"รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
+      .required("ต้องกรอกรหัสผ่าน"),
+
+    confirmation: Yup.string()
+      .oneOf([Yup.ref("password"), null], "รหัสไม่ตรงกัน")
+      .required("ต้องกรอกยืนยันรหัสผ่าน"),
+    bdate: Yup.string().required("ต้องเลือกวันเกิดของพนักงาน"),
+    sex: Yup.string().required("ต้องเลือกเพศของพนักงาน"),
+    salary: Yup.number()
+      .required("ต้องกรอกเงินเดือนของพนักงาน")
+      .positive("กรอกเงินเดือนไม่ถูกต้อง")
+      .integer("เงินเดือนต้องเป็นจำนวนเต็มบวก"),
+    hiredate: Yup.string().required("ต้องเลือกวันเริ่มทำงานของพนักงาน"),
+    username: Yup.string().required("ต้องกรอกชื่อบัญชี"),
+    images: Yup.string().required("ต้องเลือกรูปภาพ"),
+    nid: Yup.string()
+      .required("ต้องกรอกเลขประจำตัวประชาชน")
+      .matches(/^\d+$/, "ต้องเป็นตัวเลขเท่านั้น")
+      .length(13, "ต้องมีเลข 13 หลัก"),
+    phone: Yup.array()
+      .of(
+        Yup.string().test(
+          "is-number-valid",
+          "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
+          (value) => value === "" || /^[0-9]{10}$/.test(value)
+        )
+      )
+      .notRequired(),
+    address: Yup.string().required("ต้องกรอกที่อยู่"),
+    commit: Yup.number()
+      .required("ต้องกรอกค่าคอมมิสชั่น")
+      .min(0, "ค่าคอมมิสชั่นต้องมากกว่าหรือเท่ากับ 0")
+      .integer("ค่าคอมมิสชั่นต้องเป็นจำนวนเต็มเท่านั้น"),
+    position: Yup.string().required("ต้องเลือกตำแหน่งงาน"),
+    province: Yup.string().required("ต้องเลือกจังหวัด"),
+    dep: Yup.string().required("ต้องเลือกแผนก"),
+    subdistrict: Yup.string().required("ต้องเลือกตำบล"),
+    district: Yup.string().required("ต้องเลือกอำเภอ"),
+    zip_code: Yup.string().required("ต้องเลือกรหัสไปรษณีย์"),
+  });
 
   //จัดการไฟล์รูปภาพ
   const handleFileChange = (e) => {
     if (e.target.files.length === 1) {
-      setImage([e.target.files[0]]);
+      setValues({ ...values, images: e.target.files[0] });
     } else {
-      console.log("เลือกรูปได้เพียง 1 รูป");
+      toast.error("เลือกรูปได้เพียง 1 รูป", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
     }
   };
 
@@ -102,17 +164,17 @@ function I_emp() {
     fetchDep();
   }, []);
   useEffect(() => {
-    if (images.length !== 1) return;
-
-    const newImageURL = URL.createObjectURL(images[0]);
+    if (values.images == null) return;
+    console.log(typeof values.images);
+    const newImageURL = URL.createObjectURL(values.images);
     setImageURL(newImageURL);
-    console.log(images);
+    console.log(values.images);
 
     return () => {
       // Cleanup เมื่อ Component ถูก unmount
       URL.revokeObjectURL(newImageURL);
     };
-  }, [images]);
+  }, [values.images]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -124,10 +186,11 @@ function I_emp() {
       console.log(error.inner);
       const newErrors = {};
       error.inner.forEach((err) => {
-        console.log(err.path);
+        // console.log(err.path);
         newErrors[err.path] = err.message;
       });
       setErrors(newErrors);
+      console.log(errors);
     }
   };
 
@@ -147,12 +210,11 @@ function I_emp() {
     formData.append("line", values.line);
     formData.append("username", values.username);
     formData.append("password", values.password);
-    formData.append("img", images[0]);
+    formData.append("img", values.images);
     formData.append("subdistrict", values.subdistrict);
     values.phone.forEach((phone) => {
       formData.append("phone", phone);
     });
-
     try {
       const response = await axios.post(
         "http://localhost:3001/employee/insert",
@@ -222,6 +284,7 @@ function I_emp() {
                     </option>
                   ))}
                 </select>
+                {errors.dep && <span className="text-error">{errors.dep}</span>}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -247,6 +310,9 @@ function I_emp() {
                     </option>
                   ))}
                 </select>
+                {errors.position && (
+                  <span className="text-error">{errors.position}</span>
+                )}
               </div>
               <div className=" flex-1 mb-5">
                 <label
@@ -264,6 +330,9 @@ function I_emp() {
                   dateformat="yyyy-MM-dd"
                   className="input input-bordered w-full mb-1"
                 />
+                {errors.hiredate && (
+                  <span className="text-error">{errors.hiredate}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -284,6 +353,9 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="ชื่อจริง"
                 />
+                {errors.fname && (
+                  <span className="text-error">{errors.fname}</span>
+                )}
               </div>
               <div className=" flex-1 mb-5">
                 <label
@@ -302,6 +374,9 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="นามสกุลจริง"
                 />
+                {errors.lname && (
+                  <span className="text-error">{errors.lname}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -326,6 +401,7 @@ function I_emp() {
                   <option value="ชาย">ชาย</option>
                   <option value="หญิง">หญิง</option>
                 </select>
+                {errors.sex && <span className="text-error">{errors.sex}</span>}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -343,6 +419,9 @@ function I_emp() {
                   dateformat="yyyy-MM-dd"
                   className="input input-bordered w-full mb-1"
                 />
+                {errors.bdate && (
+                  <span className="text-error">{errors.bdate}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -358,8 +437,9 @@ function I_emp() {
                     setValues({ ...values, nid: e.target.value })
                   }
                   className="input input-bordered w-full"
-                  placeholder="รหัส 12 หลัก"
+                  placeholder="เลข 13 หลัก"
                 />
+                {errors.nid && <span className="text-error">{errors.nid}</span>}
               </div>
             </div>
             <div className="mb-5">
@@ -378,6 +458,9 @@ function I_emp() {
                 className="input input-bordered w-full"
                 placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
               />
+              {errors.address && (
+                <span className="text-error">{errors.address}</span>
+              )}
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
               <div className="flex-1 mb-5">
@@ -512,6 +595,9 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="เงินเดือน"
                 />
+                {errors.salary && (
+                  <span className="text-error">{errors.salary}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -529,6 +615,9 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="เปอร์เซ็นต์"
                 />
+                {errors.commit && (
+                  <span className="text-error">{errors.commit}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -586,6 +675,9 @@ function I_emp() {
                     <img className="w-100" src={imageURL} alt="uploaded" />
                   </div>
                 )}
+                {errors.images && (
+                  <span className="text-error">{errors.images}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="phone" className="block mb-2  font-medium">
@@ -631,6 +723,9 @@ function I_emp() {
                     })}
                   </div>
                 </div>
+                {Object.keys(errors).some((key) => key.startsWith("phone")) && (
+                  <span className="text-error">รูปแบบเบอร์โทรศัพท์ผิด</span>
+                )}
               </div>
             </div>
             <hr />
@@ -651,13 +746,16 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="Username"
                 />
+                {errors.username && (
+                  <span className="text-error">{errors.username}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="password"
                   className="block mb-2 text-sm font-medium  "
                 >
-                  Your password
+                  รหัสผ่าน
                 </label>
                 <input
                   type="password"
@@ -668,13 +766,16 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="Password"
                 />
+                {errors.password && (
+                  <span className="text-error">{errors.password}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="confirm password"
                   className="block mb-2 text-sm font-medium  "
                 >
-                  Confirm password
+                  ยืนยันรหัสผ่าน
                 </label>
                 <input
                   type="password"
@@ -685,6 +786,9 @@ function I_emp() {
                   className="input input-bordered w-full"
                   placeholder="Confirm Password"
                 />
+                {errors.confirmation && (
+                  <span className="text-error">{errors.confirmation}</span>
+                )}
               </div>
             </div>
 

@@ -40,7 +40,7 @@ function I_product() {
     e.preventDefault();
     try {
       await validationSchema.validate(values, { abortEarly: false });
-      handleInsert();
+      await handleInsert();
       setErrors({});
     } catch (error) {
       console.log(error.inner);
