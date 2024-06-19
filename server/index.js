@@ -2963,13 +2963,12 @@ app.put("/quotation/edit/:id", async (req, res) => {
       const updatePromises = toUpdate.map((item) => {
         return db.promise().query(
           `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ? 
-           WHERE product_id = ? AND listq_number = ? AND quotation_id = ?`,
+           WHERE listq_number = ? AND quotation_id = ?`,
           [
             item.product_price,
             item.listq_amount,
             item.listq_total,
             item.lot_number,
-            item.product_id,
             item.lot_number,
             quotationId,
           ]
@@ -3011,6 +3010,338 @@ app.delete("/quotation/delete/:id", (req, res) => {
     SET 
       quotation_del = ?
     WHERE quotation_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+
+app.get("/bill", function (req, res) {
+  let fetch =
+    "SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status FROM bn b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.bn_del = '0'";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (search) {
+    fetch += ` AND (
+      b.bn_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR b.bn_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+
+  fetch += " LIMIT ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "SELECT COUNT(bn_id) AS total FROM bill WHERE bn_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/bill/insert", async (req, res) => {
+  const sql = `insert into bill (bn_id,bn_date,bn_status,bn_credit,bn_total,bn_del,bn_detail,bn_vat,bn_tax,employee_id,customer_id,bn_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const next = await db
+    .promise()
+    .query(
+      `select LPAD(IFNULL(Max(SUBSTR(bn_id, 12, 5)),0)+1,5,'0') as next from bill ;`
+    );
+  const idnext =
+    "BN" + moment(req.body.bn_date).format("YYYYMMDD") + "-" + next[0][0].next;
+  db.query(
+    sql,
+    [
+      idnext,
+      req.body.bn_date,
+      "รออนุมัติ",
+      req.body.bn_credit,
+      req.body.bn_total,
+      "0",
+      req.body.bn_detail,
+      req.body.bn_vat,
+      req.body.bn_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      req.body.bn_dateend,
+    ],
+    (err) => {
+      if (err) {
+        console.log(err);
+        return res
+          .status(500)
+          .json({ msg: "insert ข้อมูลใบวางบิลผิด ไม่เกี่ยวกับรายการ" });
+      }
+      if (req.body.items && req.body.items.length > 0) {
+        let success = true; // ตั้งค่าเริ่มต้นเป็น true
+        req.body.items.forEach((item, index) => {
+          console.log(item);
+          db.query(
+            `insert into listb (listb_number,listb_price,listb_amount,listb_total,product_id,lot_number,bn_id) values (?,?,?,?,?,?,?)`,
+            [
+              item.listb_number,
+              item.product_price,
+              item.listb_amount,
+              item.listb_total,
+              item.product_id,
+              item.lot_number,
+              idnext,
+            ],
+            (err) => {
+              if (err) {
+                console.log(err);
+                success = false; // ถ้าเกิดข้อผิดพลาดในการเพิ่มรายการสินค้า เปลี่ยนเป็น false
+              }
+              // ให้ส่งการตอบกลับไปยังไคลเอนต์เมื่อวนลูปเสร็จสิ้น
+              if (index === req.body.items.length - 1) {
+                if (success) {
+                  res.status(201).json({
+                    msg: "เพิ่มใบแล้ว",
+                  });
+                } else {
+                  res.status(500).json({
+                    msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
+                  });
+                }
+              }
+            }
+          );
+        });
+      } else {
+        res.status(201).json({
+          msg: "เพิ่มใบแล้ว",
+        });
+      }
+    }
+  );
+});
+
+app.get("/getbill/:id", function (req, res) {
+  const bnId = req.params.id;
+  const sqlBill = `SELECT  bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id FROM bill WHERE bn_id = ?;`;
+  db.query(sqlBill, [bnId], (err, bnDetail) => {
+    if (err) {
+      console.log(err);
+      return res.json(err);
+    }
+
+    const sqlListq = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number,  bn_num FROM listb WHERE bn_id = ?;`;
+    db.query(sqlListq, [bnId], (err, listbDetail) => {
+      if (err) {
+        console.log(err);
+        return res.json(err);
+      }
+
+      const productIds = listbDetail.map((item) => item.product_id);
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product join unit on product.unit_id = unit.unit_id WHERE product_id IN (?);`;
+
+      db.query(sqlProduct, [productIds], (err, productDetail) => {
+        if (err) {
+          console.log(err);
+          return res.json(err);
+        }
+
+        const sqlEmployee_name =
+          'SELECT CONCAT(employee_fname, " ", employee_lname) as employee_name FROM employee WHERE employee_id = ?;';
+        db.query(
+          sqlEmployee_name,
+          [bnDetail[0].employee_id],
+          (err, employee_nameResult) => {
+            if (err) {
+              console.log(err);
+              return res.json(err);
+            }
+
+            const employee_name = employee_nameResult[0].employee_name;
+            return res.json({
+              bnDetail: bnDetail,
+              listbDetail: listbDetail,
+              productDetail: productDetail,
+              employee_name: employee_name,
+            });
+          }
+        );
+      });
+    });
+  });
+});
+app.put("/bill/status", function (req, res) {
+  const { status, bn_id } = req.body;
+  const sql = "update bill set bn_status = ? where bn_id = ?";
+  db.query(sql, [status, bn_id]);
+});
+app.put("/bill/edit/:id", async (req, res) => {
+  const bnId = req.params.id;
+
+  const updateBillSql = `UPDATE bill 
+                              SET bn_date = ?, bn_credit = ?, bn_total = ?, bn_detail = ?, 
+                                  bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?, bn_dateend = ?
+                              WHERE bn_id = ?`;
+
+  db.query(
+    updateBillSql,
+    [
+      req.body.bn_date,
+      req.body.bn_credit,
+      req.body.bn_total,
+      req.body.bn_detail,
+      req.body.bn_vat,
+      req.body.bn_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      req.body.bn_dateend,
+      bnId,
+    ],
+    async (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
+      }
+
+      const sqlListq = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number 
+                        FROM listb WHERE bn_id = ?`;
+
+      const [existingItems] = await db.promise().query(sqlListq, [bnId]);
+
+      const existingItemMap = new Map();
+      existingItems.forEach((item) => {
+        const key = `${item.product_id}-${item.listb_number}`;
+        existingItemMap.set(key, item);
+      });
+
+      const newItemMap = new Map();
+      req.body.items.forEach((item) => {
+        const key = `${item.product_id}-${item.listb_number}`;
+        newItemMap.set(key, item);
+      });
+
+      const toInsert = [];
+      const toUpdate = [];
+      const toDelete = [];
+
+      newItemMap.forEach((item, key) => {
+        if (existingItemMap.has(key)) {
+          toUpdate.push(item);
+          existingItemMap.delete(key);
+        } else {
+          toInsert.push(item);
+        }
+      });
+      console.log(newItemMap);
+
+      existingItemMap.forEach((item, key) => {
+        toDelete.push(item);
+      });
+
+      const insertPromises = toInsert.map((item, index) => {
+        return db.promise().query(
+          `INSERT INTO listb (listb_number, listb_price, listb_amount, listb_total, product_id, lot_number, bn_id, bn_num)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            item.listb_number,
+            item.product_price,
+            item.listb_amount,
+            item.listb_total,
+            item.product_id,
+            item.lot_number,
+            bnId,
+            1,
+          ]
+        );
+      });
+
+      const updatePromises = toUpdate.map((item) => {
+        return db.promise().query(
+          `UPDATE listb SET listb_price = ?, listb_amount = ?, listb_total = ?, lot_number = ? 
+           WHERE  listb_number = ? AND bn_id = ?`,
+          [
+            item.product_price,
+            item.listb_amount,
+            item.listb_total,
+            item.lot_number,
+            item.lot_number,
+            bnId,
+          ]
+        );
+      });
+
+      const deletePromises = toDelete.map((item) => {
+        return db
+          .promise()
+          .query(`DELETE FROM listb WHERE listb_number = ? AND bn_id = ?`, [
+            item.product_id,
+            item.listb_number,
+            bnId,
+          ]);
+      });
+
+      try {
+        await Promise.all([
+          ...insertPromises,
+          ...updatePromises,
+          ...deletePromises,
+        ]);
+        res
+          .status(200)
+          .json({ msg: "แก้ไขใบเสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
+      } catch (err) {
+        console.log(err);
+        res
+          .status(500)
+          .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
+      }
+    }
+  );
+});
+
+// เหลือการ auth ก่อนการ delete
+app.delete("/bill/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE bill 
+    SET 
+      bn_del = ?
+    WHERE bn_id = ?;
   `;
   const id = req.params.id;
   const values = ["1", id];

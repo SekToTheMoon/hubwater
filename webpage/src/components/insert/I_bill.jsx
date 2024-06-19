@@ -401,7 +401,7 @@ function I_bill() {
           </dialog>
           <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
             <div className="mt-5 mb-2 2xl:flex justify-between">
-              <div className="form-control w-25">
+              <div className="form-control w-25 ">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
                 </label>
@@ -429,30 +429,32 @@ function I_bill() {
                 <label className="label">
                   <span className="">ข้อมูลลูกค้า</span>
                 </label>
-                <textarea
-                  disabled
-                  readOnly
-                  className="textarea textarea-bordered"
-                  placeholder="รายละเอียดที่อยู่"
-                  value={selectcustomerdetail.data.customer_address}
-                ></textarea>
-
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="เลขประจำตัวผู้เสียภาษี"
-                  value={selectcustomerdetail.data.le_tax}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="สำนักงาน"
-                  value={selectcustomerdetail.data.le_name}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
+                <label className="label">
+                  <span className="">
+                    {" "}
+                    {selectcustomerdetail.data.customer_address
+                      ? "รายละเอียดที่อยู่ : " +
+                        selectcustomerdetail.data.customer_address
+                      : "รายละเอียดที่อยู่ : ไม่มี"}
+                  </span>
+                </label>
+                <label className="label">
+                  <span className="">
+                    {" "}
+                    {selectcustomerdetail.data.le_tax
+                      ? "เลขประจำตัวผู้เสียภาษี : " +
+                        selectcustomerdetail.data.le_tax
+                      : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
+                  </span>
+                </label>
+                <label className="label">
+                  <span className="">
+                    {" "}
+                    {selectcustomerdetail.data.le_name
+                      ? "ชื่อสาขา :" + selectcustomerdetail.data.le_name
+                      : "ชื่อสาขา : ไม่มี"}
+                  </span>
+                </label>
               </div>
               <div className="w-50">
                 <div className="form-control">
@@ -544,6 +546,7 @@ function I_bill() {
               </label>
               <input
                 type="text"
+                value={values.bill_detail}
                 className="input input-bordered flex-1"
                 onChange={(e) => {
                   setValues({ ...values, bill_detail: e.target.value });
