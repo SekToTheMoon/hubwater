@@ -4,10 +4,13 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+import { useNavigate, useParams } from "react-router-dom";
 
-function I_quotation() {
+function E_quotation() {
+  const { id } = useParams();
   const employee_fname = localStorage.getItem("employee_fname");
   const employee_lname = localStorage.getItem("employee_lname");
+
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
@@ -19,15 +22,16 @@ function I_quotation() {
     quotation_detail: "",
     quotation_vat: true,
     quotation_tax: false,
-    employee_id: localStorage.getItem("employee_id"),
+    employee_id: "",
     customer_id: "",
     items: [],
     quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
 
   const [errors, setErrors] = useState({});
-  const [selectcustomer, setSelectCustomer] = useState([]);
-  const [selectcustomerdetail, setSelectCustomerDetail] = useState({
+  const [quotationEmployee, setEmployee] = useState("");
+  const [selectCustomer, setSelectCustomer] = useState([]);
+  const [selectCustomerDetail, setSelectCustomerDetail] = useState({
     data: [""],
     zip_code: "",
   });
@@ -51,7 +55,120 @@ function I_quotation() {
     ),
   });
 
-  //เมื่อเลือกสินค้า
+  const checkForDuplicates = (items) => {
+    const seen = new Set();
+    for (let item of items) {
+      const key = `${item.product_id}-${item.lot_number}`;
+      if (seen.has(key)) {
+        return true; // Duplicate found
+      }
+      seen.add(key);
+    }
+    return false;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues({ ...values, [name]: value });
+  };
+  // ดึงข้อมูล ใบเสนอราคา
+  const fetchQuotation = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/getquotation/${id}`
+      );
+      const quotationDetail = response.data.quotationDetail[0];
+      const quotationList = response.data.listqDetail;
+      const productDetail = response.data.productDetail;
+
+      quotationList.forEach((list) => {
+        productDetail.forEach((product) => {
+          if (list.product_id === product.product_id) {
+            list.product_name = product.product_name;
+            list.product_price = product.product_price;
+            list.product_img = product.product_img;
+            list.unit_name = product.unit_name;
+          }
+        });
+      });
+
+      setEmployee(response.data.employee_name);
+      setValues({
+        quotation_date: moment(quotationDetail.quotation_date).format(
+          "YYYY-MM-DD"
+        ),
+        quotation_credit: quotationDetail.quotation_credit,
+        quotation_total: parseFloat(quotationDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
+        quotation_detail: quotationDetail.quotation_detail,
+        quotation_vat: quotationDetail.quotation_vat,
+        quotation_tax: quotationDetail.quotation_tax,
+        employee_id: quotationDetail.employee_id,
+        customer_id: quotationDetail.customer_id,
+        items: quotationList || [],
+        quotation_dateend: moment(quotationDetail.quotation_dateend).format(
+          "YYYY-MM-DD"
+        ),
+      });
+      fetchCustomerDetail(quotationDetail.customer_id);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+    }
+  };
+  // fetch lot ของสินค้า
+  const fetchLotNumbers = async (productID) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/selectstock/${productID}`
+      );
+      setLotNumbers(response.data);
+    } catch (error) {
+      console.error("Error fetching lot numbers:", error);
+    }
+  };
+  /// fetch product ตอนกดปุ่มเพิ่มสินค้า
+  const fetchProduct = async () => {
+    let url = `http://localhost:3001/getproduct/all`;
+    if (search !== "") {
+      url += `?search=${search}`;
+    }
+    try {
+      const res = await axios.get(url);
+      setSelectedProduct(res.data);
+    } catch (error) {
+      console.log(err);
+    }
+  };
+  /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
+  const fetchCustomer = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/getcustomers");
+      setSelectCustomer(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const fetchCustomerDetail = async (customer_id) => {
+    try {
+      const res = await axios.get(
+        "http://localhost:3001/getcustomer/" + customer_id
+      );
+      setSelectCustomerDetail({
+        data: res.data.data[0],
+        zip_code: res.data.zip_code[0].zip_code,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  // ฟังก์ชันสำหรับลบรายการสินค้า
+  const handleRemoveItem = (index) => {
+    setValues((prevValues) => {
+      const updatedItems = [...prevValues.items];
+      updatedItems.splice(index, 1);
+      return { ...prevValues, items: updatedItems };
+    });
+  };
+  //เมื่อเลือกสินค้าจะทำการ fetch lot ของสินค้า
   const handleSelectProduct = async (product) => {
     try {
       const newItem = {
@@ -83,63 +200,7 @@ function I_quotation() {
       console.error("Error selecting product:", error);
     }
   };
-  // fetch lot ของสินค้า
-  const fetchLotNumbers = async (productID) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/selectstock/${productID}`
-      );
-      setLotNumbers(response.data);
-    } catch (error) {
-      console.error("Error fetching lot numbers:", error);
-    }
-  };
 
-  /// fetch product ตอนเปิดหน้าเว็บ
-  const fetchProduct = async () => {
-    let url = `http://localhost:3001/getproduct/all`;
-    if (search !== "") {
-      url += `?search=${search}`;
-    }
-    try {
-      const res = await axios.get(url);
-      setSelectedProduct(res.data);
-    } catch (error) {
-      console.log(err);
-    }
-  };
-
-  // ฟังก์ชันสำหรับลบรายการสินค้า
-  const handleRemoveItem = (index) => {
-    setValues((prevValues) => {
-      const updatedItems = [...prevValues.items];
-      updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
-    });
-  };
-
-  /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
-  const fetchCustomer = async () => {
-    try {
-      const res = await axios.get("http://localhost:3001/getcustomers");
-      setSelectCustomer(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  const fetchCustomerDetail = async (customer_id) => {
-    try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
-      );
-      setSelectCustomerDetail({
-        data: res.data.data[0],
-        zip_code: res.data.zip_code[0].zip_code,
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  };
   ///////////////////////
 
   //เกี่ยวกับวันที่เครดิต
@@ -167,33 +228,23 @@ function I_quotation() {
   const handleSearch = () => {
     fetchProduct();
   };
-  useEffect(() => {
-    fetchCustomer();
-  }, []);
-
-  useEffect(() => {
-    console.log(values, " log from values");
-  }, [values]);
-
-  useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listq_total);
-    }, 0);
-
-    setValues((prevValues) => ({
-      ...prevValues,
-      quotation_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
-    }));
-  }, [values.items]);
-  useEffect(() => {
-    values.items.map((list) => {
-      list.listq_total;
-    });
-  }, [values.items]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (checkForDuplicates(values.items)) {
+        toast.error("มีข้อมูลสินค้าที่ซ้ำกัน", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+        return;
+      }
+
       const updatedItems = values.items.map((item, index) => ({
         ...item,
         listq_number: index + 1,
@@ -204,8 +255,8 @@ function I_quotation() {
         ...values,
         items: updatedItems,
       };
-      await validationSchema.validate(updatedValues, { abortEarly: false });
-      await handleInsert(updatedValues);
+      await validationSchema.validate(values, { abortEarly: false });
+      await handleEdit(updatedValues);
       setErrors({});
     } catch (error) {
       console.log(error.inner);
@@ -217,11 +268,10 @@ function I_quotation() {
       setErrors(newErrors);
     }
   };
-
-  const handleInsert = async (updatedValues) => {
+  const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3001/quotation/insert",
+      const response = await axios.put(
+        "http://localhost:3001/quotation/edit/" + id,
         updatedValues
       );
       console.log("Success:", response.data);
@@ -249,156 +299,177 @@ function I_quotation() {
       });
     }
   };
+  useEffect(() => {
+    fetchCustomer();
+    fetchQuotation();
+  }, []);
+
+  useEffect(() => {
+    console.log(values, " log from values");
+  }, [values]);
+
+  useEffect(() => {
+    const total = values.items.reduce((accumulator, currentItem) => {
+      return accumulator + parseInt(currentItem.listq_total);
+    }, 0);
+    ////อย่าลืมมาลบ
+    if (values.items.length > 0) {
+      setValues((prevValues) => ({
+        ...prevValues,
+        quotation_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      }));
+    }
+  }, [values.items]);
 
   return (
     <>
-      <div className="rounded-box bg-base-100 p-5">
-        <h1 className="ml-16 text-2xl">สร้างใบเสนอราคา</h1>
-        <hr className="my-4" />
-        <div className="flex items-center ">
-          {/* model4 สินค้าทั้งหมด */}
-          <dialog id="my_modal_4" className="modal">
-            <div className="modal-box w-11/12 max-w-5xl">
-              <div className="flex justify-between">
-                <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
-                <div className="flex">
-                  {" "}
-                  <label className="input input-bordered flex items-center gap-2">
-                    <input
-                      type="text"
-                      className="grow bg-base-100"
-                      placeholder="ค้นหา"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                      className="w-4 h-4 opacity-70"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </label>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleSearch()}
-                  >
-                    ค้นหา
-                  </button>
-                </div>
-              </div>
+      {/* model4 สินค้าทั้งหมด */}
+      <dialog id="my_modal_4" className="modal">
+        <div className="modal-box w-11/12 max-w-5xl">
+          <div className="flex justify-between">
+            <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
+            <div className="flex">
+              {" "}
+              <label className="input input-bordered flex items-center gap-2">
+                <input
+                  type="text"
+                  className="grow bg-base-100"
+                  placeholder="ค้นหา"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className="w-4 h-4 opacity-70"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </label>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleSearch()}
+              >
+                ค้นหา
+              </button>
+            </div>
+          </div>
 
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>รูปสินค้า</th>
-                      <th>ชื่อสินค้า</th>
-                      <th>ราคาขาย</th>
-                      <th>คงเหลือ</th>
-                      <th>หน่วยสินค้า</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedProduct.map((product) => (
-                      <tr key={product.product_id}>
-                        <td>
-                          <img
-                            src={`http://localhost:3001/img/product/${product.product_img}`}
-                            alt={product.product_name}
-                            className="w-20 h-20"
-                          />
-                        </td>
-                        <td>{product.product_name}</td>
-                        <td>{product.product_price}</td>
-                        <td>{product.product_amount}</td>
-                        <td>{product.unit_name}</td>
-                        <td>
-                          {/* <button onClick={() => handleSelectProduct(product)}>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>รูปสินค้า</th>
+                  <th>ชื่อสินค้า</th>
+                  <th>ราคาขาย</th>
+                  <th>คงเหลือ</th>
+                  <th>หน่วยสินค้า</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedProduct.map((product) => (
+                  <tr key={product.product_id}>
+                    <td>
+                      <img
+                        src={`http://localhost:3001/img/product/${product.product_img}`}
+                        alt={product.product_name}
+                        className="w-20 h-20"
+                      />
+                    </td>
+                    <td>{product.product_name}</td>
+                    <td>{product.product_price}</td>
+                    <td>{product.product_amount}</td>
+                    <td>{product.unit_name}</td>
+                    <td>
+                      {/* <button onClick={() => handleSelectProduct(product)}>
                             เลือก
                           </button> */}
-                          <button
-                            onClick={() => {
-                              document.getElementById("my_modal_3").showModal();
-                              handleSelectProduct(product);
-                            }}
-                          >
-                            เลือกล็อต
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="modal-action">
-                <form method="dialog">
-                  {/* if there is a button, it will close the modal */}
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      setSelectedProduct([]);
-                      setSearch("");
-                    }}
-                  >
-                    Close
-                  </button>
-                </form>
-              </div>
-            </div>
-          </dialog>
-          {/* model3 ล็อตสินค้า */}
-          <dialog id="my_modal_3" className="modal">
-            <div className="modal-box w-11/12 max-w-5xl">
-              <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>เลขล็อตสินค้า</th>
-                      <th>วันที่นำเข้า</th>
-                      <th>วันหมดอายุ</th>
-                      <th>ราคาทุน</th>
-                      <th>จำนวนคงเหลือ</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lotNumbers.map((lot_product) => (
-                      <tr key={lot_product.lot_number}>
-                        <td>{lot_product.lot_number}</td>
-                        <td>{lot_product.lot_date}</td>
-                        <td>{lot_product.lot_lot_has_exp}</td>
-                        <td>{lot_product.lot_price}</td>
-                        <td>{lot_product.lot_amount}</td>
-                        <td>
-                          <button
-                            onClick={() =>
-                              handleSelectLotProduct(lot_product.lot_number)
-                            }
-                          >
-                            เลือก
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="modal-action">
-                <form method="dialog">
-                  {/* if there is a button, it will close the modal */}
-                  <button className="btn">Close</button>
-                </form>
-              </div>
-            </div>
-          </dialog>
+                      <button
+                        onClick={() => {
+                          document.getElementById("my_modal_3").showModal();
+                          handleSelectProduct(product);
+                        }}
+                      >
+                        เลือกล็อต
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="modal-action">
+            <form method="dialog">
+              {/* if there is a button, it will close the modal */}
+              <button
+                className="btn"
+                onClick={() => {
+                  setSelectedProduct([]);
+                  setSearch("");
+                }}
+              >
+                Close
+              </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+      {/* model3 ล็อตสินค้า */}
+      <dialog id="my_modal_3" className="modal">
+        <div className="modal-box w-11/12 max-w-5xl">
+          <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>เลขล็อตสินค้า</th>
+                  <th>วันที่นำเข้า</th>
+                  <th>วันหมดอายุ</th>
+                  <th>ราคาทุน</th>
+                  <th>จำนวนคงเหลือ</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {lotNumbers.map((lot_product) => (
+                  <tr key={lot_product.lot_number}>
+                    <td>{lot_product.lot_number}</td>
+                    <td>{lot_product.lot_date}</td>
+                    <td>{lot_product.lot_lot_has_exp}</td>
+                    <td>{lot_product.lot_price}</td>
+                    <td>{lot_product.lot_amount}</td>
+                    <td>
+                      <button
+                        onClick={() =>
+                          handleSelectLotProduct(lot_product.lot_number)
+                        }
+                      >
+                        เลือก
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="modal-action">
+            <form method="dialog">
+              {/* if there is a button, it will close the modal */}
+              <button className="btn">Close</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+      <div className="rounded-box bg-base-100 p-5">
+        <h1 className="ml-16 text-2xl">แก้ไขใบเสนอราคา</h1>
+        <hr className="my-4" />
+        <div className="flex items-center ">
           <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
@@ -407,17 +478,17 @@ function I_quotation() {
                 </label>
                 <select
                   className="select select-bordered"
+                  name="customer_id"
                   value={values.customer_id}
                   onChange={(e) => {
-                    const cus = e.target.value;
-                    setValues({ ...values, customer_id: cus });
-                    fetchCustomerDetail(cus);
+                    handleChange(e);
+                    fetchCustomerDetail(e.target.value);
                   }}
                 >
                   <option value="" disabled>
                     เลือกลูกค้า
                   </option>
-                  {selectcustomer.map((op) => (
+                  {selectCustomer.map((op) => (
                     <option key={op.customer_id} value={op.customer_id}>
                       {op.customer_name}
                     </option>
@@ -434,14 +505,14 @@ function I_quotation() {
                   readOnly
                   className="textarea textarea-bordered"
                   placeholder="รายละเอียดที่อยู่"
-                  value={selectcustomerdetail.data.customer_address}
+                  value={selectCustomerDetail.data.customer_address}
                 ></textarea>
 
                 <input
                   readOnly
                   type="text"
                   placeholder="เลขประจำตัวผู้เสียภาษี"
-                  value={selectcustomerdetail.data.le_tax}
+                  value={selectCustomerDetail.data.le_tax}
                   disabled
                   className="input w-full max-w-xs "
                 />
@@ -449,7 +520,7 @@ function I_quotation() {
                   readOnly
                   type="text"
                   placeholder="สำนักงาน"
-                  value={selectcustomerdetail.data.le_name}
+                  value={selectCustomerDetail.data.le_name}
                   disabled
                   className="input w-full max-w-xs "
                 />
@@ -531,7 +602,7 @@ function I_quotation() {
                   <input
                     readOnly
                     type="text"
-                    value={employee_fname + " " + employee_lname}
+                    value={quotationEmployee}
                     className="input input-bordered w-1/2"
                   />
                 </div>
@@ -706,7 +777,7 @@ function I_quotation() {
                   </div>
                 </label>
               </div>
-              {values.quotation_tax && (
+              {values.quotation_tax ? (
                 <div>
                   <label className="label">
                     <span className="">ยอดชำระ</span>
@@ -719,6 +790,8 @@ function I_quotation() {
                     </div>
                   </label>
                 </div>
+              ) : (
+                ""
               )}
             </div>
 
@@ -733,4 +806,4 @@ function I_quotation() {
   );
 }
 
-export default I_quotation;
+export default E_quotation;

@@ -2376,10 +2376,12 @@ app.post("/product/insert", uploadProduct.single("img"), async (req, res) => {
 app.get("/getproduct/:id", (req, res) => {
   const id = req.params.id;
   if (id === "all") {
-    const sql = `SELECT product_id, product_name, product_price, product_img , product_amount, unit_name
-    FROM product
-    JOIN unit u ON product.unit_id = u.unit_id;`;
-    db.query(sql, [id], (err, data) => {
+    let sql = `SELECT product_id, product_name, product_price, product_img, product_amount, unit_name
+                 FROM product
+                 JOIN unit  ON product.unit_id = unit.unit_id WHERE product_name LIKE ?`;
+    const search = "%" + req.query.search + "%";
+
+    db.query(sql, search, (err, data) => {
       if (err) {
         return res.json(err);
       }
@@ -2504,7 +2506,7 @@ app.get("/stock", function (req, res) {
   fetch += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.execute(fetch, fetchValue, (err, result) => {
     if (!err) {
       db.query(
         "select count(product_id) as total from lot where product_id = ?",
@@ -2553,7 +2555,7 @@ app.post("/stock/insert", async (req, res) => {
   const idnext =
     "LOT" + moment(Date.now()).format("YYYYMMDD") + "-" + next[0][0].next;
   console.log(idnext, " ไอดีของ lot ");
-  const sql = `insert into lot (product_id,lot_number,lot_price,lot_amount,lot_total,lot_date,lot_has_exp) values (?,?,?,?,?,?,?)`;
+  const sql = `insert into lot (product_id,lot_number,lot_price,lot_amount,lot_total,lot_date) values (?,?,?,?,?,?)`;
   db.query(
     sql,
     [
@@ -2563,39 +2565,134 @@ app.post("/stock/insert", async (req, res) => {
       req.body.lot_amount,
       req.body.lot_amount,
       req.body.lot_date,
-      req.body.lot_has_exp,
     ],
     (err) => {
       if (err) {
         res.status(500).json({ msg: "insert ผิด" + err });
         console.log(err);
         return;
+      }
+    }
+  );
+  if (req.body.lot_exp) {
+    db.query(
+      `insert into lot_exp (product_id,lot_number,lot_exp_date) values (?,?,?)`,
+      [req.body.product_id, idnext, req.body.lot_exp],
+      (err) => {
+        if (err) {
+          res.status(500).json({ msg: "insert ผิด" + err });
+          console.log(err);
+          return;
+        }
+      }
+    );
+  }
+  db.query(
+    `UPDATE product
+     SET product_amount = product_amount + ?
+     WHERE product_id = ?;`,
+    [req.body.lot_amount, req.body.product_id],
+    (err) => {
+      if (err) {
+        res.status(404).json({
+          msg: "insert ผิด" + err,
+        });
       } else {
-        db.query(
-          `UPDATE product
-           SET product_amount = product_amount + ?
-           WHERE product_id = ?;`,
-          [req.body.lot_amount, req.body.product_id],
-          (err) => {
-            if (err) {
-              res.status(404).json({
-                msg: "insert ผิด" + err,
-              });
-            } else {
-              res.status(201).json({
-                msg: "เพิ่มสินค้าสำเร็จ",
-              });
-            }
-          }
-        );
+        res.status(201).json({
+          msg: "เพิ่มสินค้าสำเร็จ",
+        });
       }
     }
   );
 });
+app.put("/stock/edit/:id", async (req, res) => {
+  const product_id = req.params.id;
+
+  if (req.body.lot_amountNew) {
+    req.body.lot_amount += req.body.lot_amountNew;
+    console.log(req.body.lot_amount);
+  }
+
+  const updateLot = `
+    UPDATE lot
+    SET lot_price = ?, lot_amount = ?, lot_total = ?, lot_date = ?
+    WHERE product_id = ? AND lot_number = ?;
+  `;
+
+  try {
+    await db
+      .promise()
+      .query(updateLot, [
+        req.body.lot_price,
+        req.body.lot_amount,
+        req.body.lot_total,
+        req.body.lot_date,
+        product_id,
+        req.body.lot_number,
+      ]);
+
+    if (req.body.lot_exp_date) {
+      const checkLotExp = `
+          SELECT 1 FROM lot_exp
+          WHERE product_id = ? AND lot_number = ?;
+        `;
+      const [rows] = await db
+        .promise()
+        .query(checkLotExp, [product_id, req.body.lot_number]);
+
+      if (rows.length > 0) {
+        const updateLotExp = `
+            UPDATE lot_exp
+            SET lot_exp_date = ?
+            WHERE product_id = ? AND lot_number = ?;
+          `;
+        await db
+          .promise()
+          .query(updateLotExp, [
+            req.body.lot_exp_date,
+            product_id,
+            req.body.lot_number,
+          ]);
+      } else {
+        const insertLotExp = `
+            INSERT INTO lot_exp (product_id, lot_number, lot_exp_date)
+            VALUES (?, ?, ?);
+          `;
+        await db
+          .promise()
+          .query(insertLotExp, [
+            product_id,
+            req.body.lot_number,
+            req.body.lot_exp_date,
+          ]);
+      }
+    }
+
+    if (req.body.lot_amountNew) {
+      const updateProductAmount = `
+        UPDATE product
+        SET product_amount = product_amount + ?
+        WHERE product_id = ?;
+      `;
+      await db
+        .promise()
+        .query(updateProductAmount, [req.body.lot_amountNew, product_id]);
+    }
+
+    res.status(201).json({
+      msg: "เพิ่มสินค้าสำเร็จ",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      msg: "insert ผิด " + err,
+    });
+  }
+});
 
 app.get("/quotation", function (req, res) {
   let fetch =
-    "SELECT q.quotation_id, q.quotation_date, e.employee_fname, q.quotation_total,q.quotation_status FROM quotation q JOIN employee e ON q.employee_id = e.employee_id ";
+    "SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id WHERE q.quotation_del = '0'";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -2604,21 +2701,27 @@ app.get("/quotation", function (req, res) {
   const search = req.query.search;
   const idx_start = (page - 1) * per_page;
 
+  if (search) {
+    fetch += ` AND (
+      q.quotation_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR q.quotation_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
   if (sort_by && sort_type) {
     fetch += " ORDER BY " + sort_by + " " + sort_type;
   }
-  fetch += " Where quotation_del ='0' ";
-  if (search) {
-    fetch += "and quotation_name LIKE ? ";
-    fetchValue.push("%" + search + "%");
-  }
-  fetch += " limit ?, ?";
+
+  fetch += " LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
+
   db.execute(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
-        "select count(quotation_id) as total from quotation where quotation_del='0'",
+        "SELECT COUNT(quotation_id) AS total FROM quotation WHERE quotation_del='0'",
         (err, totalrs) => {
           if (!err) {
             const total = totalrs[0].total;
@@ -2659,7 +2762,7 @@ app.post("/quotation/insert", async (req, res) => {
       idnext,
       1,
       req.body.quotation_date,
-      "รอดำเนินการ",
+      "รออนุมัติ",
       req.body.quotation_credit,
       req.body.quotation_total,
       "0",
@@ -2684,7 +2787,7 @@ app.post("/quotation/insert", async (req, res) => {
           db.query(
             `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
             [
-              index,
+              item.listq_number,
               item.product_price,
               item.listq_amount,
               item.listq_total,
@@ -2720,6 +2823,210 @@ app.post("/quotation/insert", async (req, res) => {
       }
     }
   );
+});
+
+app.get("/getquotation/:id", function (req, res) {
+  const quotationId = req.params.id;
+  const sqlQuotation = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
+  db.query(sqlQuotation, [quotationId], (err, quotationDetail) => {
+    if (err) {
+      console.log(err);
+      return res.json(err);
+    }
+
+    const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ?;`;
+    db.query(sqlListq, [quotationId], (err, listqDetail) => {
+      if (err) {
+        console.log(err);
+        return res.json(err);
+      }
+
+      const productIds = listqDetail.map((item) => item.product_id);
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product join unit on product.unit_id = unit.unit_id WHERE product_id IN (?);`;
+
+      db.query(sqlProduct, [productIds], (err, productDetail) => {
+        if (err) {
+          console.log(err);
+          return res.json(err);
+        }
+
+        const sqlEmployee_name =
+          'SELECT CONCAT(employee_fname, " ", employee_lname) as employee_name FROM employee WHERE employee_id = ?;';
+        db.query(
+          sqlEmployee_name,
+          [quotationDetail[0].employee_id],
+          (err, employee_nameResult) => {
+            if (err) {
+              console.log(err);
+              return res.json(err);
+            }
+
+            const employee_name = employee_nameResult[0].employee_name;
+            return res.json({
+              quotationDetail: quotationDetail,
+              listqDetail: listqDetail,
+              productDetail: productDetail,
+              employee_name: employee_name,
+            });
+          }
+        );
+      });
+    });
+  });
+});
+app.put("/quotation/status", function (req, res) {
+  const { status, quotation_id } = req.body;
+  const sql =
+    "update quotation set quotation_status = ? where quotation_id = ?";
+  db.query(sql, [status, quotation_id]);
+});
+app.put("/quotation/edit/:id", async (req, res) => {
+  const quotationId = req.params.id;
+
+  const updateQuotationSql = `UPDATE quotation 
+                              SET quotation_date = ?, quotation_credit = ?, quotation_total = ?, quotation_detail = ?, 
+                                  quotation_vat = ?, quotation_tax = ?, employee_id = ?, customer_id = ?, quotation_dateend = ?
+                              WHERE quotation_id = ?`;
+
+  db.query(
+    updateQuotationSql,
+    [
+      req.body.quotation_date,
+      req.body.quotation_credit,
+      req.body.quotation_total,
+      req.body.quotation_detail,
+      req.body.quotation_vat,
+      req.body.quotation_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      req.body.quotation_dateend,
+      quotationId,
+    ],
+    async (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
+      }
+
+      const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number 
+                        FROM listq WHERE quotation_id = ?`;
+
+      const [existingItems] = await db.promise().query(sqlListq, [quotationId]);
+
+      const existingItemMap = new Map();
+      existingItems.forEach((item) => {
+        const key = `${item.product_id}-${item.listq_number}`;
+        existingItemMap.set(key, item);
+      });
+
+      const newItemMap = new Map();
+      req.body.items.forEach((item) => {
+        const key = `${item.product_id}-${item.listq_number}`;
+        newItemMap.set(key, item);
+      });
+
+      const toInsert = [];
+      const toUpdate = [];
+      const toDelete = [];
+
+      newItemMap.forEach((item, key) => {
+        if (existingItemMap.has(key)) {
+          toUpdate.push(item);
+          existingItemMap.delete(key);
+        } else {
+          toInsert.push(item);
+        }
+      });
+      console.log(newItemMap);
+
+      existingItemMap.forEach((item, key) => {
+        toDelete.push(item);
+      });
+
+      const insertPromises = toInsert.map((item, index) => {
+        return db.promise().query(
+          `INSERT INTO listq (listq_number, listq_price, listq_amount, listq_total, product_id, lot_number, quotation_id, quotation_num)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            item.listq_number,
+            item.product_price,
+            item.listq_amount,
+            item.listq_total,
+            item.product_id,
+            item.lot_number,
+            quotationId,
+            1,
+          ]
+        );
+      });
+
+      const updatePromises = toUpdate.map((item) => {
+        return db.promise().query(
+          `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ? 
+           WHERE product_id = ? AND listq_number = ? AND quotation_id = ?`,
+          [
+            item.product_price,
+            item.listq_amount,
+            item.listq_total,
+            item.lot_number,
+            item.product_id,
+            item.lot_number,
+            quotationId,
+          ]
+        );
+      });
+
+      const deletePromises = toDelete.map((item) => {
+        return db
+          .promise()
+          .query(
+            `DELETE FROM listq WHERE product_id = ? AND listq_number = ? AND quotation_id = ?`,
+            [item.product_id, item.listq_number, quotationId]
+          );
+      });
+
+      try {
+        await Promise.all([
+          ...insertPromises,
+          ...updatePromises,
+          ...deletePromises,
+        ]);
+        res
+          .status(200)
+          .json({ msg: "แก้ไขใบเสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
+      } catch (err) {
+        console.log(err);
+        res
+          .status(500)
+          .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
+      }
+    }
+  );
+});
+
+// เหลือการ auth ก่อนการ delete
+app.delete("/quotation/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE quotation 
+    SET 
+      quotation_del = ?
+    WHERE quotation_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
 });
 
 app.get("/getcustomers", function (req, res) {

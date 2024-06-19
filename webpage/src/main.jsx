@@ -39,6 +39,7 @@ import I_expensetype from "./components/insert/I_expensetype.jsx";
 import E_expensetype from "./components/edit/E_expensetype.jsx";
 import Quotation from "./components/Quotation.jsx";
 import I_quotation from "./components/insert/I_quotation.jsx";
+import E_quotation from "./components/edit/E_quotation.jsx";
 import Customer from "./components/customer.jsx";
 import I_customer from "./components/insert/I_customer.jsx";
 import E_customer from "./components/edit/E_customer.jsx";
@@ -49,6 +50,10 @@ import Stock from "./components/stock/Stock.jsx";
 import Bank from "./components/Bank.jsx";
 import I_bank from "./components/insert/I_bank.jsx";
 import E_bank from "./components/edit/E_bank.jsx";
+import Bill from "./components/Bill.jsx";
+import I_bill from "./components/insert/I_bill.jsx";
+import E_bill from "./components/edit/E_bill.jsx";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -218,6 +223,22 @@ const router = createBrowserRouter([
       {
         path: "quotation/insert",
         element: <I_quotation />,
+      },
+      {
+        path: "quotation/edit/:id",
+        element: <E_quotation />,
+      },
+      {
+        path: "bill",
+        element: <Bill />,
+      },
+      {
+        path: "bill/insert",
+        element: <I_bill />,
+      },
+      {
+        path: "bill/edit/:id",
+        element: <E_bill />,
       },
     ],
   },

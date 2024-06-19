@@ -5,7 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
 
-function I_quotation() {
+function I_bill() {
   const employee_fname = localStorage.getItem("employee_fname");
   const employee_lname = localStorage.getItem("employee_lname");
   const [search, setSearch] = useState("");
@@ -13,16 +13,16 @@ function I_quotation() {
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
   const [values, setValues] = useState({
-    quotation_date: moment(new Date()).format("YYYY-MM-DD"),
-    quotation_credit: 0,
-    quotation_total: 0, //รวมเป็นเงินเท่าไหร่
-    quotation_detail: "",
-    quotation_vat: true,
-    quotation_tax: false,
+    bill_date: moment(new Date()).format("YYYY-MM-DD"),
+    bill_credit: 0,
+    bill_total: 0, //รวมเป็นเงินเท่าไหร่
+    bill_detail: "",
+    bill_vat: true,
+    bill_tax: false,
     employee_id: localStorage.getItem("employee_id"),
     customer_id: "",
     items: [],
-    quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
+    bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
 
   const [errors, setErrors] = useState({});
@@ -32,12 +32,12 @@ function I_quotation() {
     zip_code: "",
   });
   const validationSchema = Yup.object({
-    quotation_credit: Yup.number()
+    bill_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
       .min(0, "จำนวนวันเคดิตไม่สามารถติดลบได้")
       .typeError("โปรดใส่เครดิตเป็นตัวเลข"),
     customer_id: Yup.string().required("โปรดเลือกลูกค้า"),
-    quotation_date: Yup.date()
+    bill_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
     items: Yup.array().of(
@@ -145,23 +145,23 @@ function I_quotation() {
   //เกี่ยวกับวันที่เครดิต
   const handleCreditChange = (e) => {
     const creditDays = e.target.value;
-    const newEndDate = moment(values.quotation_date)
+    const newEndDate = moment(values.bill_date)
       .add(parseInt(creditDays), "days")
       .format("YYYY-MM-DD");
     setValues({
       ...values,
-      quotation_credit: creditDays,
-      quotation_dateend: newEndDate,
+      bill_credit: creditDays,
+      bill_dateend: newEndDate,
     });
   };
   const handleEndDateChange = (e) => {
     const endDate = moment(e.target.value);
-    const startDate = moment(values.quotation_date);
+    const startDate = moment(values.bill_date);
     const creditDays = endDate.diff(startDate, "days");
     setValues({
       ...values,
-      quotation_dateend: e.target.value,
-      quotation_credit: creditDays.toString(),
+      bill_dateend: e.target.value,
+      bill_credit: creditDays.toString(),
     });
   };
   const handleSearch = () => {
@@ -182,7 +182,7 @@ function I_quotation() {
 
     setValues((prevValues) => ({
       ...prevValues,
-      quotation_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      bill_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
     }));
   }, [values.items]);
   useEffect(() => {
@@ -221,11 +221,11 @@ function I_quotation() {
   const handleInsert = async (updatedValues) => {
     try {
       const response = await axios.post(
-        "http://localhost:3001/quotation/insert",
+        "http://localhost:3001/bill/insert",
         updatedValues
       );
       console.log("Success:", response.data);
-      toast.success("quotation inserted successfully", {
+      toast.success("bill inserted successfully", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -236,8 +236,8 @@ function I_quotation() {
         theme: "dark",
       });
     } catch (error) {
-      console.error("Error during quotation insertion:", error);
-      toast.error("Error during quotation insertion", {
+      console.error("Error during bill insertion:", error);
+      toast.error("Error during bill insertion", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -462,12 +462,12 @@ function I_quotation() {
                   <input
                     type="text"
                     value={
-                      values.quotation_vat
+                      values.bill_vat
                         ? (
-                            values.quotation_total * 0.07 +
-                            values.quotation_total
+                            values.bill_total * 0.07 +
+                            values.bill_total
                           ).toFixed(0)
-                        : values.quotation_total
+                        : values.bill_total
                     }
                     className="input "
                     readOnly
@@ -479,22 +479,22 @@ function I_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_date}
+                    value={values.bill_date}
                     onChange={(e) => {
                       setValues({
                         ...values,
-                        quotation_date: e.target.value,
-                        quotation_dateend: moment(e.target.value)
-                          .add(values.quotation_credit, "days")
+                        bill_date: e.target.value,
+                        bill_dateend: moment(e.target.value)
+                          .add(values.bill_credit, "days")
                           .format("YYYY-MM-DD"),
                       });
                     }}
                     className="input input-bordered w-1/2 "
                   />
                 </div>
-                {errors.quotation_date && (
+                {errors.bill_date && (
                   <span className="text-error flex justify-end">
-                    {errors.quotation_date}
+                    {errors.bill_date}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -503,14 +503,14 @@ function I_quotation() {
                   </label>
                   <input
                     type="text"
-                    value={values.quotation_credit}
+                    value={values.bill_credit}
                     className="input input-bordered w-1/2"
                     onChange={handleCreditChange}
                   />
                 </div>
-                {errors.quotation_credit && (
+                {errors.bill_credit && (
                   <span className="text-error flex justify-end">
-                    {errors.quotation_credit}
+                    {errors.bill_credit}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -519,7 +519,7 @@ function I_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_dateend}
+                    value={values.bill_dateend}
                     onChange={handleEndDateChange}
                     className="input input-bordered w-1/2 "
                   />
@@ -546,7 +546,7 @@ function I_quotation() {
                 type="text"
                 className="input input-bordered flex-1"
                 onChange={(e) => {
-                  setValues({ ...values, quotation_detail: e.target.value });
+                  setValues({ ...values, bill_detail: e.target.value });
                 }}
               />
             </div>
@@ -645,7 +645,7 @@ function I_quotation() {
               <div>
                 <label className="label ">
                   <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.quotation_total}</div>
+                  <div className="w1/2">{values.bill_total}</div>
                 </label>
               </div>
               <div>
@@ -653,20 +653,20 @@ function I_quotation() {
                   <label className="label cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={values.quotation_vat}
+                      checked={values.bill_vat}
                       className="checkbox mr-2"
                       onChange={() =>
                         setValues({
                           ...values,
-                          quotation_vat: !values.quotation_vat,
+                          bill_vat: !values.bill_vat,
                         })
                       }
                     />
                     <span>ภาษีมูลค่าเพิ่ม 7%</span>
                   </label>
                   <div className="w1/2 ">
-                    {values.quotation_vat
-                      ? (values.quotation_total * 0.07).toFixed(0)
+                    {values.bill_vat
+                      ? (values.bill_total * 0.07).toFixed(0)
                       : ""}
                   </div>
                 </label>
@@ -675,12 +675,11 @@ function I_quotation() {
                 <label className="label">
                   <span className="">จำนวนเงินรวมทั้งสิ้น</span>
                   <div className="w1/2">
-                    {values.quotation_vat
-                      ? (
-                          values.quotation_total * 0.07 +
-                          values.quotation_total
-                        ).toFixed(0)
-                      : values.quotation_total}
+                    {values.bill_vat
+                      ? (values.bill_total * 0.07 + values.bill_total).toFixed(
+                          0
+                        )
+                      : values.bill_total}
                   </div>
                 </label>
               </div>
@@ -690,31 +689,31 @@ function I_quotation() {
                   <label className="label cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={values.quotation_tax}
+                      checked={values.bill_tax}
                       className="checkbox mr-2"
                       onChange={() =>
                         setValues({
                           ...values,
-                          quotation_tax: !values.quotation_tax,
+                          bill_tax: !values.bill_tax,
                         })
                       }
                     />
                     <span className="">หักภาษี ณ ที่จ่าย 3%</span>
                   </label>
                   <div className="w1/2">
-                    {values.quotation_tax ? values.quotation_total * 0.03 : ""}
+                    {values.bill_tax ? values.bill_total * 0.03 : ""}
                   </div>
                 </label>
               </div>
-              {values.quotation_tax && (
+              {values.bill_tax && (
                 <div>
                   <label className="label">
                     <span className="">ยอดชำระ</span>
                     <div className="w1/2">
                       {(
-                        values.quotation_total * 0.07 +
-                        values.quotation_total -
-                        values.quotation_total * 0.03
+                        values.bill_total * 0.07 +
+                        values.bill_total -
+                        values.bill_total * 0.03
                       ).toFixed(0)}
                     </div>
                   </label>
@@ -733,4 +732,4 @@ function I_quotation() {
   );
 }
 
-export default I_quotation;
+export default I_bill;

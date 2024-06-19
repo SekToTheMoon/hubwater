@@ -14,7 +14,6 @@ function Stock() {
     lot_price: 0,
     lot_amount: 0,
     lot_date: new Date(),
-    lot_has_exp: "",
     lot_exp: new Date(),
     product_id: id,
   });
@@ -23,6 +22,7 @@ function Stock() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [editLot, setEditLot] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
 
   const validationSchema = Yup.object({
@@ -101,10 +101,45 @@ function Stock() {
       });
     }
   };
+  const handleEditLot = async () => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3001/stock/edit/` + id,
+        editLot
+      );
+      fetchlots();
+      toast.success("Employee inserted successfully", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    } catch (error) {
+      console.error("Error during employee insertion:", error);
+      toast.error("Error during employee insertion", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
+  };
 
   useEffect(() => {
     fetchlots();
   }, [currentPage, perPage]);
+  //ใช้ดูตัวแปลเมื่อมีการเปลี่ยนแปลง
+  useEffect(() => {
+    console.log(editLot);
+  }, [editLot]);
   return (
     <>
       <div className="overflow-x-auto">
@@ -201,6 +236,125 @@ function Stock() {
                 </form>
               </div>
             </dialog>
+            {editLot && (
+              <dialog id="editLotModal" className="modal" open>
+                <div className="modal-box">
+                  <button
+                    className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                    onClick={() => {
+                      document.getElementById("editLotModal").close();
+                      setEditLot(null);
+                    }}
+                  >
+                    ✕
+                  </button>
+                  <h3 className="font-bold text-lg">แก้ไขล็อตสินค้า</h3>
+                  <form onSubmit={handleSubmit}>
+                    <div className="mt-4">
+                      <label className="block mb-2 font-medium">ราคาทุน</label>
+                      <input
+                        type="text"
+                        placeholder=""
+                        name="lot_price"
+                        className="input input-bordered w-full mb-1"
+                        value={editLot.lot_price}
+                        onChange={(e) =>
+                          setEditLot({ ...editLot, lot_price: e.target.value })
+                        }
+                      />
+                      {errors.lot_price && (
+                        <span className="text-error">{errors.lot_price}</span>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <label className="block mb-2 font-medium">
+                        จำนวนทั้งหมด
+                      </label>
+                      <input
+                        type="text"
+                        placeholder=""
+                        name="lot_total"
+                        className="input input-bordered w-full mb-1"
+                        value={editLot.lot_total}
+                        onChange={(e) =>
+                          setEditLot({ ...editLot, lot_total: e.target.value })
+                        }
+                      />
+                      {errors.lot_amount && (
+                        <span className="text-error">{errors.lot_amount}</span>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <label className="block mb-2 font-medium">คงเหลือ</label>
+                      <input
+                        type="text"
+                        placeholder=""
+                        name="lot_amount"
+                        className="input input-bordered w-full mb-1"
+                        value={
+                          editLot.lot_amountNew
+                            ? editLot.lot_amountNew + editLot.lot_amount + ""
+                            : editLot.lot_amount
+                        }
+                        onChange={(e) =>
+                          setEditLot({
+                            ...editLot,
+                            lot_amountNew: e.target.value - editLot.lot_amount,
+                          })
+                        }
+                      />
+                      {errors.lot_amount && (
+                        <span className="text-error">{errors.lot_amount}</span>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <label className="block mb-2 text-sm font-medium">
+                        วันที่นำเข้าล็อต
+                      </label>
+                      <input
+                        type="date"
+                        name="lot_date"
+                        className="input input-bordered w-full mb-1"
+                        value={moment(editLot.lot_date).format("YYYY-MM-DD")}
+                        onChange={(e) =>
+                          setEditLot({ ...editLot, lot_date: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <label className="block mb-2 text-sm font-medium">
+                        วันที่หมดอายุ
+                      </label>
+                      <input
+                        type="date"
+                        name="lot_exp_date"
+                        className="input input-bordered w-full mb-1"
+                        value={moment(editLot.lot_exp_date).format(
+                          "YYYY-MM-DD"
+                        )}
+                        onChange={(e) =>
+                          setEditLot({
+                            ...editLot,
+                            lot_exp_date: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="btn btn-primary mt-4"
+                      onClick={() => {
+                        handleEditLot();
+                        document.getElementById("editLotModal").close();
+                        setEditLot(null);
+                      }}
+                    >
+                      แก้ไข
+                    </button>
+                  </form>
+                </div>
+              </dialog>
+            )}
 
             <div className="flex">
               {" "}
@@ -238,6 +392,7 @@ function Stock() {
                 <th>คงเหลือ</th>
                 <th>วันที่เพิ่มล็อต</th>
                 <th>วันที่หมดอายุ</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -249,7 +404,20 @@ function Stock() {
                     <td>{lot.lot_total}</td>
                     <td>{lot.lot_amount}</td>
                     <td>{moment(lot.lot_date).format("YYYY-MM-DD")}</td>
-                    <td>{}</td>
+                    <td>
+                      {lot.lot_exp_date
+                        ? moment(lot.lot_exp_date).format("YYYY-MM-DD")
+                        : "ไม่ได้ระบุ"}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => setEditLot(lot)}
+                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
+                      >
+                        แก้ไข
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -300,6 +468,7 @@ function Stock() {
           </div>
         </div>
       </div>
+
       <ToastContainer lot="top-right" />
     </>
   );

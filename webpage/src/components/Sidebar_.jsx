@@ -28,7 +28,7 @@ function Sidebar_() {
   permissionArray.splice(0, 0, "1");
   console.log(permissionArray);
   const Menus = [
-    { title: "หน้าแรก", icon: <Gauge size={20} />, page: "home" },
+    { title: "หน้าแรก", icon: <Home size={20} />, page: "home" },
     { title: "Dashboard", icon: <Gauge size={20} />, page: "dashboard" },
     { title: "พนักงาน", icon: <Contact size={20} />, page: "employee" },
     { title: "ลูกค้า", icon: <UsersRound size={20} />, page: "customer" },
@@ -44,7 +44,7 @@ function Sidebar_() {
         },
         {
           title: "ใบวางบิล",
-          page: "billing",
+          page: "bill",
           icon: <MoreVertical size={24} />,
         },
         {

@@ -16,6 +16,7 @@ function Quotation() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
   const fetchQuotations = async () => {
     let url = `http://localhost:3001/Quotation?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -30,10 +31,22 @@ function Quotation() {
     }
   };
 
+  const handleChangeStatus = async (status, quotation_id) => {
+    let url = `http://localhost:3001/quotation/status`;
+    try {
+      const response = await axios.put(url, { status, quotation_id });
+      console.log(response);
+      // setQuotation(response.data.data);
+      // setTotalRows(response.data.total);
+    } catch (error) {
+      console.error("Error fetching Quotations:", error);
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(
-        "http://localhost:3001/Quotation/delete/" + id
+        "http://localhost:3001/quotation/delete/" + id
       );
       setQuotationfordel(null);
       fetchQuotations();
@@ -94,6 +107,8 @@ function Quotation() {
       navigate("/all/Quotation");
     }
   }, [currentPage, perPage]);
+
+  useEffect(() => {}, [Quotation]);
 
   return (
     <>
@@ -167,8 +182,9 @@ function Quotation() {
               <tr className=" text-base">
                 <th>วันที่</th>
                 <th>เลขเอกสาร</th>
-                <th>ชื่อลูกค้า</th>
+                <th>ลูกค้า</th>
                 <th>ยอดรวมสุทธิ</th>
+                <th>พนักงาน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -178,8 +194,9 @@ function Quotation() {
                   <tr key={quotation.quotation_id}>
                     <td>{quotation.quotation_date.substring(0, 10)}</td>
                     <td>{quotation.quotation_id}</td>
-                    <td>{quotation.employee_fname}</td>
+                    <td>{quotation.customer_fname}</td>
                     <td>{quotation.quotation_total}</td>
+                    <td>{quotation.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
                         value={quotation.quotation_status}
@@ -191,11 +208,15 @@ function Quotation() {
                               ...newQuotation[index],
                               quotation_status: e.target.value,
                             };
+                            handleChangeStatus(
+                              newQuotation[index].quotation_status,
+                              newQuotation[index].quotation_id
+                            );
                             return newQuotation;
                           })
                         }
                       >
-                        <option value={"รอดำเนินการ"}>รอดำเนินการ</option>
+                        <option value={"รออนุมัติ"}>รออนุมัติ</option>
                         <option value={"สร้างใบวางบิล"}>สร้างใบวางบิล</option>
                         <option value={"สร้างใบแจ้งหนี้"}>
                           สร้างใบแจ้งหนี้

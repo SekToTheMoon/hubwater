@@ -4,42 +4,57 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-function product() {
-  const [product, setproduct] = useState([]);
+function Bill() {
+  const [Bill, setBill] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [billForDel, setBillfordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
-  const fetchproducts = async () => {
-    let url = `http://localhost:3001/product?page=${currentPage}&per_page=${perPage}`;
+
+  const fetchBills = async () => {
+    let url = `http://localhost:3001/Bill?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
     try {
       const response = await axios.get(url);
-      setproduct(response.data.data);
+      setBill(response.data.data);
       setTotalRows(response.data.total);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching Bills:", error);
+    }
+  };
+
+  const handleChangeStatus = async (status, bill_id) => {
+    let url = `http://localhost:3001/bill/status`;
+    try {
+      const response = await axios.put(url, { status, bill_id });
+      console.log(response);
+      // setBill(response.data.data);
+      // setTotalRows(response.data.total);
+    } catch (error) {
+      console.error("Error fetching Bills:", error);
     }
   };
 
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete(
-        "http://localhost:3001/product/delete/" + id
+        "http://localhost:3001/bill/delete/" + id
       );
-      fetchproducts();
+      setBillfordel(null);
+      fetchBills();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
-          product: "top-right",
+          Bill: "top-right",
           autoClose: 3000,
-          hiproductrogressBar: false,
+          hiBillrogressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
@@ -51,9 +66,9 @@ function product() {
       // Handle network errors or other issues
       console.error("Error during registration:", error);
       toast.error("Error during registration", {
-        product: "top-right",
+        Bill: "top-right",
         autoClose: 5000,
-        hiproductrogressBar: false,
+        hiBillrogressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
@@ -64,7 +79,7 @@ function product() {
   };
 
   const handleSearch = () => {
-    fetchproducts();
+    fetchBills();
   };
 
   const handlePageChange = (newPage) => {
@@ -77,10 +92,10 @@ function product() {
   };
 
   useEffect(() => {
-    fetchproducts();
+    fetchBills();
     if (messageSuccess) {
       toast.success(messageSuccess, {
-        product: "top-right",
+        Bill: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -89,18 +104,20 @@ function product() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/product");
+      navigate("/all/Bill");
     }
   }, [currentPage, perPage]);
+
+  useEffect(() => {}, [Bill]);
 
   return (
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
-          <h1 className="text-2xl mb-5">สินค้า</h1>
+          <h1 className="text-2xl mb-5">ใบเสนอราคา</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มสินค้า
+              เพิ่มใบเสนอราคา
             </Link>
             <div className="flex">
               {" "}
@@ -129,77 +146,101 @@ function product() {
               </button>
             </div>
           </div>
+          {billForDel && (
+            <dialog open className="modal">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg">ลบข้อมูลใบเสนอราคา</h3>
+                <p className="py-4">
+                  ต้องการลบข้อมูลใบเสนอราคา {billForDel.bill_id} หรือไม่
+                </p>
+                <div className="modal-action">
+                  <form method="dialog">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        handleDelete(billForDel.bill_id);
+                        setBillfordel(null);
+                      }}
+                    >
+                      ยืนยัน
+                    </button>
+                    <button
+                      className="btn btn-error"
+                      onClick={() => setBillfordel(null)}
+                    >
+                      ยกเลิก
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </dialog>
+          )}
+
           <table className="table text-base">
             <thead>
               <tr className=" text-base">
-                <th>รหัสสินค้า</th>
-                <th>ชื่อสินค้า</th>
-                <th>ราคา</th>
-                <th>จำนวนคงเหลือ</th>
-                <th>จุดสั่งซื้อสินค้า</th>
+                <th>วันที่</th>
+                <th>เลขเอกสาร</th>
+                <th>ลูกค้า</th>
+                <th>ยอดรวมสุทธิ</th>
+                <th>พนักงาน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
             <tbody>
-              {product && product.length !== 0 ? (
-                product.map((product) => (
-                  <tr
-                    className={
-                      product.product_reorder >= product.product_amount &&
-                      "text-error"
-                    }
-                    key={product.product_id}
-                  >
-                    <td>{product.product_id}</td>
-                    <td>{product.product_name}</td>
-                    <td>{product.product_price}</td>
-                    <td>{product.product_amount}</td>
-                    <td>{product.product_reorder}</td>
-                    <td>
-                      <Link
-                        to={`stock/${product.product_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        สต๊อก
-                      </Link>
-                      <Link
-                        to={`edit/${product.product_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + product.product_id)
-                            .showModal()
+              {Bill && Bill.length !== 0 ? (
+                Bill.map((bill, index) => (
+                  <tr key={bill.bill_id}>
+                    <td>{bill.bill_date.substring(0, 10)}</td>
+                    <td>{bill.bill_id}</td>
+                    <td>{bill.customer_fname}</td>
+                    <td>{bill.bill_total}</td>
+                    <td>{bill.employee_fname}</td>
+                    <td className="flex gap-2">
+                      <select
+                        value={bill.bill_status}
+                        className="select select-bordered w-1/2 max-w-xs"
+                        onChange={(e) =>
+                          setBill((oldBill) => {
+                            let newBill = [...oldBill];
+                            newBill[index] = {
+                              ...newBill[index],
+                              bill_status: e.target.value,
+                            };
+                            handleChangeStatus(
+                              newBill[index].bill_status,
+                              newBill[index].bill_id
+                            );
+                            return newBill;
+                          })
                         }
                       >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${product.product_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลสินค้า</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลสินค้า {product.product_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(product.product_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
+                        <option value={"รออนุมัติ"}>รออนุมัติ</option>
+                        <option value={"สร้างใบวางบิล"}>สร้างใบวางบิล</option>
+                        <option value={"สร้างใบแจ้งหนี้"}>
+                          สร้างใบแจ้งหนี้
+                        </option>
+                        <option value={"ดำเนินการแล้ว"}>ดำเนินการแล้ว</option>
+                        <option value={"อนุมัติ"}>อนุมัติ</option>
+                      </select>
+                      <div className="dropdown dropdown-hover ">
+                        <div tabIndex={0} role="button" className="p-2">
+                          ...
                         </div>
-                      </dialog>
+                        <ul
+                          tabIndex={0}
+                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                        >
+                          <li>
+                            <Link to={`edit/${bill.bill_id}`}>แก้ไข</Link>
+                          </li>
+                          <li>
+                            <button onClick={() => setBillfordel(bill)}>
+                              ลบ
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -223,7 +264,7 @@ function product() {
               <option value="30">30</option>
               {/* Add more options if needed */}
             </select>
-            {product && product.length !== 0 ? (
+            {Bill && Bill.length !== 0 ? (
               <div className="flex justify-between items-center">
                 <span className="mr-5">
                   {`Showing ${(currentPage - 1) * perPage + 1}-${Math.min(
@@ -251,9 +292,9 @@ function product() {
           </div>
         </div>
       </div>
-      <ToastContainer product="top-right" />
+      <ToastContainer Bill="top-right" />
     </>
   );
 }
 
-export default product;
+export default Bill;
