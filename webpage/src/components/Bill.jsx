@@ -4,7 +4,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import statusOptions from "../constants/statusOptions";
+import io from "socket.io-client";
+import { handleChangeStatus } from "../utils/changeStatus";
+
 function Bill() {
+  //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
+  let roll = localStorage.getItem("posit_name");
+  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+
   const [Bill, setBill] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -12,6 +20,7 @@ function Bill() {
   const [search, setSearch] = useState("");
   const [billForDel, setBillfordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
+  const statusBill = statusOptions[1];
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
@@ -31,15 +40,12 @@ function Bill() {
     }
   };
 
-  const handleChangeStatus = async (status, bill_id) => {
-    let url = `http://localhost:3001/bill/status`;
-    try {
-      const response = await axios.put(url, { status, bill_id });
-      console.log(response);
-      // setBill(response.data.data);
-      // setTotalRows(response.data.total);
-    } catch (error) {
-      console.error("Error fetching Bills:", error);
+  const handleSelectChange = (event, bill) => {
+    const selectedValue = event.target.value;
+    if (selectedValue === "สร้างใบแจ้งหนี้") {
+      navigate(`/all/invoice/insert?bill=${bill.bn_id}`);
+    } else {
+      handleChangeStatus(selectedValue, bill.bn_id);
     }
   };
 
@@ -52,7 +58,7 @@ function Bill() {
       fetchBills();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
-          Bill: "top-right",
+          position: "top-right",
           autoClose: 3000,
           hiBillrogressBar: false,
           closeOnClick: true,
@@ -66,7 +72,7 @@ function Bill() {
       // Handle network errors or other issues
       console.error("Error during registration:", error);
       toast.error("Error during registration", {
-        Bill: "top-right",
+        position: "top-right",
         autoClose: 5000,
         hiBillrogressBar: false,
         closeOnClick: true,
@@ -95,7 +101,7 @@ function Bill() {
     fetchBills();
     if (messageSuccess) {
       toast.success(messageSuccess, {
-        Bill: "top-right",
+        position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -108,16 +114,35 @@ function Bill() {
     }
   }, [currentPage, perPage]);
 
-  useEffect(() => {}, [Bill]);
+  useEffect(() => {
+    const socket = io("http://localhost:3001");
+    socket.on("statusUpdate", ({ status, id }) => {
+      if (id.startsWith("BN")) {
+        setBill((oldBill) => {
+          let newBill = [...oldBill];
+          const index = newBill.findIndex((q) => q.bn_id === id);
+          if (index !== -1) {
+            newBill[index].bn_status = status;
+          }
+          return newBill;
+        });
+      }
+    });
+
+    return () => {
+      console.log("Cleaning up socket");
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
-          <h1 className="text-2xl mb-5">ใบเสนอราคา</h1>
+          <h1 className="text-2xl mb-5">ใบวางบิล</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มใบเสนอราคา
+              เพิ่มใบวางบิล
             </Link>
             <div className="flex">
               {" "}
@@ -149,16 +174,16 @@ function Bill() {
           {billForDel && (
             <dialog open className="modal">
               <div className="modal-box">
-                <h3 className="font-bold text-lg">ลบข้อมูลใบเสนอราคา</h3>
+                <h3 className="font-bold text-lg">ลบข้อมูลใบวางบิล</h3>
                 <p className="py-4">
-                  ต้องการลบข้อมูลใบเสนอราคา {billForDel.bill_id} หรือไม่
+                  ต้องการลบข้อมูลใบวางบิล {billForDel.bn_id} หรือไม่
                 </p>
                 <div className="modal-action">
                   <form method="dialog">
                     <button
                       className="btn btn-primary"
                       onClick={() => {
-                        handleDelete(billForDel.bill_id);
+                        handleDelete(billForDel.bn_id);
                         setBillfordel(null);
                       }}
                     >
@@ -190,38 +215,25 @@ function Bill() {
             <tbody>
               {Bill && Bill.length !== 0 ? (
                 Bill.map((bill, index) => (
-                  <tr key={bill.bill_id}>
-                    <td>{bill.bill_date.substring(0, 10)}</td>
-                    <td>{bill.bill_id}</td>
+                  <tr key={bill.bn_id}>
+                    <td>{bill.bn_date.substring(0, 10)}</td>
+                    <td>{bill.bn_id}</td>
                     <td>{bill.customer_fname}</td>
-                    <td>{bill.bill_total}</td>
+                    <td>{bill.bn_total}</td>
                     <td>{bill.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
-                        value={bill.bill_status}
+                        value={bill.bn_status}
                         className="select select-bordered w-1/2 max-w-xs"
-                        onChange={(e) =>
-                          setBill((oldBill) => {
-                            let newBill = [...oldBill];
-                            newBill[index] = {
-                              ...newBill[index],
-                              bill_status: e.target.value,
-                            };
-                            handleChangeStatus(
-                              newBill[index].bill_status,
-                              newBill[index].bill_id
-                            );
-                            return newBill;
-                          })
-                        }
+                        onChange={(e) => handleSelectChange(e, bill)}
                       >
-                        <option value={"รออนุมัติ"}>รออนุมัติ</option>
-                        <option value={"สร้างใบวางบิล"}>สร้างใบวางบิล</option>
-                        <option value={"สร้างใบแจ้งหนี้"}>
-                          สร้างใบแจ้งหนี้
-                        </option>
-                        <option value={"ดำเนินการแล้ว"}>ดำเนินการแล้ว</option>
-                        <option value={"อนุมัติ"}>อนุมัติ</option>
+                        {statusBill[bill.bn_status][roll].map(
+                          (element, idx) => (
+                            <option key={idx} value={element}>
+                              {element}
+                            </option>
+                          )
+                        )}
                       </select>
                       <div className="dropdown dropdown-hover ">
                         <div tabIndex={0} role="button" className="p-2">
@@ -232,7 +244,7 @@ function Bill() {
                           className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                         >
                           <li>
-                            <Link to={`edit/${bill.bill_id}`}>แก้ไข</Link>
+                            <Link to={`edit/${bill.bn_id}`}>แก้ไข</Link>
                           </li>
                           <li>
                             <button onClick={() => setBillfordel(bill)}>
@@ -292,7 +304,7 @@ function Bill() {
           </div>
         </div>
       </div>
-      <ToastContainer Bill="top-right" />
+      <ToastContainer position="top-right" />
     </>
   );
 }

@@ -9,7 +9,7 @@ function E_posit() {
   const [values, setValues] = useState({
     posit_name: "",
     dep_id: "",
-    permission: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    permission: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   });
   const [errors, setErrors] = useState({});
   const [selectdep, setSelectdep] = useState([]);
@@ -183,9 +183,11 @@ function E_posit() {
                 "พนักงานขาย",
                 "ลูกค้า",
                 "เอกสารขาย",
+                "ขายหน้าร้าน",
+                "ค่าใช้จ่าย",
                 "สินค้า",
                 "ค่าคงที่สินค้า",
-                "ขายหน้าร้าน",
+                "บริษัทคู่ค้า",
                 "แผนก",
                 "ตำแหน่ง",
                 "บัญชีธนาคาร",

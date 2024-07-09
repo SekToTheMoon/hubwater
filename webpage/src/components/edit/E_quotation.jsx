@@ -8,8 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 function E_quotation() {
   const { id } = useParams();
-  const employee_fname = localStorage.getItem("employee_fname");
-  const employee_lname = localStorage.getItem("employee_lname");
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
@@ -27,14 +26,13 @@ function E_quotation() {
     items: [],
     quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
-  const [errors, setErrors] = useState({});
   const [quotationEmployee, setEmployee] = useState("");
   const [selectCustomer, setSelectCustomer] = useState([]);
-  const [selectCustomerDetail, setSelectCustomerDetail] = useState({
+  const [selectCustomerDetail, setselectCustomerDetail] = useState({
     data: [""],
     zip_code: "",
   });
+  const [errors, setErrors] = useState({});
   const validationSchema = Yup.object({
     quotation_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
@@ -55,7 +53,7 @@ function E_quotation() {
     ),
   });
 
-  const checkForDuplicates = (items) => {
+  const checkItem = (items) => {
     const seen = new Set();
     for (let item of items) {
       const key = `${item.product_id}-${item.lot_number}`;
@@ -64,9 +62,18 @@ function E_quotation() {
       }
       seen.add(key);
     }
-    return false;
-  };
+    const updatedItems = values.items.map((item, index) => ({
+      ...item,
+      listq_number: index + 1,
+    }));
 
+    if (updatedItems.length == 0) return;
+    const updatedValues = {
+      ...values,
+      items: updatedItems,
+    };
+    return updatedValues;
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues({ ...values, [name]: value });
@@ -152,7 +159,7 @@ function E_quotation() {
       const res = await axios.get(
         "http://localhost:3001/getcustomer/" + customer_id
       );
-      setSelectCustomerDetail({
+      setselectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
       });
@@ -231,8 +238,9 @@ function E_quotation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (checkForDuplicates(values.items)) {
-        toast.error("มีข้อมูลสินค้าที่ซ้ำกัน", {
+      const updatedValues = checkItem(values.items);
+      if (updatedValues === true) {
+        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
           position: "top-right",
           autoClose: 5000,
           hideProgressBar: false,
@@ -244,20 +252,9 @@ function E_quotation() {
         });
         return;
       }
-
-      const updatedItems = values.items.map((item, index) => ({
-        ...item,
-        listq_number: index + 1,
-      }));
-
-      // Update the values with the updated items
-      const updatedValues = {
-        ...values,
-        items: updatedItems,
-      };
       await validationSchema.validate(values, { abortEarly: false });
       await handleEdit(updatedValues);
-      setErrors({});
+      // setErrors({});
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
@@ -277,7 +274,7 @@ function E_quotation() {
       console.log("Success:", response.data);
       toast.success("quotation inserted successfully", {
         position: "top-right",
-        autoClose: 5000,
+        autoClose: 4000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -285,6 +282,10 @@ function E_quotation() {
         progress: undefined,
         theme: "dark",
       });
+      // setTimeout(
+      //   () => navigate("/all/quotation", { state: { msg: response.data } }),
+      //   4000
+      // );
     } catch (error) {
       console.error("Error during quotation insertion:", error);
       toast.error("Error during quotation insertion", {
@@ -500,30 +501,34 @@ function E_quotation() {
                 <label className="label">
                   <span className="">ข้อมูลลูกค้า</span>
                 </label>
-                <textarea
-                  disabled
-                  readOnly
-                  className="textarea textarea-bordered"
-                  placeholder="รายละเอียดที่อยู่"
-                  value={selectCustomerDetail.data.customer_address}
-                ></textarea>
-
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="เลขประจำตัวผู้เสียภาษี"
-                  value={selectCustomerDetail.data.le_tax}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="สำนักงาน"
-                  value={selectCustomerDetail.data.le_name}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
+                <div className="rounded-[12px] border px-3 py-1">
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.customer_address
+                        ? "รายละเอียดที่อยู่ : " +
+                          selectCustomerDetail.data.customer_address
+                        : "รายละเอียดที่อยู่ : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_tax
+                        ? "เลขประจำตัวผู้เสียภาษี : " +
+                          selectCustomerDetail.data.le_tax
+                        : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_name
+                        ? "สำนักงาน :" + selectCustomerDetail.data.le_name
+                        : "สำนักงาน : ไม่มี"}
+                    </span>
+                  </label>
+                </div>
               </div>
               <div className="w-50">
                 <div className="form-control">
@@ -616,6 +621,7 @@ function E_quotation() {
               <input
                 type="text"
                 className="input input-bordered flex-1"
+                value={values.quotation_detail}
                 onChange={(e) => {
                   setValues({ ...values, quotation_detail: e.target.value });
                 }}

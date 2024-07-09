@@ -16,16 +16,16 @@ function E_bill() {
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
   const [values, setValues] = useState({
-    bill_date: moment(new Date()).format("YYYY-MM-DD"),
-    bill_credit: 0,
-    bill_total: 0, //รวมเป็นเงินเท่าไหร่
-    bill_detail: "",
-    bill_vat: true,
-    bill_tax: false,
+    bn_date: moment(new Date()).format("YYYY-MM-DD"),
+    bn_credit: 0,
+    bn_total: 0, //รวมเป็นเงินเท่าไหร่
+    bn_detail: "",
+    bn_vat: true,
+    bn_tax: false,
     employee_id: "",
     customer_id: "",
     items: [],
-    bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
+    bn_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
 
   const [errors, setErrors] = useState({});
@@ -36,18 +36,18 @@ function E_bill() {
     zip_code: "",
   });
   const validationSchema = Yup.object({
-    bill_credit: Yup.number()
+    bn_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
       .min(0, "จำนวนวันเคดิตไม่สามารถติดลบได้")
       .typeError("โปรดใส่เครดิตเป็นตัวเลข"),
     customer_id: Yup.string().required("โปรดเลือกลูกค้า"),
-    bill_date: Yup.date()
+    bn_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
-      .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
+      .required("โปรดเลือกวันที่ออกใบวางบิล"),
     items: Yup.array().of(
       Yup.object().shape({
         product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listq_amount: Yup.number()
+        listb_amount: Yup.number()
           .required("โปรดระบุจำนวนสินค้า")
           .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
         lot_number: Yup.string().required("โปรดเลือก Lot number"),
@@ -55,7 +55,7 @@ function E_bill() {
     ),
   });
 
-  const checkForDuplicates = (items) => {
+  const checkItem = (items) => {
     const seen = new Set();
     for (let item of items) {
       const key = `${item.product_id}-${item.lot_number}`;
@@ -64,19 +64,29 @@ function E_bill() {
       }
       seen.add(key);
     }
-    return false;
+    const updatedItems = values.items.map((item, index) => ({
+      ...item,
+      listb_number: index + 1,
+    }));
+
+    if (updatedItems.length == 0) return true;
+    const updatedValues = {
+      ...values,
+      items: updatedItems,
+    };
+    return updatedValues;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues({ ...values, [name]: value });
   };
-  // ดึงข้อมูล ใบเสนอราคา
+  // ดึงข้อมูล ใบวางบิล
   const fetchBill = async () => {
     try {
       const response = await axios.get(`http://localhost:3001/getbill/${id}`);
-      const billDetail = response.data.billDetail[0];
-      const billList = response.data.listqDetail;
+      const bnDetail = response.data.bnDetail[0];
+      const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
 
       billList.forEach((list) => {
@@ -92,18 +102,18 @@ function E_bill() {
 
       setEmployee(response.data.employee_name);
       setValues({
-        bill_date: moment(billDetail.bill_date).format("YYYY-MM-DD"),
-        bill_credit: billDetail.bill_credit,
-        bill_total: parseFloat(billDetail.bill_total), //รวมเป็นเงินเท่าไหร่
-        bill_detail: billDetail.bill_detail,
-        bill_vat: billDetail.bill_vat,
-        bill_tax: billDetail.bill_tax,
-        employee_id: billDetail.employee_id,
-        customer_id: billDetail.customer_id,
+        bn_date: moment(bnDetail.bn_date).format("YYYY-MM-DD"),
+        bn_credit: bnDetail.bn_credit,
+        bn_total: parseFloat(bnDetail.bn_total), //รวมเป็นเงินเท่าไหร่
+        bn_detail: bnDetail.bn_detail,
+        bn_vat: bnDetail.bn_vat,
+        bn_tax: bnDetail.bn_tax,
+        employee_id: bnDetail.employee_id,
+        customer_id: bnDetail.customer_id,
         items: billList || [],
-        bill_dateend: moment(billDetail.bill_dateend).format("YYYY-MM-DD"),
+        bn_dateend: moment(bnDetail.bn_dateend).format("YYYY-MM-DD"),
       });
-      fetchCustomerDetail(billDetail.customer_id);
+      fetchCustomerDetail(bnDetail.customer_id);
     } catch (error) {
       console.error("Error fetching product:", error);
     }
@@ -171,8 +181,8 @@ function E_bill() {
         product_price: product.product_price,
         product_img: product.product_img,
         unit_name: product.unit_name,
-        listq_total: product.product_price,
-        listq_amount: 1,
+        listb_total: product.product_price,
+        listb_amount: 1,
         lot_number: "", // ค่า lot_number ยังไม่ได้กำหนด
       };
       setProductdetail(newItem);
@@ -200,23 +210,23 @@ function E_bill() {
   //เกี่ยวกับวันที่เครดิต
   const handleCreditChange = (e) => {
     const creditDays = e.target.value;
-    const newEndDate = moment(values.bill_date)
+    const newEndDate = moment(values.bn_date)
       .add(parseInt(creditDays), "days")
       .format("YYYY-MM-DD");
     setValues({
       ...values,
-      bill_credit: creditDays,
-      bill_dateend: newEndDate,
+      bn_credit: creditDays,
+      bn_dateend: newEndDate,
     });
   };
   const handleEndDateChange = (e) => {
     const endDate = moment(e.target.value);
-    const startDate = moment(values.bill_date);
+    const startDate = moment(values.bn_date);
     const creditDays = endDate.diff(startDate, "days");
     setValues({
       ...values,
-      bill_dateend: e.target.value,
-      bill_credit: creditDays.toString(),
+      bn_dateend: e.target.value,
+      bn_credit: creditDays.toString(),
     });
   };
   const handleSearch = () => {
@@ -225,8 +235,10 @@ function E_bill() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (checkForDuplicates(values.items)) {
-        toast.error("มีข้อมูลสินค้าที่ซ้ำกัน", {
+      const updatedValues = checkItem(values.items);
+      console.log(updatedValues);
+      if (updatedValues === true) {
+        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
           position: "top-right",
           autoClose: 5000,
           hideProgressBar: false,
@@ -238,17 +250,6 @@ function E_bill() {
         });
         return;
       }
-
-      const updatedItems = values.items.map((item, index) => ({
-        ...item,
-        listq_number: index + 1,
-      }));
-
-      // Update the values with the updated items
-      const updatedValues = {
-        ...values,
-        items: updatedItems,
-      };
       await validationSchema.validate(values, { abortEarly: false });
       await handleEdit(updatedValues);
       setErrors({});
@@ -304,15 +305,13 @@ function E_bill() {
 
   useEffect(() => {
     const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listq_total);
+      return accumulator + parseInt(currentItem.listb_total);
     }, 0);
-    ////อย่าลืมมาลบ
-    if (values.items.length > 0) {
-      setValues((prevValues) => ({
-        ...prevValues,
-        bill_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
-      }));
-    }
+
+    setValues((prevValues) => ({
+      ...prevValues,
+      bn_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+    }));
   }, [values.items]);
 
   return (
@@ -461,7 +460,7 @@ function E_bill() {
         </div>
       </dialog>
       <div className="rounded-box bg-base-100 p-5">
-        <h1 className="ml-16 text-2xl">แก้ไขใบเสนอราคา</h1>
+        <h1 className="ml-16 text-2xl">แก้ไขใบวางบิล</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
           <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
@@ -494,30 +493,35 @@ function E_bill() {
                 <label className="label">
                   <span className="">ข้อมูลลูกค้า</span>
                 </label>
-                <textarea
-                  disabled
-                  readOnly
-                  className="textarea textarea-bordered"
-                  placeholder="รายละเอียดที่อยู่"
-                  value={selectCustomerDetail.data.customer_address}
-                ></textarea>
-
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="เลขประจำตัวผู้เสียภาษี"
-                  value={selectCustomerDetail.data.le_tax}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
-                <input
-                  readOnly
-                  type="text"
-                  placeholder="สำนักงาน"
-                  value={selectCustomerDetail.data.le_name}
-                  disabled
-                  className="input w-full max-w-xs "
-                />
+                <div className="rounded-[12px] border px-3 py-1">
+                  {" "}
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.customer_address
+                        ? "รายละเอียดที่อยู่ : " +
+                          selectCustomerDetail.data.customer_address
+                        : "รายละเอียดที่อยู่ : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_tax
+                        ? "เลขประจำตัวผู้เสียภาษี : " +
+                          selectCustomerDetail.data.le_tax
+                        : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_name
+                        ? "สำนักงาน :" + selectCustomerDetail.data.le_name
+                        : "สำนักงาน : ไม่มี"}
+                    </span>
+                  </label>
+                </div>
               </div>
               <div className="w-50">
                 <div className="form-control">
@@ -527,12 +531,9 @@ function E_bill() {
                   <input
                     type="text"
                     value={
-                      values.bill_vat
-                        ? (
-                            values.bill_total * 0.07 +
-                            values.bill_total
-                          ).toFixed(0)
-                        : values.bill_total
+                      values.bn_vat
+                        ? (values.bn_total * 0.07 + values.bn_total).toFixed(0)
+                        : values.bn_total
                     }
                     className="input "
                     readOnly
@@ -544,22 +545,22 @@ function E_bill() {
                   </label>
                   <input
                     type="date"
-                    value={values.bill_date}
+                    value={values.bn_date}
                     onChange={(e) => {
                       setValues({
                         ...values,
-                        bill_date: e.target.value,
-                        bill_dateend: moment(e.target.value)
-                          .add(values.bill_credit, "days")
+                        bn_date: e.target.value,
+                        bn_dateend: moment(e.target.value)
+                          .add(values.bn_credit, "days")
                           .format("YYYY-MM-DD"),
                       });
                     }}
                     className="input input-bordered w-1/2 "
                   />
                 </div>
-                {errors.bill_date && (
+                {errors.bn_date && (
                   <span className="text-error flex justify-end">
-                    {errors.bill_date}
+                    {errors.bn_date}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -568,14 +569,14 @@ function E_bill() {
                   </label>
                   <input
                     type="text"
-                    value={values.bill_credit}
+                    value={values.bn_credit}
                     className="input input-bordered w-1/2"
                     onChange={handleCreditChange}
                   />
                 </div>
-                {errors.bill_credit && (
+                {errors.bn_credit && (
                   <span className="text-error flex justify-end">
-                    {errors.bill_credit}
+                    {errors.bn_credit}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -584,7 +585,7 @@ function E_bill() {
                   </label>
                   <input
                     type="date"
-                    value={values.bill_dateend}
+                    value={values.bn_dateend}
                     onChange={handleEndDateChange}
                     className="input input-bordered w-1/2 "
                   />
@@ -610,8 +611,9 @@ function E_bill() {
               <input
                 type="text"
                 className="input input-bordered flex-1"
+                value={values.bn_detail}
                 onChange={(e) => {
-                  setValues({ ...values, bill_detail: e.target.value });
+                  setValues({ ...values, bn_detail: e.target.value });
                 }}
               />
             </div>
@@ -650,14 +652,14 @@ function E_bill() {
                       <input
                         className="text-center w-16"
                         type="text"
-                        value={item.listq_amount || ""}
+                        value={item.listb_amount || ""}
                         onChange={(e) => {
                           const newAmount = e.target.value;
                           const updatedItems = [...values.items];
                           if (newAmount === "" || Number(newAmount) > 0) {
-                            updatedItems[index].listq_amount =
+                            updatedItems[index].listb_amount =
                               newAmount === "" ? "" : Number(newAmount);
-                            updatedItems[index].listq_total =
+                            updatedItems[index].listb_total =
                               (newAmount === "" ? 0 : Number(newAmount)) *
                               updatedItems[index].product_price;
                             setValues({ ...values, items: updatedItems });
@@ -666,11 +668,11 @@ function E_bill() {
                         onBlur={() => {
                           const updatedItems = [...values.items];
                           if (
-                            updatedItems[index].listq_amount === "" ||
-                            updatedItems[index].listq_amount === 0
+                            updatedItems[index].listb_amount === "" ||
+                            updatedItems[index].listb_amount === 0
                           ) {
-                            updatedItems[index].listq_amount = 1;
-                            updatedItems[index].listq_total =
+                            updatedItems[index].listb_amount = 1;
+                            updatedItems[index].listb_total =
                               1 * updatedItems[index].product_price;
                             setValues({ ...values, items: updatedItems });
                           }
@@ -679,7 +681,7 @@ function E_bill() {
                     </td>
                     <td>{item.unit_name}</td>
                     <td>{item.product_price}</td>
-                    <td>{item.listq_total}</td>
+                    <td>{item.listb_total}</td>
                     <td>
                       <button
                         type="button"
@@ -710,7 +712,7 @@ function E_bill() {
               <div>
                 <label className="label ">
                   <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.bill_total}</div>
+                  <div className="w1/2">{values.bn_total}</div>
                 </label>
               </div>
               <div>
@@ -718,21 +720,19 @@ function E_bill() {
                   <label className="label cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={values.bill_vat}
+                      checked={values.bn_vat}
                       className="checkbox mr-2"
                       onChange={() =>
                         setValues({
                           ...values,
-                          bill_vat: !values.bill_vat,
+                          bn_vat: !values.bn_vat,
                         })
                       }
                     />
                     <span>ภาษีมูลค่าเพิ่ม 7%</span>
                   </label>
                   <div className="w1/2 ">
-                    {values.bill_vat
-                      ? (values.bill_total * 0.07).toFixed(0)
-                      : ""}
+                    {values.bn_vat ? (values.bn_total * 0.07).toFixed(0) : ""}
                   </div>
                 </label>
               </div>
@@ -740,11 +740,9 @@ function E_bill() {
                 <label className="label">
                   <span className="">จำนวนเงินรวมทั้งสิ้น</span>
                   <div className="w1/2">
-                    {values.bill_vat
-                      ? (values.bill_total * 0.07 + values.bill_total).toFixed(
-                          0
-                        )
-                      : values.bill_total}
+                    {values.bn_vat
+                      ? (values.bn_total * 0.07 + values.bn_total).toFixed(0)
+                      : values.bn_total}
                   </div>
                 </label>
               </div>
@@ -754,31 +752,31 @@ function E_bill() {
                   <label className="label cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={values.bill_tax}
+                      checked={values.bn_tax}
                       className="checkbox mr-2"
                       onChange={() =>
                         setValues({
                           ...values,
-                          bill_tax: !values.bill_tax,
+                          bn_tax: !values.bn_tax,
                         })
                       }
                     />
                     <span className="">หักภาษี ณ ที่จ่าย 3%</span>
                   </label>
                   <div className="w1/2">
-                    {values.bill_tax ? values.bill_total * 0.03 : ""}
+                    {values.bn_tax ? values.bn_total * 0.03 : ""}
                   </div>
                 </label>
               </div>
-              {values.bill_tax ? (
+              {values.bn_tax ? (
                 <div>
                   <label className="label">
                     <span className="">ยอดชำระ</span>
                     <div className="w1/2">
                       {(
-                        values.bill_total * 0.07 +
-                        values.bill_total -
-                        values.bill_total * 0.03
+                        values.bn_total * 0.07 +
+                        values.bn_total -
+                        values.bn_total * 0.03
                       ).toFixed(0)}
                     </div>
                   </label>

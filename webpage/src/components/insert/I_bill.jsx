@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import { useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
 
 function I_bill() {
-  const employee_fname = localStorage.getItem("employee_fname");
-  const employee_lname = localStorage.getItem("employee_lname");
+  const employee_fullname =
+    localStorage.getItem("employee_fname") +
+    " " +
+    localStorage.getItem("employee_lname");
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
+  const [QuotationEmployee, setEmployee] = useState("");
   const [values, setValues] = useState({
     bill_date: moment(new Date()).format("YYYY-MM-DD"),
     bill_credit: 0,
@@ -19,18 +23,22 @@ function I_bill() {
     bill_detail: "",
     bill_vat: true,
     bill_tax: false,
-    employee_id: localStorage.getItem("employee_id"),
+    bill_status: "รออนุมัติ",
+    employee_id: "",
     customer_id: "",
     items: [],
     bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
   const [errors, setErrors] = useState({});
   const [selectcustomer, setSelectCustomer] = useState([]);
-  const [selectcustomerdetail, setSelectCustomerDetail] = useState({
+  const [selectCustomerDetail, setSelectCustomerDetail] = useState({
     data: [""],
     zip_code: "",
   });
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const quotation = searchParams.get("quotation");
   const validationSchema = Yup.object({
     bill_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
@@ -39,11 +47,11 @@ function I_bill() {
     customer_id: Yup.string().required("โปรดเลือกลูกค้า"),
     bill_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
-      .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
+      .required("โปรดเลือกวันที่ออกใบวางบิล"),
     items: Yup.array().of(
       Yup.object().shape({
         product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listq_amount: Yup.number()
+        listb_amount: Yup.number()
           .required("โปรดระบุจำนวนสินค้า")
           .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
         lot_number: Yup.string().required("โปรดเลือก Lot number"),
@@ -51,6 +59,34 @@ function I_bill() {
     ),
   });
 
+  const checkItem = (items) => {
+    const seen = new Set();
+    for (let item of items) {
+      const key = `${item.product_id}-${item.lot_number}`;
+      if (seen.has(key)) {
+        return true; // Duplicate found
+      }
+      seen.add(key);
+    }
+    const updatedItems = values.items.map((item, index) => ({
+      ...item,
+      listb_number: index + 1,
+    }));
+    //เมื่อไม่มี item ควร return true ฤ ป่าว ??
+    if (updatedItems.length == 0) return;
+    let updatedValues = {
+      ...values,
+      items: updatedItems,
+    };
+    // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
+    if (quotation) {
+      updatedValues = {
+        ...updatedValues,
+        quotation_id: quotation,
+      };
+    }
+    return updatedValues;
+  };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -60,8 +96,8 @@ function I_bill() {
         product_price: product.product_price,
         product_img: product.product_img,
         unit_name: product.unit_name,
-        listq_total: product.product_price,
-        listq_amount: 1,
+        listb_total: product.product_price,
+        listb_amount: 1,
         lot_number: "", // ค่า lot_number ยังไม่ได้กำหนด
       };
       setProductdetail(newItem);
@@ -109,15 +145,78 @@ function I_bill() {
     }
   };
 
-  // ฟังก์ชันสำหรับลบรายการสินค้า
-  const handleRemoveItem = (index) => {
-    setValues((prevValues) => {
-      const updatedItems = [...prevValues.items];
-      updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
-    });
-  };
+  // ดึงข้อมูล ใบเสนอราคา
+  const fetchQuotation = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/getquotation/${quotation}`
+      );
+      const quotationDetail = response.data.quotationDetail[0];
+      const quotationList = response.data.listqDetail;
+      const productDetail = response.data.productDetail;
 
+      //วนเซ้ตค่า list
+      quotationList.forEach((list) => {
+        productDetail.forEach((product) => {
+          if (list.product_id === product.product_id) {
+            list.product_name = product.product_name;
+            list.product_price = product.product_price;
+            list.product_img = product.product_img;
+            list.unit_name = product.unit_name;
+          }
+        });
+      });
+      const newData = quotationList.map(
+        ({
+          listq_number,
+          listq_price,
+          listq_amount,
+          listq_total,
+          ...rest
+        }) => ({
+          ...rest,
+          listb_number: listq_number,
+          listb_price: listq_price,
+          listb_amount: listq_amount,
+          listb_total: listq_total,
+        })
+      );
+      setEmployee(response.data.employee_name);
+      setValues({
+        ...values,
+        bill_total: parseFloat(quotationDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
+        bill_detail: quotationDetail.quotation_detail,
+        bill_vat: quotationDetail.quotation_vat,
+        bill_tax: quotationDetail.quotation_tax,
+        bill_credit: quotationDetail.quotation_credit,
+        bill_status: quotationDetail.quotation_status,
+        bill_dateend: moment(new Date())
+          .add(quotationDetail.quotation_credit, "days")
+          .format("YYYY-MM-DD"),
+        employee_id: quotationDetail.employee_id,
+        customer_id: quotationDetail.customer_id,
+        items: newData || [],
+      });
+      fetchCustomerDetail(quotationDetail.customer_id);
+      fetchCustomerName(quotationDetail.customer_id);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+    }
+  };
+  ///////////////////////
+  const fetchCustomerName = async (customer_id) => {
+    try {
+      const res = await axios.get(
+        "http://localhost:3001/getcustomers?sqlWhere=" + customer_id
+      );
+      setValues((prevState) => ({
+        ...prevState,
+        customer_name: res.data[0].customer_name,
+      }));
+    } catch (err) {
+      console.log(err);
+    }
+  };
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
@@ -141,6 +240,14 @@ function I_bill() {
     }
   };
   ///////////////////////
+  // ฟังก์ชันสำหรับลบรายการสินค้า
+  const handleRemoveItem = (index) => {
+    setValues((prevValues) => {
+      const updatedItems = [...prevValues.items];
+      updatedItems.splice(index, 1);
+      return { ...prevValues, items: updatedItems };
+    });
+  };
 
   //เกี่ยวกับวันที่เครดิต
   const handleCreditChange = (e) => {
@@ -168,7 +275,12 @@ function I_bill() {
     fetchProduct();
   };
   useEffect(() => {
-    fetchCustomer();
+    if (quotation) {
+      fetchQuotation();
+    } else {
+      fetchCustomer();
+      setEmployee(employee_fullname);
+    }
   }, []);
 
   useEffect(() => {
@@ -177,7 +289,7 @@ function I_bill() {
 
   useEffect(() => {
     const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listq_total);
+      return accumulator + parseInt(currentItem.listb_total);
     }, 0);
 
     setValues((prevValues) => ({
@@ -185,25 +297,24 @@ function I_bill() {
       bill_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
     }));
   }, [values.items]);
-  useEffect(() => {
-    values.items.map((list) => {
-      list.listq_total;
-    });
-  }, [values.items]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedItems = values.items.map((item, index) => ({
-        ...item,
-        listq_number: index + 1,
-      }));
-
-      // Update the values with the updated items
-      const updatedValues = {
-        ...values,
-        items: updatedItems,
-      };
+      const updatedValues = checkItem(values.items);
+      if (updatedValues === true) {
+        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+        return;
+      }
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleInsert(updatedValues);
       setErrors({});
@@ -253,7 +364,7 @@ function I_bill() {
   return (
     <>
       <div className="rounded-box bg-base-100 p-5">
-        <h1 className="ml-16 text-2xl">สร้างใบเสนอราคา</h1>
+        <h1 className="ml-16 text-2xl">สร้างใบวางบิล</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
           {/* model4 สินค้าทั้งหมด */}
@@ -399,7 +510,7 @@ function I_bill() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
+          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-5xl">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25 ">
                 <label className="label">
@@ -417,6 +528,11 @@ function I_bill() {
                   <option value="" disabled>
                     เลือกลูกค้า
                   </option>
+                  {values.customer_name && (
+                    <option value={values.customer_id} disabled>
+                      {values.customer_name}
+                    </option>
+                  )}
                   {selectcustomer.map((op) => (
                     <option key={op.customer_id} value={op.customer_id}>
                       {op.customer_name}
@@ -429,32 +545,35 @@ function I_bill() {
                 <label className="label">
                   <span className="">ข้อมูลลูกค้า</span>
                 </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.customer_address
-                      ? "รายละเอียดที่อยู่ : " +
-                        selectcustomerdetail.data.customer_address
-                      : "รายละเอียดที่อยู่ : ไม่มี"}
-                  </span>
-                </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.le_tax
-                      ? "เลขประจำตัวผู้เสียภาษี : " +
-                        selectcustomerdetail.data.le_tax
-                      : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
-                  </span>
-                </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.le_name
-                      ? "ชื่อสาขา :" + selectcustomerdetail.data.le_name
-                      : "ชื่อสาขา : ไม่มี"}
-                  </span>
-                </label>
+                <div className="rounded-[12px] border px-3 py-1">
+                  {" "}
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.customer_address
+                        ? "รายละเอียดที่อยู่ : " +
+                          selectCustomerDetail.data.customer_address
+                        : "รายละเอียดที่อยู่ : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_tax
+                        ? "เลขประจำตัวผู้เสียภาษี : " +
+                          selectCustomerDetail.data.le_tax
+                        : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_name
+                        ? "สำนักงาน :" + selectCustomerDetail.data.le_name
+                        : "สำนักงาน : ไม่มี"}
+                    </span>
+                  </label>
+                </div>
               </div>
               <div className="w-50">
                 <div className="form-control">
@@ -533,7 +652,7 @@ function I_bill() {
                   <input
                     readOnly
                     type="text"
-                    value={employee_fname + " " + employee_lname}
+                    value={QuotationEmployee}
                     className="input input-bordered w-1/2"
                   />
                 </div>
@@ -586,16 +705,17 @@ function I_bill() {
                     <td>{item.lot_number}</td>
                     <td>
                       <input
+                        disabled={quotation ? true : false}
                         className="text-center w-16"
                         type="text"
-                        value={item.listq_amount || ""}
+                        value={item.listb_amount || ""}
                         onChange={(e) => {
                           const newAmount = e.target.value;
                           const updatedItems = [...values.items];
                           if (newAmount === "" || Number(newAmount) > 0) {
-                            updatedItems[index].listq_amount =
+                            updatedItems[index].listb_amount =
                               newAmount === "" ? "" : Number(newAmount);
-                            updatedItems[index].listq_total =
+                            updatedItems[index].listb_total =
                               (newAmount === "" ? 0 : Number(newAmount)) *
                               updatedItems[index].product_price;
                             setValues({ ...values, items: updatedItems });
@@ -604,11 +724,11 @@ function I_bill() {
                         onBlur={() => {
                           const updatedItems = [...values.items];
                           if (
-                            updatedItems[index].listq_amount === "" ||
-                            updatedItems[index].listq_amount === 0
+                            updatedItems[index].listb_amount === "" ||
+                            updatedItems[index].listb_amount === 0
                           ) {
-                            updatedItems[index].listq_amount = 1;
-                            updatedItems[index].listq_total =
+                            updatedItems[index].listb_amount = 1;
+                            updatedItems[index].listb_total =
                               1 * updatedItems[index].product_price;
                             setValues({ ...values, items: updatedItems });
                           }
@@ -617,30 +737,34 @@ function I_bill() {
                     </td>
                     <td>{item.unit_name}</td>
                     <td>{item.product_price}</td>
-                    <td>{item.listq_total}</td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
-                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
-                      >
-                        ลบ
-                      </button>
-                    </td>
+                    <td>{item.listb_total}</td>
+                    {!quotation && (
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
+                        >
+                          ลบ
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
-                <tr>
-                  <td colSpan="8" className="text-center">
-                    <div
-                      className="btn"
-                      onClick={() => {
-                        document.getElementById("my_modal_4").showModal();
-                      }}
-                    >
-                      เพิ่มสินค้า
-                    </div>
-                  </td>
-                </tr>
+                {!quotation && (
+                  <tr>
+                    <td colSpan="8" className="text-center">
+                      <div
+                        className="btn"
+                        onClick={() => {
+                          document.getElementById("my_modal_4").showModal();
+                        }}
+                      >
+                        เพิ่มสินค้า
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <hr />
@@ -655,6 +779,7 @@ function I_bill() {
                 <label className="label">
                   <label className="label cursor-pointer">
                     <input
+                      disabled={quotation ? true : false}
                       type="checkbox"
                       checked={values.bill_vat}
                       className="checkbox mr-2"
@@ -691,6 +816,7 @@ function I_bill() {
                 <label className="label">
                   <label className="label cursor-pointer">
                     <input
+                      disabled={quotation ? true : false}
                       type="checkbox"
                       checked={values.bill_tax}
                       className="checkbox mr-2"
@@ -708,7 +834,7 @@ function I_bill() {
                   </div>
                 </label>
               </div>
-              {values.bill_tax && (
+              {values.bill_tax ? (
                 <div>
                   <label className="label">
                     <span className="">ยอดชำระ</span>
@@ -721,6 +847,8 @@ function I_bill() {
                     </div>
                   </label>
                 </div>
+              ) : (
+                ""
               )}
             </div>
 

@@ -7,18 +7,38 @@ const multer = require("multer");
 const path = require("path");
 const saltRounds = 10;
 const uuid = require("uuid");
-const { connect } = require("http2");
 const moment = require("moment");
-app.use(express.json());
-app.use(cors());
 const jwt = require("jsonwebtoken");
-const { decode } = require("punycode");
+const http = require("http");
+const socketIo = require("socket.io");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
 require("dotenv").config();
+
+const corsOptions = {
+  origin: "http://localhost:5173", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
+  methods: ["GET", "POST", "PUT", "DELETE"],
+};
+// ตั้งค่ามิดเดิลแวร์
+app.use(express.json());
+app.use(cors(corsOptions));
+
+// สร้างเซิร์ฟเวอร์ HTTP
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "http://localhost:5173", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
+
+// ตั้งค่าการเชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
   database: "hubwater",
+  timezone: "Z",
 });
 
 db.connect((err) => {
@@ -28,7 +48,28 @@ db.connect((err) => {
     console.log("Connected to MySQL database");
   }
 });
-app.listen(process.env.PORT);
+
+// สร้าง pool สำหรับการเชื่อมต่อฐานข้อมูล MySQL
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "hubwater",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+// เมื่อมี client เชื่อมต่อกับ socket จะมีการ log show
+io.on("connection", (socket) => {
+  console.log("A user connected");
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
+  });
+});
+
+// เริ่มเซิร์ฟเวอร์
+const PORT = process.env.PORT || 4000;
 
 const storageAvatar = multer.diskStorage({
   destination: path.join(__dirname, "img", "avatar"),
@@ -37,6 +78,7 @@ const storageAvatar = multer.diskStorage({
     cb(null, Date.now() + "-" + uuid.v4().substring(0, 8) + ".png");
   },
 });
+
 const storageProduct = multer.diskStorage({
   destination: path.join(__dirname, "img", "product"),
   filename: function (req, file, cb) {
@@ -44,8 +86,68 @@ const storageProduct = multer.diskStorage({
     cb(null, Date.now() + "-" + uuid.v4().substring(0, 8) + ".png");
   },
 });
+
+const storageExpense = multer.diskStorage({
+  destination: path.join(__dirname, "img", "expense"),
+  filename: function (req, file, cb) {
+    // null as first argument means no error
+    cb(null, Date.now() + "-" + uuid.v4().substring(0, 8) + ".png");
+  },
+});
+
 const uploadAvatar = multer({ storage: storageAvatar });
 const uploadProduct = multer({ storage: storageProduct });
+const uploadExpense = multer({ storage: storageExpense });
+
+const updateStatus = (id, status, res) => {
+  let tableName;
+  let idField;
+
+  if (status === "สร้างใบวางบิล" || status === "สร้างใบแจ้งหนี้")
+    status = "ดำเนินการแล้ว";
+
+  if (id.startsWith("QT")) {
+    tableName = "quotation";
+    idField = "quotation";
+  } else if (id.startsWith("BN")) {
+    tableName = "bill";
+    idField = "bn";
+  } else if (id.startsWith("IV")) {
+    tableName = "invoice";
+    idField = "iv";
+  } else if (id.startsWith("RC")) {
+    tableName = "receipt";
+    idField = "rc";
+  } else if (id.startsWith("OT")) {
+    tableName = "expense";
+    idField = "out";
+  } else if (id.startsWith("RF")) {
+    tableName = "receiptcash";
+    idField = "rf";
+  } else {
+    return res.status(400).send("Invalid ID prefix.");
+  }
+
+  const sql = `UPDATE ${tableName} SET ${idField}_status = ? WHERE ${idField}_id = ?`;
+  console.log(sql);
+  db.query(sql, [status, id], (err, result) => {
+    if (err) {
+      return res.status(500).send("Database update failed.");
+    }
+    // ส่งข้อความไปยัง client ที่เชื่อมต่อทั้งหมด
+    io.emit("statusUpdate", { status, id });
+  });
+};
+
+app.put("/updateStatus", (req, res) => {
+  let { status, id } = req.body;
+  // Uncomment and adjust the following if necessary
+  // if (status === "สร้างใบวางบิล" || status === "สร้างใบแจ้งหนี้") {
+  //   status = "ดำเนินการแล้ว";
+  // }
+
+  updateStatus(id, status, res);
+});
 
 function generateAccessToken(user) {
   return jwt.sign(
@@ -56,6 +158,7 @@ function generateAccessToken(user) {
     // { expiresIn: "59s" }
   );
 }
+
 function generateRefreshToken(user) {
   return jwt.sign(
     {
@@ -66,6 +169,7 @@ function generateRefreshToken(user) {
   );
 }
 let refreshTokens = [];
+
 app.post("/token", (req, res) => {
   const refreshToken = req.body.refreshToken;
   if (refreshToken === null) return res.status(401).send("ไม่มีการส่งมา");
@@ -990,7 +1094,7 @@ app.put("/bank/edit/:id", async (req, res) => {
 app.get("/getbank/:id", (req, res) => {
   const id = req.params.id;
   if (id == "all") {
-    const sql = "select bank_id, bank_name from bank";
+    const sql = "select bank_id, bank_name ,bank_type , bank_num from bank";
     db.query(sql, (err, data) => {
       if (err) {
         return res.json(err);
@@ -2113,6 +2217,8 @@ app.put("/employee/edit/:id", uploadAvatar.single("img"), async (req, res) => {
   //     Address: ${address}
   //     phone: ${phone}
   //     Image: ${imageName}
+  //     password: ${password}
+
   //   `);
   try {
     // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
@@ -2166,6 +2272,7 @@ subdistrict_code = ?
     if (password.length > 0) {
       sql += ", employee_password = ?";
       const hash = await bcrypt.hash(password, saltRounds);
+      console.log(hash);
       values.push(hash);
     }
     if (imageName.length > 0) {
@@ -2827,7 +2934,7 @@ app.post("/quotation/insert", async (req, res) => {
 
 app.get("/getquotation/:id", function (req, res) {
   const quotationId = req.params.id;
-  const sqlQuotation = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
+  const sqlQuotation = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
   db.query(sqlQuotation, [quotationId], (err, quotationDetail) => {
     if (err) {
       console.log(err);
@@ -2842,6 +2949,17 @@ app.get("/getquotation/:id", function (req, res) {
       }
 
       const productIds = listqDetail.map((item) => item.product_id);
+
+      // ตรวจสอบว่าอาร์เรย์ productIds ไม่ว่างเปล่า
+      if (productIds.length === 0) {
+        return res.json({
+          quotationDetail: quotationDetail,
+          listbDetail: listqDetail,
+          productDetail: [],
+          employee_name: "",
+          message: "ไม่พบสินค้าสำหรับรหัสใบเสนอราคาที่กำหนด",
+        });
+      }
       const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product join unit on product.unit_id = unit.unit_id WHERE product_id IN (?);`;
 
       db.query(sqlProduct, [productIds], (err, productDetail) => {
@@ -2874,12 +2992,12 @@ app.get("/getquotation/:id", function (req, res) {
     });
   });
 });
-app.put("/quotation/status", function (req, res) {
-  const { status, quotation_id } = req.body;
-  const sql =
-    "update quotation set quotation_status = ? where quotation_id = ?";
-  db.query(sql, [status, quotation_id]);
-});
+
+// app.put("/quotation/status", (req, res) => {
+//   let { status, quotation_id } = req.body;
+//   updateStatus(id, status, res, io);
+// });
+
 app.put("/quotation/edit/:id", async (req, res) => {
   const quotationId = req.params.id;
 
@@ -2908,7 +3026,8 @@ app.put("/quotation/edit/:id", async (req, res) => {
         return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
       }
 
-      const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number 
+      const sqlListq = `SELECT listq_number, 
+      product_id
                         FROM listq WHERE quotation_id = ?`;
 
       const [existingItems] = await db.promise().query(sqlListq, [quotationId]);
@@ -2937,7 +3056,7 @@ app.put("/quotation/edit/:id", async (req, res) => {
           toInsert.push(item);
         }
       });
-      console.log(newItemMap);
+      console.log(toUpdate);
 
       existingItemMap.forEach((item, key) => {
         toDelete.push(item);
@@ -2965,11 +3084,11 @@ app.put("/quotation/edit/:id", async (req, res) => {
           `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ? 
            WHERE listq_number = ? AND quotation_id = ?`,
           [
-            item.product_price,
+            item.listq_price,
             item.listq_amount,
             item.listq_total,
             item.lot_number,
-            item.lot_number,
+            item.listq_number,
             quotationId,
           ]
         );
@@ -2979,8 +3098,8 @@ app.put("/quotation/edit/:id", async (req, res) => {
         return db
           .promise()
           .query(
-            `DELETE FROM listq WHERE product_id = ? AND listq_number = ? AND quotation_id = ?`,
-            [item.product_id, item.listq_number, quotationId]
+            `DELETE FROM listq WHERE listq_number = ? AND quotation_id = ?`,
+            [item.listq_number, quotationId]
           );
       });
 
@@ -3030,7 +3149,7 @@ app.delete("/quotation/delete/:id", (req, res) => {
 
 app.get("/bill", function (req, res) {
   let fetch =
-    "SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status FROM bn b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.bn_del = '0'";
+    "SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type FROM bill b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.bn_del = '0'";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -3082,43 +3201,43 @@ app.get("/bill", function (req, res) {
 });
 
 app.post("/bill/insert", async (req, res) => {
-  const sql = `insert into bill (bn_id,bn_date,bn_status,bn_credit,bn_total,bn_del,bn_detail,bn_vat,bn_tax,employee_id,customer_id,bn_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
-  const next = await db
-    .promise()
-    .query(
-      `select LPAD(IFNULL(Max(SUBSTR(bn_id, 12, 5)),0)+1,5,'0') as next from bill ;`
-    );
-  const idnext =
-    "BN" + moment(req.body.bn_date).format("YYYYMMDD") + "-" + next[0][0].next;
-  db.query(
-    sql,
-    [
-      idnext,
-      req.body.bn_date,
-      "รออนุมัติ",
-      req.body.bn_credit,
-      req.body.bn_total,
-      "0",
-      req.body.bn_detail,
-      req.body.bn_vat,
-      req.body.bn_tax,
-      req.body.employee_id,
-      req.body.customer_id,
-      req.body.bn_dateend,
-    ],
-    (err) => {
-      if (err) {
-        console.log(err);
-        return res
-          .status(500)
-          .json({ msg: "insert ข้อมูลใบวางบิลผิด ไม่เกี่ยวกับรายการ" });
-      }
+  const sqlInsertBill = `INSERT INTO bill (bn_id, bn_date, bn_status, bn_credit, bn_total, bn_del, bn_detail, bn_vat, bn_tax, employee_id, customer_id, bn_type, bn_dateend) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const sqlSelectNext = `SELECT LPAD(IFNULL(MAX(SUBSTR(bn_id, 12, 5)),0)+1,5,'0') AS next FROM bill;`;
+  const sqlInertQtBn = `INSERT INTO quotation_has_bill (bn_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
+
+  try {
+    const connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const [next] = await connection.query(sqlSelectNext);
+
+      const idnext =
+        "BN" +
+        moment(req.body.bill_date).format("YYYYMMDD") +
+        "-" +
+        next[0].next;
+
+      await connection.query(sqlInsertBill, [
+        idnext,
+        req.body.bill_date,
+        req.body.bill_status,
+        req.body.bill_credit,
+        req.body.bill_total,
+        "0",
+        req.body.bill_detail,
+        req.body.bill_vat,
+        req.body.bill_tax,
+        req.body.employee_id,
+        req.body.customer_id,
+        "เดี่ยว",
+        req.body.bill_dateend,
+      ]);
+
       if (req.body.items && req.body.items.length > 0) {
-        let success = true; // ตั้งค่าเริ่มต้นเป็น true
-        req.body.items.forEach((item, index) => {
-          console.log(item);
-          db.query(
-            `insert into listb (listb_number,listb_price,listb_amount,listb_total,product_id,lot_number,bn_id) values (?,?,?,?,?,?,?)`,
+        const itemPromises = req.body.items.map((item) =>
+          connection.query(
+            `INSERT INTO listb (listb_number, listb_price, listb_amount, listb_total, product_id, lot_number, bn_id) VALUES (?,?,?,?,?,?,?)`,
             [
               item.listb_number,
               item.product_price,
@@ -3127,55 +3246,69 @@ app.post("/bill/insert", async (req, res) => {
               item.product_id,
               item.lot_number,
               idnext,
-            ],
-            (err) => {
-              if (err) {
-                console.log(err);
-                success = false; // ถ้าเกิดข้อผิดพลาดในการเพิ่มรายการสินค้า เปลี่ยนเป็น false
-              }
-              // ให้ส่งการตอบกลับไปยังไคลเอนต์เมื่อวนลูปเสร็จสิ้น
-              if (index === req.body.items.length - 1) {
-                if (success) {
-                  res.status(201).json({
-                    msg: "เพิ่มใบแล้ว",
-                  });
-                } else {
-                  res.status(500).json({
-                    msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
-                  });
-                }
-              }
-            }
-          );
-        });
-      } else {
-        res.status(201).json({
-          msg: "เพิ่มใบแล้ว",
-        });
+            ]
+          )
+        );
+
+        await Promise.all(itemPromises);
       }
+      //ต้องแก้ ใบที่ ของใบเสนอราคาด้วย ตอนนี้กำหนดเป็น 1 ไปก่อน
+      if (req.body.quotation_id) {
+        await connection.query(sqlInertQtBn, [
+          idnext,
+          req.body.quotation_id,
+          1,
+        ]);
+        updateStatus(req.body.quotation_id, "ดำเนินการแล้ว", res);
+      }
+
+      await connection.commit();
+      res.status(201).json({ msg: "เพิ่มใบแล้ว" });
+    } catch (err) {
+      console.error(err);
+      await connection.rollback();
+      res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า" });
+    } finally {
+      connection.release();
     }
-  );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล" });
+  }
 });
 
 app.get("/getbill/:id", function (req, res) {
   const bnId = req.params.id;
-  const sqlBill = `SELECT  bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id FROM bill WHERE bn_id = ?;`;
+  const sqlBill = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend FROM bill WHERE bn_id = ?;`;
+
   db.query(sqlBill, [bnId], (err, bnDetail) => {
     if (err) {
       console.log(err);
       return res.json(err);
     }
 
-    const sqlListq = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number,  bn_num FROM listb WHERE bn_id = ?;`;
+    const sqlListq = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number FROM listb WHERE bn_id = ?;`;
     db.query(sqlListq, [bnId], (err, listbDetail) => {
       if (err) {
         console.log(err);
         return res.json(err);
       }
 
+      console.log(listbDetail);
       const productIds = listbDetail.map((item) => item.product_id);
-      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product join unit on product.unit_id = unit.unit_id WHERE product_id IN (?);`;
 
+      // ตรวจสอบว่าอาร์เรย์ productIds ไม่ว่างเปล่า
+      if (productIds.length === 0) {
+        return res.json({
+          bnDetail: bnDetail,
+          listbDetail: listbDetail,
+          productDetail: [],
+          employee_name: "",
+          message: "ไม่พบสินค้าสำหรับรหัสบิลที่กำหนด",
+        });
+      }
+
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product JOIN unit ON product.unit_id = unit.unit_id WHERE product_id IN (?);`;
       db.query(sqlProduct, [productIds], (err, productDetail) => {
         if (err) {
           console.log(err);
@@ -3183,7 +3316,7 @@ app.get("/getbill/:id", function (req, res) {
         }
 
         const sqlEmployee_name =
-          'SELECT CONCAT(employee_fname, " ", employee_lname) as employee_name FROM employee WHERE employee_id = ?;';
+          'SELECT CONCAT(employee_fname, " ", employee_lname) AS employee_name FROM employee WHERE employee_id = ?;';
         db.query(
           sqlEmployee_name,
           [bnDetail[0].employee_id],
@@ -3193,7 +3326,9 @@ app.get("/getbill/:id", function (req, res) {
               return res.json(err);
             }
 
-            const employee_name = employee_nameResult[0].employee_name;
+            const employee_name = employee_nameResult[0]
+              ? employee_nameResult[0].employee_name
+              : "";
             return res.json({
               bnDetail: bnDetail,
               listbDetail: listbDetail,
@@ -3206,6 +3341,7 @@ app.get("/getbill/:id", function (req, res) {
     });
   });
 });
+
 app.put("/bill/status", function (req, res) {
   const { status, bn_id } = req.body;
   const sql = "update bill set bn_status = ? where bn_id = ?";
@@ -3216,7 +3352,7 @@ app.put("/bill/edit/:id", async (req, res) => {
 
   const updateBillSql = `UPDATE bill 
                               SET bn_date = ?, bn_credit = ?, bn_total = ?, bn_detail = ?, 
-                                  bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?, bn_dateend = ?
+                                  bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?,bn_type =?, bn_dateend = ?
                               WHERE bn_id = ?`;
 
   db.query(
@@ -3230,19 +3366,20 @@ app.put("/bill/edit/:id", async (req, res) => {
       req.body.bn_tax,
       req.body.employee_id,
       req.body.customer_id,
+      "เดี่ยว",
       req.body.bn_dateend,
       bnId,
     ],
     async (err) => {
       if (err) {
         console.log(err);
-        return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
+        return res.status(500).json({ msg: "Update ข้อมูลใบผิดพลาด" });
       }
 
-      const sqlListq = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number 
+      const sqlListb = `SELECT listb_number, product_id
                         FROM listb WHERE bn_id = ?`;
 
-      const [existingItems] = await db.promise().query(sqlListq, [bnId]);
+      const [existingItems] = await db.promise().query(sqlListb, [bnId]);
 
       const existingItemMap = new Map();
       existingItems.forEach((item) => {
@@ -3255,7 +3392,6 @@ app.put("/bill/edit/:id", async (req, res) => {
         const key = `${item.product_id}-${item.listb_number}`;
         newItemMap.set(key, item);
       });
-
       const toInsert = [];
       const toUpdate = [];
       const toDelete = [];
@@ -3268,16 +3404,16 @@ app.put("/bill/edit/:id", async (req, res) => {
           toInsert.push(item);
         }
       });
-      console.log(newItemMap);
 
       existingItemMap.forEach((item, key) => {
         toDelete.push(item);
       });
+      console.log(existingItemMap);
 
       const insertPromises = toInsert.map((item, index) => {
         return db.promise().query(
-          `INSERT INTO listb (listb_number, listb_price, listb_amount, listb_total, product_id, lot_number, bn_id, bn_num)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO listb (listb_number, listb_price, listb_amount, listb_total, product_id, lot_number, bn_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             item.listb_number,
             item.product_price,
@@ -3286,12 +3422,12 @@ app.put("/bill/edit/:id", async (req, res) => {
             item.product_id,
             item.lot_number,
             bnId,
-            1,
           ]
         );
       });
 
       const updatePromises = toUpdate.map((item) => {
+        console.log(item);
         return db.promise().query(
           `UPDATE listb SET listb_price = ?, listb_amount = ?, listb_total = ?, lot_number = ? 
            WHERE  listb_number = ? AND bn_id = ?`,
@@ -3300,7 +3436,7 @@ app.put("/bill/edit/:id", async (req, res) => {
             item.listb_amount,
             item.listb_total,
             item.lot_number,
-            item.lot_number,
+            item.listb_number,
             bnId,
           ]
         );
@@ -3310,7 +3446,6 @@ app.put("/bill/edit/:id", async (req, res) => {
         return db
           .promise()
           .query(`DELETE FROM listb WHERE listb_number = ? AND bn_id = ?`, [
-            item.product_id,
             item.listb_number,
             bnId,
           ]);
@@ -3360,15 +3495,1207 @@ app.delete("/bill/delete/:id", (req, res) => {
   });
 });
 
-app.get("/getcustomers", function (req, res) {
-  const sql = `select customer_id, CONCAT(customer_fname,' ',customer_lname) AS customer_name FROM customer WHERE customer_del = '0';
-  `;
-  db.query(sql, (err, data) => {
+app.get("/invoice", function (req, res) {
+  let fetch =
+    "SELECT i.iv_id, i.iv_date, c.customer_fname,e.employee_fname, i.iv_total, i.iv_status FROM invoice i JOIN employee e ON i.employee_id = e.employee_id JOIN customer c ON c.customer_id = i.customer_id WHERE i.iv_del = '0'";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (search) {
+    fetch += ` AND (
+      i.iv_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR i.iv_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+
+  fetch += " LIMIT ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "SELECT COUNT(iv_id) AS total FROM invoice WHERE iv_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/invoice/insert", async (req, res) => {
+  const sqlInsertInvoice = `insert into invoice (iv_id,iv_date,iv_status,iv_credit,iv_total,iv_del,iv_detail,iv_vat,iv_tax,employee_id,customer_id,iv_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const sqlSelectNext = `select LPAD(IFNULL(Max(SUBSTR(iv_id, 12, 5)),0)+1,5,'0') as next from invoice ;`;
+  const sqlInertQtIv = `INSERT INTO quotation_has_invoice (iv_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
+  const sqlInertBnIv = `INSERT INTO bill_has_invoice (iv_id, bn_id ) VALUES (?,?)`;
+
+  try {
+    const connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const [next] = await connection.query(sqlSelectNext);
+
+      const idnext =
+        "IV" +
+        moment(req.body.invoice_date).format("YYYYMMDD") +
+        "-" +
+        next[0].next;
+      await connection.query(sqlInsertInvoice, [
+        idnext,
+        req.body.invoice_date,
+        req.body.invoice_status,
+        req.body.invoice_credit,
+        req.body.invoice_total,
+        "0",
+        req.body.invoice_detail,
+        req.body.invoice_vat,
+        req.body.invoice_tax,
+        req.body.employee_id,
+        req.body.customer_id,
+        req.body.invoice_dateend,
+      ]);
+      if (req.body.items && req.body.items.length > 0) {
+        const itemPromises = req.body.items.map((item) =>
+          connection.query(
+            `insert into listi (listi_number,listi_price,listi_amount,listi_total,product_id,lot_number,iv_id) values (?,?,?,?,?,?,?)`,
+            [
+              item.listi_number,
+              item.product_price,
+              item.listi_amount,
+              item.listi_total,
+              item.product_id,
+              item.lot_number,
+              idnext,
+            ]
+          )
+        );
+        await Promise.all(itemPromises);
+      }
+      //ต้องแก้ ใบที่ ของใบเสนอราคาด้วย ตอนนี้กำหนดเป็น 1 ไปก่อน
+      if (req.body.quotation_id) {
+        await connection.query(sqlInertQtIv, [
+          idnext,
+          req.body.quotation_id,
+          1,
+        ]);
+        updateStatus(req.body.quotation_id, "ดำเนินการแล้ว", res);
+      }
+      if (req.body.bn_id) {
+        await connection.query(sqlInertBnIv, [idnext, req.body.bn_id]);
+        updateStatus(req.body.bn_id, "ดำเนินการแล้ว", res);
+      }
+
+      await connection.commit();
+      res.status(201).json({ msg: "เพิ่มใบแล้ว" });
+    } catch (err) {
+      console.error(err);
+      await connection.rollback();
+      res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า" });
+    } finally {
+      connection.release();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล" });
+  }
+});
+
+app.get("/getinvoice/:id", function (req, res) {
+  const ivId = req.params.id;
+  const sqlInvoice = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend FROM invoice WHERE iv_id = ?;`;
+
+  db.query(sqlInvoice, [ivId], (err, ivDetail) => {
     if (err) {
+      console.log(err);
       return res.json(err);
     }
-    return res.json(data);
+
+    const sqlListq = `SELECT listi_number, listi_price, listi_amount, listi_total, product_id, lot_number FROM listi WHERE iv_id = ?;`;
+    db.query(sqlListq, [ivId], (err, listiDetail) => {
+      if (err) {
+        console.log(err);
+        return res.json(err);
+      }
+
+      console.log(listiDetail);
+      const productIds = listiDetail.map((item) => item.product_id);
+
+      // ตรวจสอบว่าอาร์เรย์ productIds ไม่ว่างเปล่า
+      if (productIds.length === 0) {
+        return res.json({
+          ivDetail: ivDetail,
+          listiDetail: listiDetail,
+          productDetail: [],
+          employee_name: "",
+          message: "ไม่พบสินค้าสำหรับรหัสบิลที่กำหนด",
+        });
+      }
+
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product JOIN unit ON product.unit_id = unit.unit_id WHERE product_id IN (?);`;
+      db.query(sqlProduct, [productIds], (err, productDetail) => {
+        if (err) {
+          console.log(err);
+          return res.json(err);
+        }
+
+        const sqlEmployee_name =
+          'SELECT CONCAT(employee_fname, " ", employee_lname) AS employee_name FROM employee WHERE employee_id = ?;';
+        db.query(
+          sqlEmployee_name,
+          [ivDetail[0].employee_id],
+          (err, employee_nameResult) => {
+            if (err) {
+              console.log(err);
+              return res.json(err);
+            }
+
+            const employee_name = employee_nameResult[0]
+              ? employee_nameResult[0].employee_name
+              : "";
+            return res.json({
+              ivDetail: ivDetail,
+              listiDetail: listiDetail,
+              productDetail: productDetail,
+              employee_name: employee_name,
+            });
+          }
+        );
+      });
+    });
   });
+});
+
+app.put("/invoice/status", function (req, res) {
+  const { status, iv_id } = req.body;
+  const sql = "update invoice set iv_status = ? where iv_id = ?";
+  db.query(sql, [status, iv_id]);
+});
+app.put("/invoice/edit/:id", async (req, res) => {
+  const ivId = req.params.id;
+
+  const updateInvoiceSql = `UPDATE invoice 
+                              SET iv_date = ?, iv_credit = ?, iv_total = ?, iv_detail = ?, 
+                                  iv_vat = ?, iv_tax = ?, employee_id = ?, customer_id = ?, iv_dateend = ?
+                              WHERE iv_id = ?`;
+
+  db.query(
+    updateInvoiceSql,
+    [
+      req.body.iv_date,
+      req.body.iv_credit,
+      req.body.iv_total,
+      req.body.iv_detail,
+      req.body.iv_vat,
+      req.body.iv_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      req.body.iv_dateend,
+      ivId,
+    ],
+    async (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ msg: "Update ข้อมูลใบแจ้งหนี้ผิดพลาด" });
+      }
+
+      const sqlListb = `SELECT listi_number, product_id
+                        FROM listi WHERE iv_id = ?`;
+
+      const [existingItems] = await db.promise().query(sqlListb, [ivId]);
+
+      const existingItemMap = new Map();
+      existingItems.forEach((item) => {
+        const key = `${item.product_id}-${item.listi_number}`;
+        existingItemMap.set(key, item);
+      });
+
+      const newItemMap = new Map();
+      req.body.items.forEach((item) => {
+        const key = `${item.product_id}-${item.listi_number}`;
+        newItemMap.set(key, item);
+      });
+
+      const toInsert = [];
+      const toUpdate = [];
+      const toDelete = [];
+
+      newItemMap.forEach((item, key) => {
+        if (existingItemMap.has(key)) {
+          toUpdate.push(item);
+          existingItemMap.delete(key);
+        } else {
+          toInsert.push(item);
+        }
+      });
+
+      existingItemMap.forEach((item, key) => {
+        toDelete.push(item);
+      });
+
+      const insertPromises = toInsert.map((item, index) => {
+        return db.promise().query(
+          `INSERT INTO listi (listi_number, listi_price, listi_amount, listi_total, product_id, lot_number, iv_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            item.listi_number,
+            item.product_price,
+            item.listi_amount,
+            item.listi_total,
+            item.product_id,
+            item.lot_number,
+            ivId,
+          ]
+        );
+      });
+
+      const updatePromises = toUpdate.map((item) => {
+        return db.promise().query(
+          `UPDATE listi SET listi_price = ?, listi_amount = ?, listi_total = ?, lot_number = ? 
+           WHERE  listi_number = ? AND iv_id = ?`,
+          [
+            item.product_price,
+            item.listi_amount,
+            item.listi_total,
+            item.lot_number,
+            item.listi_number,
+            ivId,
+          ]
+        );
+      });
+
+      const deletePromises = toDelete.map((item) => {
+        return db
+          .promise()
+          .query(`DELETE FROM listi WHERE listi_number = ? AND iv_id = ?`, [
+            item.listi_number,
+            ivId,
+          ]);
+      });
+
+      try {
+        await Promise.all([
+          ...insertPromises,
+          ...updatePromises,
+          ...deletePromises,
+        ]);
+        res
+          .status(200)
+          .json({ msg: "แก้ไขใบแจ้งหนี้เสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
+      } catch (err) {
+        console.log(err);
+        res
+          .status(500)
+          .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
+      }
+    }
+  );
+});
+
+// เหลือการ auth ก่อนการ delete
+app.delete("/invoice/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE invoice 
+    SET 
+      iv_del = ?
+    WHERE iv_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+
+//ทำเสร็จแล้วอย่าลืมดูว่า rc_type ต้องใช้ฤป่าว
+app.get("/receipt", function (req, res) {
+  let fetch =
+    "SELECT b.rc_id, b.rc_date, c.customer_fname,e.employee_fname, b.rc_total, b.rc_status,b.rc_type,b.rc_tax,rc_detail FROM receipt b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.rc_del = '0'";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (search) {
+    fetch += ` AND (
+      b.rc_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR b.rc_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+
+  fetch += " LIMIT ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "SELECT COUNT(rc_id) AS total FROM receipt WHERE rc_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/receipt/insert", async (req, res) => {
+  const sql = `insert into receipt (rc_id,rc_date,rc_status,rc_total,rc_del,rc_detail,rc_vat,rc_tax,employee_id,customer_id,rc_type) values (?,?,?,?,?,?,?,?,?,?,?)`;
+  const sqlInertIvRc =
+    "insert into invoice_has_receipt (rc_id,iv_id) values (?,?)";
+  const next = await db
+    .promise()
+    .query(
+      `select LPAD(IFNULL(Max(SUBSTR(rc_id, 12, 5)),0)+1,5,'0') as next from receipt ;`
+    );
+
+  const idnext =
+    "RC" +
+    moment(req.body.receipt_date).format("YYYYMMDD") +
+    "-" +
+    next[0][0].next;
+  db.query(
+    sql,
+    [
+      idnext,
+      req.body.receipt_date,
+      "รอเก็บเงิน",
+      req.body.receipt_total,
+      "0",
+      req.body.receipt_detail,
+      req.body.receipt_vat,
+      req.body.receipt_tax,
+      req.body.employee_id,
+      req.body.customer_id,
+      "เดี่ยว", //ความจริงต้องเอามาจากข้อมูลใบที่สร้าง
+    ],
+    (err) => {
+      if (err) {
+        console.log(err);
+        return res
+          .status(500)
+          .json({ msg: "insert ข้อมูลใบวางบิลผิด ไม่เกี่ยวกับรายการ" });
+      }
+      if (req.body.items && req.body.items.length > 0) {
+        let success = true; // ตั้งค่าเริ่มต้นเป็น true
+        req.body.items.forEach((item, index) => {
+          db.query(
+            `insert into listr (listr_number,listr_price,listr_amount,listr_total,product_id,lot_number,rc_id) values (?,?,?,?,?,?,?)`,
+            [
+              item.listi_number,
+              item.product_price,
+              item.listi_amount,
+              item.listi_total,
+              item.product_id,
+              item.lot_number,
+              idnext,
+            ],
+            (err) => {
+              if (err) {
+                console.log(err);
+                success = false; // ถ้าเกิดข้อผิดพลาดในการเพิ่มรายการสินค้า เปลี่ยนเป็น false
+              }
+              // ให้ส่งการตอบกลับไปยังไคลเอนต์เมื่อวนลูปเสร็จสิ้น
+              if (index === req.body.items.length - 1) {
+                if (success) {
+                  if (req.body.iv_id) {
+                    db.query(sqlInertIvRc, [idnext, req.body.iv_id]);
+                    updateStatus(req.body.iv_id, "ดำเนินการแล้ว", res);
+                  }
+                  res.status(201).json({
+                    msg: "เพิ่มใบแล้ว",
+                  });
+                } else {
+                  res.status(500).json({
+                    msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า",
+                  });
+                }
+              }
+            }
+          );
+        });
+      } else {
+        res.status(201).json({
+          msg: "เพิ่มใบแล้ว",
+        });
+      }
+    }
+  );
+});
+
+app.get("/getreceipt/:id", function (req, res) {
+  const rcId = req.params.id;
+  const sqlReceipt = `SELECT rc_date, rc_total,  rc_detail, rc_vat, rc_tax, employee_id, customer_id ,rc_type FROM receipt WHERE rc_id = ?;`;
+
+  db.query(sqlReceipt, [rcId], (err, rcDetail) => {
+    if (err) {
+      console.log(err);
+      return res.json(err);
+    }
+
+    const sqlListq = `SELECT listr_number, listr_price, listr_amount, listr_total, product_id, lot_number FROM listr WHERE rc_id = ?;`;
+    db.query(sqlListq, [rcId], (err, listrDetail) => {
+      if (err) {
+        console.log(err);
+        return res.json(err);
+      }
+      const productIds = listrDetail.map((item) => item.product_id);
+
+      // ตรวจสอบว่าอาร์เรย์ productIds ไม่ว่างเปล่า
+      if (productIds.length === 0) {
+        return res.json({
+          rcDetail: rcDetail,
+          listrDetail: listrDetail,
+          productDetail: [],
+          employee_name: "",
+          message: "ไม่พบสินค้าสำหรับรหัสบิลที่กำหนด",
+        });
+      }
+
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product JOIN unit ON product.unit_id = unit.unit_id WHERE product_id IN (?);`;
+      db.query(sqlProduct, [productIds], (err, productDetail) => {
+        if (err) {
+          console.log(err);
+          return res.json(err);
+        }
+
+        const sqlEmployee_name =
+          'SELECT CONCAT(employee_fname, " ", employee_lname) AS employee_name FROM employee WHERE employee_id = ?;';
+
+        db.query(
+          sqlEmployee_name,
+          [rcDetail[0].employee_id],
+          (err, employee_nameResult) => {
+            if (err) {
+              console.log(err);
+              return res.json(err);
+            }
+            const employee_name = employee_nameResult[0]
+              ? employee_nameResult[0].employee_name
+              : "";
+            return res.json({
+              rcDetail: rcDetail,
+              listrDetail: listrDetail,
+              productDetail: productDetail,
+              employee_name: employee_name,
+            });
+          }
+        );
+      });
+    });
+  });
+});
+
+app.put("/receipt/status", function (req, res) {
+  const { status, rc_id } = req.body;
+  const sql = "update receipt set rc_status = ? where rc_id = ?";
+  db.query(sql, [status, rc_id]);
+});
+
+app.put("/receipt/money", function (req, res) {
+  const { rc_id, rc_date, rc_detail, rc_pay, bank_id } = req.body;
+  let sql =
+    // ลบอัพเดท สเตตัสออกมาลองดูว่า error ไหม
+    "update receipt set  rc_date =? ,rc_detail =? ,rc_pay =? ";
+  let values = [rc_date, rc_detail, rc_pay];
+  if (bank_id) {
+    sql += ", bank_id =? ";
+    values.push(bank_id);
+  }
+  sql += "where rc_id = ?";
+  values.push(rc_id);
+  db.query(sql, values, (err) => {
+    if (err) {
+      console.err(err);
+      res.json(err);
+    } else {
+      res.json("บันทึกการรับเงินเรียบร้อย");
+    }
+  });
+});
+
+app.put("/receiptCash/money", function (req, res) {
+  const { rf_id, rf_date, rf_detail, rf_pay, bank_id } = req.body;
+  let sql = "update receiptcash set  rf_date =? ,rf_detail =? ,rf_pay =? ";
+  let values = [rf_date, rf_detail, rf_pay];
+  if (bank_id) {
+    sql += ", bank_id =? ";
+    values.push(bank_id);
+  }
+  sql += "where rf_id = ?";
+  values.push(rf_id);
+  db.query(sql, values, (err) => {
+    if (err) {
+      console.error(err);
+      res.json(err);
+    } else {
+      res.json("บันทึกการรับเงินเรียบร้อย");
+    }
+  });
+});
+
+app.delete("/receipt/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE receipt 
+    SET 
+      rc_del = ?
+    WHERE rc_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+
+app.get("/receiptcash", function (req, res) {
+  let fetch =
+    "SELECT i.rf_id, i.rf_date, c.customer_fname,e.employee_fname, i.rf_total, i.rf_status FROM receiptcash i JOIN employee e ON i.employee_id = e.employee_id LEFT OUTER JOIN customer c ON c.customer_id = i.customer_id WHERE i.rf_del = '0'";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (search) {
+    fetch += ` AND (
+      i.rf_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR i.rf_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+
+  fetch += " LIMIT ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "SELECT COUNT(rf_id) AS total FROM receiptcash WHERE rf_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/receiptcash/insert", async (req, res) => {
+  const sqlInsertInvoice = `insert into receiptcash (rf_id,rf_date,rf_status,rf_total,rf_del,rf_detail,rf_vat,rf_tax,employee_id,customer_id) values (?,?,?,?,?,?,?,?,?,?)`;
+  const sqlSelectNext = `select LPAD(IFNULL(Max(SUBSTR(rf_id, 12, 5)),0)+1,5,'0') as next from receiptcash ;`;
+
+  try {
+    const connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const [next] = await connection.query(sqlSelectNext);
+
+      const idnext =
+        "RF" + moment(req.body.rf_date).format("YYYYMMDD") + "-" + next[0].next;
+      await connection.query(sqlInsertInvoice, [
+        idnext,
+        req.body.rf_date,
+        "รอเก็บเงิน",
+        req.body.rf_total,
+        "0",
+        req.body.rf_detail,
+        req.body.rf_vat,
+        req.body.rf_tax,
+        req.body.employee_id,
+        req.body.customer_id ? req.body.customer_id : null,
+      ]);
+      if (req.body.items && req.body.items.length > 0) {
+        const itemPromises = req.body.items.map((item, index) =>
+          connection.query(
+            `insert into listrf (listrf_number,listrf_price,listrf_amount,listrf_total,product_id,lot_number,rf_id) values (?,?,?,?,?,?,?)`,
+            [
+              index + 1,
+              item.product_price,
+              item.listrf_amount,
+              item.listrf_total,
+              item.product_id,
+              item.lot_number,
+              idnext,
+            ]
+          )
+        );
+        await Promise.all(itemPromises);
+      }
+
+      await connection.commit();
+      res.status(201).json({ msg: "เพิ่มใบแล้ว" });
+    } catch (err) {
+      console.error(err);
+      await connection.rollback();
+      res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเพิ่มรายการสินค้า" });
+    } finally {
+      connection.release();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล" });
+  }
+});
+
+app.get("/getreceiptcash/:id", function (req, res) {
+  const rfId = req.params.id;
+  const sqlReceiptCash = `SELECT rf_date, rf_total, rf_detail, rf_vat, rf_tax, employee_id, customer_id  FROM receiptcash WHERE rf_id = ?;`;
+  const sqlListq = `SELECT listrf_number, listrf_price, listrf_amount, listrf_total, product_id, lot_number FROM listrf WHERE rf_id = ?;`;
+  db.query(sqlReceiptCash, [rfId], (err, rfDetail) => {
+    if (err) {
+      console.log(err);
+      return res.json(err);
+    }
+
+    db.query(sqlListq, [rfId], (err, listrf_Detail) => {
+      if (err) {
+        console.log(err);
+        return res.json(err);
+      }
+      const productIds = listrf_Detail.map((item) => item.product_id);
+
+      // ตรวจสอบว่าอาร์เรย์ productIds ไม่ว่างเปล่า
+      if (productIds.length === 0) {
+        return res.json({
+          rfDetail: rfDetail,
+          listrf_Detail: listrf_Detail,
+          productDetail: [],
+          employee_name: "",
+          message: "ไม่พบสินค้าสำหรับรหัสบิลที่กำหนด",
+        });
+      }
+
+      const sqlProduct = `SELECT product_id, product_name, product_price, product_img, unit.unit_name FROM product JOIN unit ON product.unit_id = unit.unit_id WHERE product_id IN (?);`;
+      db.query(sqlProduct, [productIds], (err, productDetail) => {
+        if (err) {
+          console.log(err);
+          return res.json(err);
+        }
+
+        const sqlEmployee_name =
+          'SELECT CONCAT(employee_fname, " ", employee_lname) AS employee_name FROM employee WHERE employee_id = ?;';
+        db.query(
+          sqlEmployee_name,
+          [rfDetail[0].employee_id],
+          (err, employee_nameResult) => {
+            if (err) {
+              console.log(err);
+              return res.json(err);
+            }
+
+            const employee_name = employee_nameResult[0]
+              ? employee_nameResult[0].employee_name
+              : "";
+            return res.json({
+              rfDetail: rfDetail,
+              listrf_Detail: listrf_Detail,
+              productDetail: productDetail,
+              employee_name: employee_name,
+            });
+          }
+        );
+      });
+    });
+  });
+});
+
+app.put("/receiptcash/edit/:id", async (req, res) => {
+  const rfId = req.params.id;
+
+  const updateInvoiceSql = `UPDATE receiptcash 
+                              SET rf_date = ?, rf_total = ?, rf_detail = ?, 
+                                  rf_vat = ?, rf_tax = ?,  customer_id = ?
+                              WHERE rf_id = ?`;
+
+  db.query(
+    updateInvoiceSql,
+    [
+      req.body.rf_date,
+      req.body.rf_total,
+      req.body.rf_detail,
+      req.body.rf_vat,
+      req.body.rf_tax,
+      req.body.customer_id ? req.body.customer_id : null,
+      rfId,
+    ],
+    async (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ msg: "Update ข้อมูลผิดพลาด" });
+      }
+
+      const sqlListrf = `SELECT listrf_number, product_id
+                        FROM listrf WHERE rf_id = ?`;
+
+      const [existingItems] = await db.promise().query(sqlListrf, [rfId]);
+
+      const existingItemMap = new Map();
+      existingItems.forEach((item) => {
+        const key = `${item.product_id}-${item.listrf_number}`;
+        existingItemMap.set(key, item);
+      });
+
+      const newItemMap = new Map();
+      req.body.items.forEach((item) => {
+        const key = `${item.product_id}-${item.listrf_number}`;
+        newItemMap.set(key, item);
+      });
+
+      const toInsert = [];
+      const toUpdate = [];
+      const toDelete = [];
+
+      newItemMap.forEach((item, key) => {
+        if (existingItemMap.has(key)) {
+          toUpdate.push(item);
+          existingItemMap.delete(key);
+        } else {
+          toInsert.push(item);
+        }
+      });
+
+      existingItemMap.forEach((item, key) => {
+        toDelete.push(item);
+      });
+
+      const insertPromises = toInsert.map((item, index) => {
+        return db.promise().query(
+          `INSERT INTO listrf (listrf_number, listrf_price, listrf_amount, listrf_total, product_id, lot_number, rf_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            item.listrf_number,
+            item.product_price,
+            item.listrf_amount,
+            item.listrf_total,
+            item.product_id,
+            item.lot_number,
+            rfId,
+          ]
+        );
+      });
+
+      const updatePromises = toUpdate.map((item) => {
+        return db.promise().query(
+          `UPDATE listrf SET listrf_price = ?, listrf_amount = ?, listrf_total = ?, lot_number = ? 
+           WHERE  listrf_number = ? AND rf_id = ?`,
+          [
+            item.product_price,
+            item.listrf_amount,
+            item.listrf_total,
+            item.lot_number,
+            item.listrf_number,
+            rfId,
+          ]
+        );
+      });
+
+      const deletePromises = toDelete.map((item) => {
+        return db
+          .promise()
+          .query(`DELETE FROM listrf WHERE listrf_number = ? AND rf_id = ?`, [
+            item.listrf_number,
+            rfId,
+          ]);
+      });
+
+      try {
+        await Promise.all([
+          ...insertPromises,
+          ...updatePromises,
+          ...deletePromises,
+        ]);
+        res.status(200).json({ msg: "แก้ไขใบและรายการสินค้าเรียบร้อยแล้ว" });
+      } catch (err) {
+        console.log(err);
+        res
+          .status(500)
+          .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
+      }
+    }
+  );
+});
+
+// เหลือการ auth ก่อนการ delete
+app.delete("/receiptcash/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE receiptcash 
+    SET 
+      rf_del = ?
+    WHERE rf_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+
+app.get("/out", function (req, res) {
+  let fetch =
+    "SELECT o.out_id, o.out_date, e.employee_fname, o.out_total, o.out_status FROM expense o JOIN employee e ON o.employee_id = e.employee_id WHERE o.out_del = '0'";
+  let fetchValue = [];
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_by = req.query.sort_by;
+  const sort_type = req.query.sort_type;
+  const search = req.query.search;
+  const idx_start = (page - 1) * per_page;
+
+  if (search) {
+    fetch += ` AND (
+      o.out_id LIKE ?
+      OR c.customer_fname LIKE ?
+      OR o.out_date LIKE ?
+    )`;
+    fetchValue = Array(3).fill(`${search}%`);
+  }
+
+  if (sort_by && sort_type) {
+    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  }
+
+  fetch += " LIMIT ?, ?";
+  fetchValue.push(idx_start);
+  fetchValue.push(per_page);
+
+  db.execute(fetch, fetchValue, (err, result, field) => {
+    if (!err) {
+      db.query(
+        "SELECT COUNT(out_id) AS total FROM expense WHERE out_del='0'",
+        (err, totalrs) => {
+          if (!err) {
+            const total = totalrs[0].total;
+            res.json({
+              data: result,
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: Math.ceil(total / per_page),
+            });
+          } else {
+            res.json({ msg: "query น่าจะผิด" });
+          }
+        }
+      );
+    } else {
+      res.json({ msg: err });
+    }
+  });
+});
+
+app.post("/out/insert", uploadExpense.array("img"), async (req, res) => {
+  const items = JSON.parse(req.body.items);
+  const sql = `INSERT INTO expense (Out_id, Out_date, Out_status, Out_total, Out_del, Out_detail, employee_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const sqlInsertImg = "INSERT INTO outimg (out_id, outimg) VALUES (?, ?)";
+  const imageFiles = req.files;
+
+  const connection = await pool.promise().getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [next] = await connection.query(
+      `SELECT LPAD(IFNULL(MAX(SUBSTR(out_id, 12, 5)), 0) + 1, 5, '0') AS next FROM expense;`
+    );
+
+    const idNext =
+      "OT" + moment(req.body.out_date).format("YYYYMMDD") + "-" + next[0].next;
+
+    await connection.query(sql, [
+      idNext,
+      req.body.out_date,
+      "รอจ่ายเงิน",
+      req.body.out_total,
+      "0",
+      req.body.out_detail,
+      req.body.employee_id,
+    ]);
+
+    if (items && items.length > 0) {
+      let index = 1;
+      for (const item of items) {
+        await connection.query(
+          `INSERT INTO listout (listo_number,listo_name, listo_price, listo_amount, listo_total, Out_id, expensetype_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            index, // ใช้ index
+            item.listo_name,
+            item.listo_price,
+            item.listo_amount,
+            item.listo_total,
+            idNext,
+            item.expensetype_id,
+          ]
+        );
+        index++;
+      }
+    }
+
+    if (imageFiles && imageFiles.length > 0) {
+      for (const file of imageFiles) {
+        await connection.query(sqlInsertImg, [idNext, file.filename]);
+      }
+    }
+
+    await connection.commit();
+    res.status(201).json({ msg: "เพิ่มใบแล้ว" });
+  } catch (err) {
+    await connection.rollback();
+    console.log(err);
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการเพิ่มข้อมูล" });
+  } finally {
+    connection.release();
+  }
+});
+
+app.post("/out/edit/:id", uploadExpense.array("img"), async (req, res) => {
+  const items = JSON.parse(req.body.items);
+  const oldImages = JSON.parse(req.body.oldImage);
+  const outId = req.params.id;
+  const sqlUpdateOut = `UPDATE expense SET Out_date = ?, Out_status = ?, Out_total = ?, Out_detail = ? WHERE Out_id = ?`;
+  const sqlDeleteListOut = `DELETE FROM listout WHERE Out_id = ?`;
+  const sqlInsertListOut = `INSERT INTO listout (listo_number, listo_name, listo_price, listo_amount, listo_total, Out_id, expensetype_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const sqlDeleteOutImg = `DELETE FROM outimg WHERE out_id = ?`;
+  const sqlInsertOutImg = "INSERT INTO outimg (out_id, outimg) VALUES (?, ?)";
+  const imageFiles = req.files;
+
+  const connection = await pool.promise().getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // อัพเดตข้อมูลเอกสาร
+    await connection.query(sqlUpdateOut, [
+      req.body.out_date,
+      "รอจ่ายเงิน",
+      req.body.out_total,
+      req.body.out_detail,
+      outId,
+    ]);
+
+    // ลบรายการค่าใช้จ่ายเก่า
+    await connection.query(sqlDeleteListOut, [outId]);
+
+    // เพิ่มรายการค่าใช้จ่ายใหม่
+    if (items && items.length > 0) {
+      let index = 1;
+      for (const item of items) {
+        await connection.query(sqlInsertListOut, [
+          index, // ใช้ index
+          item.listo_name,
+          item.listo_price,
+          item.listo_amount,
+          item.listo_total,
+          outId,
+          item.expensetype_id,
+        ]);
+        index++;
+      }
+    }
+
+    // ลบรูปภาพเก่า
+    await connection.query(sqlDeleteOutImg, [outId]);
+
+    // เพิ่มรูปภาพใหม่
+    if (imageFiles && imageFiles.length > 0) {
+      for (const file of imageFiles) {
+        await connection.query(sqlInsertOutImg, [outId, file.filename]);
+      }
+      // ลบรูปภาพเก่าออกจากโฟลเดอร์
+      oldImages.forEach((img) => {
+        const filePath = path.join(__dirname, "img", "expense", img.outimg);
+        console.log(filePath);
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.log(`Failed to delete image: ${img.outimg}`, err);
+          }
+        });
+      });
+    }
+
+    await connection.commit();
+    res.status(200).json({ msg: "แก้ไขข้อมูลสำเร็จ" });
+  } catch (err) {
+    await connection.rollback();
+    console.log(err);
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการแก้ไขข้อมูล" });
+  } finally {
+    connection.release();
+  }
+});
+
+app.get("/getout/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [outData] = await db
+      .promise()
+      .query(
+        `SELECT out_date,out_total,out_detail,employee_id FROM expense WHERE Out_id = ?`,
+        [id]
+      );
+    const [listData] = await db
+      .promise()
+      .query(
+        `SELECT listo_number,listo_name,listo_price,listo_amount,listo_total,expensetype_name FROM listout join expensetype on listout.expensetype_id = expensetype.expensetype_id WHERE Out_id = ?`,
+        [id]
+      );
+    const [imagesData] = await db
+      .promise()
+      .query(`SELECT outimg FROM outimg WHERE out_id = ?`, [id]);
+
+    res.json({
+      outData: outData[0],
+      listData,
+      imagesData,
+    });
+  } catch (error) {
+    res.status(500).json({ msg: "Error fetching data", error });
+  }
+});
+
+app.delete("/out/delete/:id", (req, res) => {
+  const sql = `
+    UPDATE expense 
+    SET 
+      out_del = ?
+    WHERE out_id = ?;
+  `;
+  const id = req.params.id;
+  const values = ["1", id];
+  console.log(id);
+  db.execute(sql, values, (err, result) => {
+    if (err) {
+      res.status(500).json({
+        msg: "Error delete department",
+      });
+      return;
+    }
+    res.status(201).json({
+      msg: "ลบเรียบร้อยแล้ว",
+      data: result,
+    });
+    return;
+  });
+});
+
+app.get("/getcustomers", (req, res) => {
+  const sqlWhere = req.query.sqlWhere; // ใช้ req.query เพื่อดึง query parameter ที่ชื่อ sqlWhere
+  let sql = `SELECT customer_id, CONCAT(customer_fname, ' ', customer_lname) AS customer_name FROM customer WHERE customer_del = '0'`;
+
+  if (sqlWhere) {
+    sql += ` AND customer_id = ?`; // ใช้ parameterized query
+    db.query(sql, [sqlWhere], (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  } else {
+    db.query(sql, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      return res.json(data);
+    });
+  }
 });
 
 app.get("/getprovince", (req, res) => {
@@ -3415,4 +4742,185 @@ app.get("/img/product/:imageName", (req, res) => {
 
   // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
   res.sendFile(imagePath);
+});
+app.get("/img/expense/:imageName", (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(__dirname, "img", "expense", imageName);
+
+  // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
+  res.sendFile(imagePath);
+});
+
+app.get("/pdf", async (req, res) => {
+  console.log("am in");
+  const id = req.query.id;
+  let sqlSelect;
+  let sqlList;
+
+  let header;
+  let tableName;
+  let idField;
+  let listname;
+  let numberQT;
+
+  if (id.startsWith("QT")) {
+    header = `ใบเสนอราคา`;
+    tableName = "quotation";
+    idField = "quotation";
+    listname = "listq";
+    numberQT = req.query.numberQT;
+    sqlSelect = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
+    sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ?;`;
+  } else if (id.startsWith("BN")) {
+    header = `ใบวางบิล`;
+    tableName = "bill";
+    idField = "bn";
+    listname = "listb";
+    sqlSelect = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend FROM bill WHERE bn_id = ?;`;
+    sqlList = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number FROM listb WHERE bn_id = ?;`;
+  } else if (id.startsWith("IV")) {
+    header = `ใบแจ้งหนี้`;
+    tableName = "invoice";
+    idField = "iv";
+    listname = "listi";
+    sqlSelect = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend FROM invoice WHERE iv_id = ?;`;
+    sqlList = `SELECT listi_number, listi_price, listi_amount, listi_total, product_id, lot_number FROM listi WHERE iv_id = ?;`;
+  } else if (id.startsWith("RC")) {
+    header = `ใบเสร็จรับเงิน`;
+    tableName = "receipt";
+    idField = "rc";
+    listname = "listr";
+    sqlSelect = `SELECT rc_date, rc_total,  rc_detail, rc_vat, rc_tax, employee_id, customer_id ,rc_type FROM receipt WHERE rc_id = ?;`;
+    sqlList = `SELECT listr_number, listr_price, listr_amount, listr_total, product_id, lot_number FROM listr WHERE rc_id = ?;`;
+  } else {
+    return res.status(400).send("ไม่มีใบที่คุณให้มา");
+  }
+  const [result] = await db
+    .promise()
+    .query(sqlSelect, [id, numberQT ? numberQT : ""]);
+
+  const sqlEmployee_name =
+    'SELECT CONCAT(employee_fname, " ", employee_lname) as employee_name FROM employee WHERE employee_id = ?;';
+  const [employee_nameResult] = await db
+    .promise()
+    .query(sqlEmployee_name, [result[0].employee_id]);
+  const employee_name = employee_nameResult[0].employee_name;
+
+  const [lists] = await db
+    .promise()
+    .query(sqlList, [id, numberQT ? numberQT : ""]);
+
+  // ข้อมูลรายละเอียดลูกค้า
+  const customerDetails = await db
+    .promise()
+    .query(
+      "SELECT concat(customer_fname +' '+ customer_lname) as customer_name , customer_address FROM customer WHERE customer_id = ?",
+      [result[0].customer_id]
+    );
+  const customer = customerDetails[0][0];
+
+  console.log(result, employee_name, lists);
+
+  const doc = new PDFDocument({ size: "A4" });
+
+  doc.pipe(fs.createWriteStream(header + id + `.pdf`));
+  // Embed the Thai font
+  doc.registerFont("THSarabunNew", "fonts/THSarabunNew.ttf");
+  doc.font("THSarabunNew");
+
+  // Header Section
+  doc.fontSize(20).text(header, 390, 40);
+
+  // หัวข้อทางด้านขวา
+  doc.fontSize(14).text("บริษัท ฮับ วอเตอร์เทค จำกัด (สำนักงานใหญ่)", 48, 80);
+  doc.text("โทร. 123547896", 48, 95);
+
+  doc.text("ลูกค้า: " + customer.customer_name, 48, 120);
+  doc.text(customer.customer_address, 48, 140);
+
+  //หัวข้อทางด้านซ้าย
+  const rightSide = 350;
+  doc.text("เลขที่ ", rightSide, 80);
+  doc.text(id, rightSide + 40, 80);
+  doc.text("วันที่", rightSide, 100);
+  doc.text(
+    moment(result[0][`${idField}_date`]).format("DD-MM-YYYY"),
+    rightSide + 40,
+    100
+  );
+  doc.text("เครดิต", rightSide, 120);
+  doc.text(result[0][`${idField}_credit`], rightSide + 40, 120);
+  doc.text("ผู้ขาย", rightSide, 140);
+  doc.text(employee_name, rightSide + 40, 140);
+  let hight = 80;
+
+  for (let index = 0; index < 4; index++) {
+    doc.text(":", 380, hight);
+    hight += 20;
+  }
+
+  //ความสูงของบตารารางเป็นต้นไป
+  let y = 210;
+  // หัวข้อตาราง
+  doc.text("ลำดับ", 48, y, { width: 22, align: "center" });
+  doc.text("ชื่อสินค้า", 100, y, { width: 70, align: "center" });
+  doc.text("เลขล็อต", 170, y, { width: 140, align: "center" });
+  doc.text("ราคาต่อหน่วย", 310, y, { width: 80, align: "right" });
+  doc.text("จำนวน", 390, y, { width: 60, align: "right" });
+  doc.text("ยอดรวม", 450, y, { width: 60, align: "right" });
+
+  lists.forEach((item, index) => {
+    doc.text(item[`${listname}_number`], 48, y + 20, {
+      width: 22,
+      align: "center",
+    });
+    doc.text(item.product_id, 100, y + 20, { width: 70, align: "center" });
+    doc.text(item.lot_number, 170, y + 20, { width: 140, align: "center" });
+    doc.text(item[`${listname}_price`], 310, y + 20, {
+      width: 80,
+      align: "right",
+    });
+    doc.text(item[`${listname}_amount`], 390, y + 20, {
+      width: 60,
+      align: "right",
+    });
+    doc.text(item[`${listname}_total`], 450, y + 20, {
+      width: 60,
+      align: "right",
+    });
+    y += 20;
+  });
+
+  doc.text("รวมเป็นเงิน", rightSide, y + 40);
+  doc.text(result[0][`${idField}_total`] + " บาท", rightSide + 100, y + 40);
+  doc.text("ภาษีมูลค่าเพิ่ม 7%", rightSide, y + 60);
+  doc.text(result[0][`${idField}_vat`] + " บาท", rightSide + 100, y + 60);
+  doc.text("จำนวนเงินรวมทั้งสิ้น", rightSide, y + 80);
+  doc.text(
+    result[0][`${idField}_total`] + result[0][`${idField}_vat`] + " บาท",
+    rightSide + 100,
+    y + 80
+  );
+  doc.text("หักภาษี ณ ที่จ่าย 3%", rightSide, y + 100);
+  doc.text(result[0][`${idField}_tax`] + " บาท", rightSide + 100, y + 100);
+  doc.text("ยอดชำระ", rightSide, y + 120);
+  doc.text(
+    result[0][`${idField}_total`] +
+      result[0][`${idField}_vat`] -
+      result[0][`${idField}_tax`] +
+      " บาท",
+    rightSide + 100,
+    y + 120
+  );
+
+  doc.end();
+
+  // stream.on('finish', function() {
+  //   res.download(header);
+  // });
+  // }
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

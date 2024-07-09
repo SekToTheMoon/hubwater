@@ -11,9 +11,9 @@ import User from "./components/User.jsx";
 import Error from "./Error.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import Testimg from "./components/testimg.jsx";
+
 import All from "./All.jsx";
-import E_dep from "./components/edit/e_dep.jsx";
+import E_dep from "./components/edit/E_dep.jsx";
 import I_dep from "./components/insert/I_dep.jsx";
 import Department from "./components/Department.jsx";
 import Employee from "./components/Employee.jsx";
@@ -38,6 +38,7 @@ import Expensetype from "./components/Expensetype.jsx";
 import I_expensetype from "./components/insert/I_expensetype.jsx";
 import E_expensetype from "./components/edit/E_expensetype.jsx";
 import Quotation from "./components/Quotation.jsx";
+import View_quotation from "./components/views/View_quotation.jsx";
 import I_quotation from "./components/insert/I_quotation.jsx";
 import E_quotation from "./components/edit/E_quotation.jsx";
 import Customer from "./components/customer.jsx";
@@ -53,11 +54,32 @@ import E_bank from "./components/edit/E_bank.jsx";
 import Bill from "./components/Bill.jsx";
 import I_bill from "./components/insert/I_bill.jsx";
 import E_bill from "./components/edit/E_bill.jsx";
-
+import Receipt from "./components/Receipt.jsx";
+import I_receipt from "./components/insert/I_receipt.jsx";
+import Invoice from "./components/Invoice.jsx";
+import I_invoice from "./components/insert/I_invoice.jsx";
+import E_invoice from "./components/edit/E_invoice.jsx";
+import Testimg from "./components/Testimg.jsx";
+import View_receipt from "./components/views/View_receipt.jsx";
+import View_bill from "./components/views/View_bill.jsx";
+import View_invoice from "./components/views/View_invoice.jsx";
+import Out from "./components/Out.jsx";
+import I_out from "./components/insert/I_out.jsx";
+import E_out from "./components/edit/E_out.jsx";
+import View_out from "./components/views/View_out.jsx";
+import ReceiptCash from "./components/ReceiptCash.jsx";
+import I_receiptcash from "./components/insert/I_receiptcash.jsx";
+import E_receiptcash from "./components/edit/E_receiptcash.jsx";
+import View_receiptcash from "./components/views/View_receiptcash.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Login />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/test",
+    element: <Testimg />,
     errorElement: <Error />,
   },
   {
@@ -225,6 +247,10 @@ const router = createBrowserRouter([
         element: <I_quotation />,
       },
       {
+        path: "quotation/view/:id",
+        element: <View_quotation />,
+      },
+      {
         path: "quotation/edit/:id",
         element: <E_quotation />,
       },
@@ -237,8 +263,72 @@ const router = createBrowserRouter([
         element: <I_bill />,
       },
       {
+        path: "bill/view",
+        element: <View_bill />,
+      },
+      {
         path: "bill/edit/:id",
         element: <E_bill />,
+      },
+      {
+        path: "invoice",
+        element: <Invoice />,
+      },
+      {
+        path: "invoice/insert",
+        element: <I_invoice />,
+      },
+      {
+        path: "invoice/view",
+        element: <View_invoice />,
+      },
+      {
+        path: "invoice/edit/:id",
+        element: <E_invoice />,
+      },
+      {
+        path: "receipt",
+        element: <Receipt />,
+      },
+      {
+        path: "receipt/insert",
+        element: <I_receipt />,
+      },
+      {
+        path: "receipt/view",
+        element: <View_receipt />,
+      },
+      {
+        path: "out",
+        element: <Out />,
+      },
+      {
+        path: "out/insert",
+        element: <I_out />,
+      },
+      {
+        path: "out/edit/:id",
+        element: <E_out />,
+      },
+      {
+        path: "out/view/:id",
+        element: <View_out />,
+      },
+      {
+        path: "receiptcash",
+        element: <ReceiptCash />,
+      },
+      {
+        path: "receiptcash/insert",
+        element: <I_receiptcash />,
+      },
+      {
+        path: "receiptcash/edit/:id",
+        element: <E_receiptcash />,
+      },
+      {
+        path: "receiptcash/view/:id",
+        element: <View_receiptcash />,
       },
     ],
   },

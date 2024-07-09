@@ -27,7 +27,7 @@ function I_quotation() {
 
   const [errors, setErrors] = useState({});
   const [selectcustomer, setSelectCustomer] = useState([]);
-  const [selectcustomerdetail, setSelectCustomerDetail] = useState({
+  const [selectCustomerDetail, setSelectCustomerDetail] = useState({
     data: [""],
     zip_code: "",
   });
@@ -51,6 +51,27 @@ function I_quotation() {
     ),
   });
 
+  const checkItem = (items) => {
+    const seen = new Set();
+    for (let item of items) {
+      const key = `${item.product_id}-${item.lot_number}`;
+      if (seen.has(key)) {
+        return true; // Duplicate found
+      }
+      seen.add(key);
+    }
+    const updatedItems = values.items.map((item, index) => ({
+      ...item,
+      listq_number: index + 1,
+    }));
+
+    if (updatedItems.length == 0) return;
+    const updatedValues = {
+      ...values,
+      items: updatedItems,
+    };
+    return updatedValues;
+  };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -194,16 +215,21 @@ function I_quotation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedItems = values.items.map((item, index) => ({
-        ...item,
-        listq_number: index + 1,
-      }));
+      const updatedValues = checkItem(values.items);
 
-      // Update the values with the updated items
-      const updatedValues = {
-        ...values,
-        items: updatedItems,
-      };
+      if (updatedValues === true) {
+        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+        return;
+      }
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleInsert(updatedValues);
       setErrors({});
@@ -429,32 +455,34 @@ function I_quotation() {
                 <label className="label">
                   <span className="">ข้อมูลลูกค้า</span>
                 </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.customer_address
-                      ? "รายละเอียดที่อยู่ : " +
-                        selectcustomerdetail.data.customer_address
-                      : "รายละเอียดที่อยู่ : ไม่มี"}
-                  </span>
-                </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.le_tax
-                      ? "เลขประจำตัวผู้เสียภาษี : " +
-                        selectcustomerdetail.data.le_tax
-                      : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
-                  </span>
-                </label>
-                <label className="label">
-                  <span className="">
-                    {" "}
-                    {selectcustomerdetail.data.le_name
-                      ? "ชื่อสาขา :" + selectcustomerdetail.data.le_name
-                      : "ชื่อสาขา : ไม่มี"}
-                  </span>
-                </label>
+                <div className="rounded-[12px] border px-3 py-1">
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.customer_address
+                        ? "รายละเอียดที่อยู่ : " +
+                          selectCustomerDetail.data.customer_address
+                        : "รายละเอียดที่อยู่ : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_tax
+                        ? "เลขประจำตัวผู้เสียภาษี : " +
+                          selectCustomerDetail.data.le_tax
+                        : "เลขประจำตัวผู้เสียภาษี : ไม่มี"}
+                    </span>
+                  </label>
+                  <label className="label">
+                    <span className="">
+                      {" "}
+                      {selectCustomerDetail.data.le_name
+                        ? "สำนักงาน :" + selectCustomerDetail.data.le_name
+                        : "สำนักงาน : ไม่มี"}
+                    </span>
+                  </label>
+                </div>
               </div>
               <div className="w-50">
                 <div className="form-control">

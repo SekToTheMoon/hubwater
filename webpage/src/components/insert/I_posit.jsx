@@ -8,7 +8,7 @@ function I_posit() {
   const [values, setValues] = useState({
     posit_name: "",
     dep_id: "",
-    permission: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    permission: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   });
   const [errors, setErrors] = useState({});
   const [selectdep, setSelectdep] = useState([]);
@@ -73,7 +73,7 @@ function I_posit() {
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     if (name === "selectAll") {
-      const updatedPermission = checked ? Array(10).fill(1) : Array(10).fill(0);
+      const updatedPermission = checked ? Array(11).fill(1) : Array(11).fill(0);
       setValues({ ...values, permission: updatedPermission });
     } else {
       const index = parseInt(name);
@@ -163,34 +163,35 @@ function I_posit() {
               </label>
             </div>
             <hr />
+
             <div className="grid grid-cols-5 gap-x-32">
-              <div className="grid grid-cols-5 gap-x-32">
-                {[
-                  "Dashboard",
-                  "พนักงานขาย",
-                  "ลูกค้า",
-                  "เอกสารขาย",
-                  "สินค้า",
-                  "ค่าคงที่สินค้า",
-                  "ขายหน้าร้าน",
-                  "แผนก",
-                  "ตำแหน่ง",
-                  "บัญชีธนาคาร",
-                ].map((permission, index) => (
-                  <div className="form-control" key={index}>
-                    <label className="label cursor-pointer">
-                      <span className="label-text">{permission}</span>
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        name={index.toString()}
-                        checked={values.permission[index] === 1}
-                        onChange={handleCheckboxChange}
-                      />
-                    </label>
-                  </div>
-                ))}
-              </div>
+              {[
+                "Dashboard",
+                "พนักงานขาย",
+                "ลูกค้า",
+                "เอกสารขาย",
+                "ขายหน้าร้าน",
+                "ค่าใช้จ่าย",
+                "สินค้า",
+                "ค่าคงที่สินค้า",
+                "บริษัทคู่ค้า",
+                "แผนก",
+                "ตำแหน่ง",
+                "บัญชีธนาคาร",
+              ].map((permission, index) => (
+                <div className="form-control" key={index}>
+                  <label className="label cursor-pointer">
+                    <span className="label-text">{permission}</span>
+                    <input
+                      type="checkbox"
+                      className="checkbox"
+                      name={index.toString()}
+                      checked={values.permission[index] === 1}
+                      onChange={handleCheckboxChange}
+                    />
+                  </label>
+                </div>
+              ))}
             </div>
 
             <button type="submit" className="btn btn-primary w-full mt-2">

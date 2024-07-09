@@ -29,6 +29,7 @@ function I_emp() {
     zip_code: "",
     images: null,
   });
+
   const [errors, setErrors] = useState({});
   const [selectprovince, setSelectProvince] = useState([]);
   const [selectdistrict, setSelectDistrict] = useState([]);
@@ -36,6 +37,7 @@ function I_emp() {
   const [selectdep, setSelectdep] = useState([]);
   const [selectposit, setSelectposit] = useState([]);
   const [imageURL, setImageURL] = useState(null);
+
   const validationSchema = Yup.object({
     fname: Yup.string()
       .matches(/^[\u0E00-\u0E7F]+$/, "กรอกชื่อจริงไม่ถูกต้อง")

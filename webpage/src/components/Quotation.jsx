@@ -4,7 +4,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import statusOptions from "../constants/statusOptions";
+import { handleChangeStatus } from "../utils/changeStatus";
+import io from "socket.io-client";
+
 function Quotation() {
+  //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
+  let roll = localStorage.getItem("posit_name");
+  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+
   const [Quotation, setQuotation] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -12,6 +20,7 @@ function Quotation() {
   const [search, setSearch] = useState("");
   const [quotationForDel, setQuotationfordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
+  const statusQuotation = statusOptions[0];
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
@@ -31,15 +40,14 @@ function Quotation() {
     }
   };
 
-  const handleChangeStatus = async (status, quotation_id) => {
-    let url = `http://localhost:3001/quotation/status`;
-    try {
-      const response = await axios.put(url, { status, quotation_id });
-      console.log(response);
-      // setQuotation(response.data.data);
-      // setTotalRows(response.data.total);
-    } catch (error) {
-      console.error("Error fetching Quotations:", error);
+  const handleSelectChange = (event, quotation) => {
+    const selectedValue = event.target.value;
+    if (selectedValue === "สร้างใบวางบิล") {
+      navigate(`/all/bill/insert?quotation=${quotation.quotation_id}`);
+    } else if (selectedValue === "สร้างใบแจ้งหนี้") {
+      navigate(`/all/invoice/insert?quotation=${quotation.quotation_id}`);
+    } else {
+      handleChangeStatus(selectedValue, quotation.quotation_id);
     }
   };
 
@@ -52,7 +60,7 @@ function Quotation() {
       fetchQuotations();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
-          Quotation: "top-right",
+          position: "top-right",
           autoClose: 3000,
           hiQuotationrogressBar: false,
           closeOnClick: true,
@@ -66,7 +74,7 @@ function Quotation() {
       // Handle network errors or other issues
       console.error("Error during registration:", error);
       toast.error("Error during registration", {
-        Quotation: "top-right",
+        position: "top-right",
         autoClose: 5000,
         hiQuotationrogressBar: false,
         closeOnClick: true,
@@ -95,7 +103,7 @@ function Quotation() {
     fetchQuotations();
     if (messageSuccess) {
       toast.success(messageSuccess, {
-        Quotation: "top-right",
+        position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -108,7 +116,26 @@ function Quotation() {
     }
   }, [currentPage, perPage]);
 
-  useEffect(() => {}, [Quotation]);
+  useEffect(() => {
+    const socket = io("http://localhost:3001");
+    socket.on("statusUpdate", ({ status, id }) => {
+      if (id.startsWith("QT")) {
+        setQuotation((oldQuotations) => {
+          let newQuotations = [...oldQuotations];
+          const index = newQuotations.findIndex((q) => q.quotation_id === id);
+          if (index !== -1) {
+            newQuotations[index].quotation_status = status;
+          }
+          return newQuotations;
+        });
+      }
+    });
+
+    return () => {
+      console.log("Cleaning up socket");
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <>
@@ -193,7 +220,12 @@ function Quotation() {
                 Quotation.map((quotation, index) => (
                   <tr key={quotation.quotation_id}>
                     <td>{quotation.quotation_date.substring(0, 10)}</td>
-                    <td>{quotation.quotation_id}</td>
+                    <td
+                      className="cursor-pointer"
+                      onClick={() => navigate(`view/${quotation.quotation_id}`)}
+                    >
+                      {quotation.quotation_id}
+                    </td>
                     <td>{quotation.customer_fname}</td>
                     <td>{quotation.quotation_total}</td>
                     <td>{quotation.employee_fname}</td>
@@ -201,28 +233,15 @@ function Quotation() {
                       <select
                         value={quotation.quotation_status}
                         className="select select-bordered w-1/2 max-w-xs"
-                        onChange={(e) =>
-                          setQuotation((oldQuotation) => {
-                            let newQuotation = [...oldQuotation];
-                            newQuotation[index] = {
-                              ...newQuotation[index],
-                              quotation_status: e.target.value,
-                            };
-                            handleChangeStatus(
-                              newQuotation[index].quotation_status,
-                              newQuotation[index].quotation_id
-                            );
-                            return newQuotation;
-                          })
-                        }
+                        onChange={(e) => handleSelectChange(e, quotation)}
                       >
-                        <option value={"รออนุมัติ"}>รออนุมัติ</option>
-                        <option value={"สร้างใบวางบิล"}>สร้างใบวางบิล</option>
-                        <option value={"สร้างใบแจ้งหนี้"}>
-                          สร้างใบแจ้งหนี้
-                        </option>
-                        <option value={"ดำเนินการแล้ว"}>ดำเนินการแล้ว</option>
-                        <option value={"อนุมัติ"}>อนุมัติ</option>
+                        {statusQuotation[quotation.quotation_status][roll].map(
+                          (element, idx) => (
+                            <option key={idx} value={element}>
+                              {element}
+                            </option>
+                          )
+                        )}
                       </select>
                       <div className="dropdown dropdown-hover ">
                         <div tabIndex={0} role="button" className="p-2">
@@ -297,7 +316,7 @@ function Quotation() {
           </div>
         </div>
       </div>
-      <ToastContainer Quotation="top-right" />
+      <ToastContainer position="top-right" />
     </>
   );
 }

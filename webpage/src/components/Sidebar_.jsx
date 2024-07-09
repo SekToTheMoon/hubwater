@@ -12,15 +12,14 @@ import {
   Contact,
   Home,
   UserRoundCog,
-  DollarSign,
+  HandCoins,
   LogOut,
+  Receipt,
 } from "lucide-react";
 import { NavLink, useLocation, Link } from "react-router-dom";
 import axios from "axios";
 
 function Sidebar_() {
-  const baseClasses =
-    "text-base-content  relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group";
   const [open, setOpen] = useState(true);
   const [openSub, setOpensub] = useState(false);
   const permission = localStorage.getItem("posit_permission");
@@ -59,6 +58,16 @@ function Sidebar_() {
         },
       ],
     },
+    {
+      title: "ขายหน้าร้าน",
+      icon: <HandCoins size={20} />,
+      page: "receiptcash",
+    },
+    {
+      title: "เอกสารค่าใช้จ่าย",
+      icon: <Receipt size={20} />,
+      page: "out",
+    },
     { title: "สินค้า", icon: <PackageSearch size={20} />, page: "product" },
     {
       title: "ค่าคงที่สินค้า",
@@ -92,11 +101,7 @@ function Sidebar_() {
         },
       ],
     },
-    {
-      title: "ขายหน้าร้าน",
-      icon: <DollarSign size={20} />,
-      page: "receiptcash",
-    },
+    { title: "บริษัทคู่ค้า", icon: <Home size={20} />, page: "partner" },
     { title: "แผนก", icon: <Home size={20} />, page: "department" },
     { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "position" },
     { title: "บัญชี", icon: <Landmark size={20} />, page: "bank" },
