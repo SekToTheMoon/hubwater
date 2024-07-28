@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
@@ -24,7 +24,7 @@ function I_bill() {
     bill_vat: true,
     bill_tax: false,
     bill_status: "รออนุมัติ",
-    employee_id: "",
+    employee_id: localStorage.getItem("employee_id"),
     customer_id: "",
     items: [],
     bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
@@ -38,6 +38,7 @@ function I_bill() {
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
+  const navigate = useNavigate();
   const quotation = searchParams.get("quotation");
   const validationSchema = Yup.object({
     bill_credit: Yup.number()
@@ -72,8 +73,8 @@ function I_bill() {
       ...item,
       listb_number: index + 1,
     }));
-    //เมื่อไม่มี item ควร return true ฤ ป่าว ??
-    if (updatedItems.length == 0) return;
+
+    if (updatedItems.length == 0) return true;
     let updatedValues = {
       ...values,
       items: updatedItems,
@@ -317,7 +318,7 @@ function I_bill() {
       }
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleInsert(updatedValues);
-      setErrors({});
+      navigate("/all/bill");
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};

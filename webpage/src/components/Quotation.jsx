@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import { handleChangeStatus } from "../utils/changeStatus";
 import io from "socket.io-client";
+import DocumentLink from "./component/DocumentLink";
 
 function Quotation() {
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -136,7 +137,7 @@ function Quotation() {
       socket.disconnect();
     };
   }, []);
-
+  const [hovered, setHovered] = useState(false);
   return (
     <>
       <div className="overflow-x-auto">
@@ -220,11 +221,30 @@ function Quotation() {
                 Quotation.map((quotation, index) => (
                   <tr key={quotation.quotation_id}>
                     <td>{quotation.quotation_date.substring(0, 10)}</td>
-                    <td
-                      className="cursor-pointer"
-                      onClick={() => navigate(`view/${quotation.quotation_id}`)}
-                    >
-                      {quotation.quotation_id}
+                    <td className="group relative ">
+                      <span
+                        className="cursor-pointer hover:underline "
+                        onClick={() =>
+                          navigate(`view/${quotation.quotation_id}`)
+                        }
+                      >
+                        {quotation.quotation_id}{" "}
+                      </span>
+                      {(quotation.bn_id || quotation.iv_id) && (
+                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
+                          <div className="flex flex-col space-y-2">
+                            <DocumentLink
+                              to={`/all/bill/view/${quotation.bn_id}`}
+                              id={quotation.bn_id}
+                            />
+                            <DocumentLink
+                              to={`/all/invoice/view/${quotation.iv_id}`}
+                              id={quotation.iv_id}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td>{quotation.customer_fname}</td>
                     <td>{quotation.quotation_total}</td>

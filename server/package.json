@@ -13,6 +13,7 @@
     "nodemon": "^3.0.3",
     "pdfkit": "^0.15.0",
     "socket.io": "^4.7.5",
+    "thai-baht-text": "^1.0.8",
     "uuid": "^9.0.1"
   },
   "name": "server",

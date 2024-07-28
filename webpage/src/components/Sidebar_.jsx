@@ -101,17 +101,17 @@ function Sidebar_() {
         },
       ],
     },
-    { title: "บริษัทคู่ค้า", icon: <Home size={20} />, page: "partner" },
+    { title: "ค่าคงที่บริษัท", icon: <Home size={20} />, page: "company" },
     { title: "แผนก", icon: <Home size={20} />, page: "department" },
     { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "position" },
     { title: "บัญชี", icon: <Landmark size={20} />, page: "bank" },
   ];
 
   return (
-    <aside className="h-screen  flex flex-col bg-base-100  shadow-sm">
-      <div className="p-4 pb-2 flex justify-between items-center  ">
+    <aside className="h-screen  flex flex-col bg-base-100  shadow-sm max-w-60">
+      <div className="p-4 pb-2 flex justify-between items-center h-12 ">
         <img
-          src="https://www.creativefabrica.com/wp-content/uploads/2018/11/Water-Logo-by-Acongraphic-47-580x386.jpg"
+          src="http://localhost:3001/img/logo/logo.png"
           className={`overflow-hidden transition-all ${
             open ? "w-12" : "hidden"
           }`}
@@ -120,7 +120,7 @@ function Sidebar_() {
         <span
           className={`overflow-hidden transition-all ${open ? "" : "hidden"}`}
         >
-          HubWaterTECH
+          HubWater
         </span>
         <button
           onClick={() => setOpen(!open)}
@@ -213,13 +213,6 @@ function Sidebar_() {
                     >
                       {menu.title}
                     </span>
-                    {alert && (
-                      <div
-                        className={`absolute right-2 w-2 h-2 rounded  ${
-                          open ? "" : "top-2"
-                        }`}
-                      />
-                    )}
                     {!open && (
                       <div
                         className={`
@@ -257,18 +250,18 @@ function Sidebar_() {
         <div
           className={`
               flex justify-between items-center
-              overflow-hidden transition-all ${open ? "w-52 ml-3" : "m-auto"}
+              overflow-hidden transition-all ${open ? "w-52" : "m-auto"}
           `}
         >
           <div
-            className={`leading-4  ${open ? "" : "hidden"}
+            className={`leading-4 p-1  ${open ? "" : "hidden"}
           `}
           >
-            <h1 className="font-semibold">
+            <h3 className="font-semibold">
               {localStorage.getItem("employee_fname") +
                 " " +
                 localStorage.getItem("employee_lname")}
-            </h1>
+            </h3>
           </div>
           <div
             className="cursor-pointer"

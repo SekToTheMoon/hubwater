@@ -22,4 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-../server/img/
+/server/img/*
+/server/*.pdf

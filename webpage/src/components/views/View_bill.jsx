@@ -18,7 +18,6 @@ function View_bill() {
     items: [],
     bn_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
   const [billEmployee, setEmployee] = useState("");
   const [selectCustomerDetail, setselectCustomerDetail] = useState({
     data: [""],
@@ -29,9 +28,10 @@ function View_bill() {
   const fetchbill = async () => {
     try {
       const response = await axios.get(`http://localhost:3001/getbill/${id}`);
-      const billDetail = response.data.billDetail[0];
+      const billDetail = response.data.bnDetail[0];
       const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
+      console.log(billDetail);
 
       billList.forEach((list) => {
         productDetail.forEach((product) => {
@@ -89,7 +89,12 @@ function View_bill() {
         <div className="flex items-center">
           <div className="mx-auto w-2/3 pr-20 2xl:max-w-5xl ">
             <div className="flex justify-end mt-3">
-              <button className="btn btn-info text-base-100">
+              <button
+                className="btn btn-info text-base-100"
+                onClick={() => {
+                  axios.get(`http://localhost:3001/pdf?id=${id}`);
+                }}
+              >
                 print / download
               </button>
             </div>

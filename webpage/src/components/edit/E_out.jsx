@@ -150,7 +150,6 @@ function E_out() {
   };
 
   const handleSubmit = async (e) => {
-    console.log("this for update");
     e.preventDefault();
     try {
       // await validationSchema.validate(values, { abortEarly: false });

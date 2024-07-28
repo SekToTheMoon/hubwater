@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
@@ -40,6 +40,7 @@ function I_invoice() {
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
+  const navigate = useNavigate();
   const quotation = searchParams.get("quotation");
   const bill = searchParams.get("bill");
   const validationSchema = Yup.object({
@@ -75,8 +76,7 @@ function I_invoice() {
       ...item,
       listi_number: index + 1,
     }));
-    //เมื่อไม่มี item ควร return true ฤ ป่าว ??
-    if (updatedItems.length == 0) return;
+    if (updatedItems.length == 0) return true;
     let updatedValues = {
       ...values,
       items: updatedItems,
@@ -214,7 +214,7 @@ function I_invoice() {
     }
   };
 
-  // ดึงข้อมูล ใบเสนอราคา
+  // ดึงข้อมูล ใบวางบิล
   const fetchBill = async () => {
     try {
       const response = await axios.get(`http://localhost:3001/getbill/${bill}`);
@@ -251,14 +251,14 @@ function I_invoice() {
       setEmployee(response.data.employee_name);
       setValues({
         ...values,
-        invoice_total: parseFloat(bnDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
-        invoice_detail: bnDetail.quotation_detail,
-        invoice_vat: bnDetail.quotation_vat,
-        invoice_tax: bnDetail.quotation_tax,
-        invoice_credit: bnDetail.quotation_credit,
-        invoice_status: bnDetail.quotation_status,
+        invoice_total: parseFloat(bnDetail.bn_total), //รวมเป็นเงินเท่าไหร่
+        invoice_detail: bnDetail.bn_detail,
+        invoice_vat: bnDetail.bn_vat,
+        invoice_tax: bnDetail.bn_tax,
+        invoice_credit: bnDetail.bn_credit,
+        invoice_status: bnDetail.bn_status,
         invoice_dateend: moment(new Date())
-          .add(bnDetail.quotation_credit, "days")
+          .add(bnDetail.bn_credit, "days")
           .format("YYYY-MM-DD"),
         employee_id: bnDetail.employee_id,
         customer_id: bnDetail.customer_id,
@@ -342,6 +342,26 @@ function I_invoice() {
   const handleSearch = () => {
     fetchProduct();
   };
+  const handleStockCut = async (Item) => {
+    try {
+      if (bill || quotation) {
+        axios.put(`http://localhost:3001/stockcut`, { item: Item });
+      }
+    } catch (err) {
+      console.error("ตัดสต๊อกสินค้าไม่สำเร็จ:", err);
+      toast.error("ตัดสต๊อกสินค้าไม่สำเร็จ", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      throw new Error("No items found for the given invoice ID");
+    }
+  };
   useEffect(() => {
     if (quotation) {
       fetchQuotation();
@@ -391,8 +411,10 @@ function I_invoice() {
         return;
       }
       await validationSchema.validate(updatedValues, { abortEarly: false });
+      await handleStockCut(updatedValues.items);
       await handleInsert(updatedValues);
-      setErrors({});
+      navigate("/all/invoice");
+      // setErrors({});
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};

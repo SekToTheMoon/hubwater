@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
+import DocumentLink from "./component/DocumentLink";
 
 function Bill() {
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -217,7 +218,29 @@ function Bill() {
                 Bill.map((bill, index) => (
                   <tr key={bill.bn_id}>
                     <td>{bill.bn_date.substring(0, 10)}</td>
-                    <td>{bill.bn_id}</td>
+                    <td className="group relative ">
+                      <span
+                        className="cursor-pointer hover:underline "
+                        onClick={() => navigate(`view/${bill.bn_id}`)}
+                      >
+                        {bill.bn_id}
+                      </span>
+                      {(bill.quotation_id || bill.iv_id) && (
+                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
+                          <div className="flex flex-col space-y-2">
+                            <DocumentLink
+                              to={`/all/quotation/view/${bill.quotation_id}`}
+                              id={bill.quotation_id}
+                            />
+                            <DocumentLink
+                              to={`/all/invoice/view/${bill.iv_id}`}
+                              id={bill.iv_id}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </td>
                     <td>{bill.customer_fname}</td>
                     <td>{bill.bn_total}</td>
                     <td>{bill.employee_fname}</td>

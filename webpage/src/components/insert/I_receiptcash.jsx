@@ -58,7 +58,7 @@ function I_receiptcash() {
       listrf_number: index + 1,
     }));
 
-    if (updatedItems.length == 0) return;
+    if (updatedItems.length == 0) return true;
     const updatedValues = {
       ...values,
       items: updatedItems,

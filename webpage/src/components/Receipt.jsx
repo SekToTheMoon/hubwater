@@ -8,6 +8,7 @@ import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
+import DocumentLink from "./component/DocumentLink";
 
 function Receipt() {
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -120,7 +121,6 @@ function Receipt() {
 
   const handleReceiptMoney = async () => {
     try {
-      console.log("Starting handleReceiptMoney");
       const response = await axios.put(
         "http://localhost:3001/receipt/money",
         ReceiptMoney
@@ -245,11 +245,26 @@ function Receipt() {
                 Receipt.map((receipt, index) => (
                   <tr key={receipt.rc_id}>
                     <td>{receipt.rc_date.substring(0, 10)}</td>
-                    <td
-                      className="cursor-pointer"
-                      onClick={() => navigate(`view?receipt=${receipt.rc_id}`)}
-                    >
-                      {receipt.rc_id}
+                    <td className="group relative ">
+                      <span
+                        className="cursor-pointer hover:underline "
+                        onClick={() =>
+                          navigate(`view?receipt=${receipt.rc_id}`)
+                        }
+                      >
+                        {receipt.rc_id}
+                      </span>
+                      {receipt.iv_id && (
+                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
+                          <div className="flex flex-col space-y-2">
+                            <DocumentLink
+                              to={`/all/invoice/view/${receipt.iv_id}`}
+                              id={receipt.iv_id}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td>{receipt.customer_fname}</td>
                     <td>{receipt.rc_total}</td>
@@ -262,7 +277,9 @@ function Receipt() {
                           if (e.target.value === "เก็บเงิน") {
                             setReceiptMoney({
                               ...receipt,
-                              rc_date: moment(new Date()).format("YYYY-MM-DD"),
+                              rc_payday: moment(new Date()).format(
+                                "YYYY-MM-DD"
+                              ),
                             });
                             fetchBank();
                           } else {
@@ -387,11 +404,11 @@ function Receipt() {
                 <input
                   className="border rounded-lg border-base-300 focus:bg-tran "
                   type="date"
-                  value={ReceiptMoney.rc_date}
+                  value={ReceiptMoney.rc_payday}
                   onChange={(e) =>
                     setReceiptMoney({
                       ...ReceiptMoney,
-                      rc_date: moment(moment(e.target.value)).format(
+                      rc_payday: moment(moment(e.target.value)).format(
                         "YYYY-MM-DD"
                       ),
                     })

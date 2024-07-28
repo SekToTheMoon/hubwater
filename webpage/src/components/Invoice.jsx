@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
+import DocumentLink from "./component/DocumentLink";
 
 function Invoice() {
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -40,12 +41,57 @@ function Invoice() {
     }
   };
 
-  const handleSelectChange = (event, invoice) => {
+  const handleSelectChange = async (event, invoice) => {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบเสร็จรับเงิน") {
       navigate(`/all/receipt/insert?invoice=${invoice.iv_id}`);
+    } else if (selectedValue === "ยกเลิก") {
+      await handleRetureStock(invoice.iv_id);
+      handleChangeStatus(selectedValue, invoice.iv_id);
+    } else if (selectedValue === "อนุมัติ") {
+      await handleStockCut(invoice.iv_id);
+      handleChangeStatus(selectedValue, invoice.iv_id);
     } else {
       handleChangeStatus(selectedValue, invoice.iv_id);
+    }
+  };
+
+  const handleRetureStock = async (iv_id) => {
+    try {
+      const response = await axios.put(`http://localhost:3001/returestock`, {
+        id: iv_id,
+      });
+    } catch (error) {
+      toast.success("เกิดข้อผิดพลาดในการคืนสต๊อกสินค้า", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      return;
+    }
+  };
+
+  const handleStockCut = async (iv_id) => {
+    try {
+      axios.put(`http://localhost:3001/stockcut`, { id: iv_id });
+    } catch (err) {
+      console.error("ตัดสต๊อกสินค้าไม่สำเร็จ:", err);
+      toast.error("ตัดสต๊อกสินค้าไม่สำเร็จ", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      throw new Error("No items found for the given invoice ID");
     }
   };
 
@@ -217,7 +263,35 @@ function Invoice() {
                 Invoice.map((invoice, index) => (
                   <tr key={invoice.iv_id}>
                     <td>{invoice.iv_date.substring(0, 10)}</td>
-                    <td>{invoice.iv_id}</td>
+                    <td className="group relative ">
+                      <span
+                        className="cursor-pointer hover:underline "
+                        onClick={() => navigate(`view/${invoice.iv_id}`)}
+                      >
+                        {invoice.iv_id}
+                      </span>
+                      {(invoice.quotation_id ||
+                        invoice.bn_id ||
+                        invoice.rc_id) && (
+                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
+                          <div className="flex flex-col space-y-2">
+                            <DocumentLink
+                              to={`/all/quotation/view/${invoice.quotation_id}`}
+                              id={invoice.quotation_id}
+                            />
+                            <DocumentLink
+                              to={`/all/invoice/view/${invoice.bn_id}`}
+                              id={invoice.bn_id}
+                            />
+                            <DocumentLink
+                              to={`/all/receipt/view?receipt=${invoice.rc_id}`}
+                              id={invoice.rc_id}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </td>
                     <td>{invoice.customer_fname}</td>
                     <td>{invoice.iv_total}</td>
                     <td>{invoice.employee_fname}</td>

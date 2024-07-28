@@ -31,8 +31,8 @@ function View_invoice() {
       const response = await axios.get(
         `http://localhost:3001/getinvoice/${id}`
       );
-      const invoiceDetail = response.data.invoiceDetail[0];
-      const invoiceList = response.data.listqDetail;
+      const invoiceDetail = response.data.ivDetail[0];
+      const invoiceList = response.data.listiDetail;
       const productDetail = response.data.productDetail;
 
       invoiceList.forEach((list) => {
@@ -91,7 +91,12 @@ function View_invoice() {
         <div className="flex items-center">
           <div className="mx-auto w-2/3 pr-20 2xl:max-w-5xl ">
             <div className="flex justify-end mt-3">
-              <button className="btn btn-info text-base-100">
+              <button
+                className="btn btn-info text-base-100"
+                onClick={() => {
+                  axios.get(`http://localhost:3001/pdf?id=${id}`);
+                }}
+              >
                 print / download
               </button>
             </div>
@@ -241,10 +246,10 @@ function View_invoice() {
                       </div>
                     </td>
                     <td>{item.lot_number}</td>
-                    <td>{item.listq_amount}</td>
+                    <td>{item.listi_amount}</td>
                     <td>{item.unit_name}</td>
                     <td>{item.product_price}</td>
-                    <td>{item.listq_total}</td>
+                    <td>{item.listi_total}</td>
                   </tr>
                 ))}
               </tbody>

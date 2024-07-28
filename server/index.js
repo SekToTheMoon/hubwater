@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
-const mysql = require("mysql2");
+
+const { db, pool } = require("./database"); // นำเข้าไฟล์ database.js
+
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
@@ -15,6 +17,9 @@ const PDFDocument = require("pdfkit");
 const fs = require("fs");
 require("dotenv").config();
 
+const pdfRoutes = require("./routes/pdfRoutes");
+const DashboardRoutes = require("./routes/DashboardRoutes");
+
 const corsOptions = {
   origin: "http://localhost:5173", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -22,7 +27,6 @@ const corsOptions = {
 // ตั้งค่ามิดเดิลแวร์
 app.use(express.json());
 app.use(cors(corsOptions));
-
 // สร้างเซิร์ฟเวอร์ HTTP
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -30,34 +34,6 @@ const io = socketIo(server, {
     origin: "http://localhost:5173", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
-});
-
-// ตั้งค่าการเชื่อมต่อฐานข้อมูล MySQL
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "hubwater",
-  timezone: "Z",
-});
-
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to MySQL:", err);
-  } else {
-    console.log("Connected to MySQL database");
-  }
-});
-
-// สร้าง pool สำหรับการเชื่อมต่อฐานข้อมูล MySQL
-const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "hubwater",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
 });
 
 // เมื่อมี client เชื่อมต่อกับ socket จะมีการ log show
@@ -94,10 +70,32 @@ const storageExpense = multer.diskStorage({
     cb(null, Date.now() + "-" + uuid.v4().substring(0, 8) + ".png");
   },
 });
+// กำหนดการเก็บไฟล์
+const storageCompany = multer.diskStorage({
+  destination: function (req, file, cb) {
+    if (file.fieldname && file.fieldname === "logo") {
+      cb(null, path.join(__dirname, "img", "logo"));
+    } else if (file.fieldname && file.fieldname === "signature") {
+      cb(null, path.join(__dirname, "img", "signature"));
+    } else {
+      cb(new Error("Invalid image order"));
+    }
+  },
+  filename: function (req, file, cb) {
+    if (file.fieldname && file.fieldname === "logo") {
+      cb(null, "logo.png");
+    } else if (file.fieldname && file.fieldname === "signature") {
+      cb(null, "signature.png");
+    } else {
+      cb(new Error("Invalid image order"));
+    }
+  },
+});
 
 const uploadAvatar = multer({ storage: storageAvatar });
 const uploadProduct = multer({ storage: storageProduct });
 const uploadExpense = multer({ storage: storageExpense });
+const uploadComany = multer({ storage: storageCompany });
 
 const updateStatus = (id, status, res) => {
   let tableName;
@@ -193,12 +191,6 @@ async function getNextID(prefix, tableselect) {
   console.log(prefix + next[0][0].next);
   return prefix + next[0][0].next;
 }
-
-app.get("/", (req, res) => {
-  res.json({
-    msg: "Hello World from server",
-  });
-});
 
 //อยู๋หน้า all ตรวจสอบผู้ใช้ต้องมี token
 app.post("/auth", (req, res) => {
@@ -2798,8 +2790,11 @@ app.put("/stock/edit/:id", async (req, res) => {
 });
 
 app.get("/quotation", function (req, res) {
-  let fetch =
-    "SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id WHERE q.quotation_del = '0'";
+  let fetch = `SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status 
+    , b.bn_id , i.iv_id FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id 
+    Left JOIN quotation_has_bill b on q.quotation_id = b.quotation_id  
+    Left JOIN quotation_has_invoice i on q.quotation_id = i.quotation_id  
+    WHERE q.quotation_del = '0'`;
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -3148,8 +3143,12 @@ app.delete("/quotation/delete/:id", (req, res) => {
 });
 
 app.get("/bill", function (req, res) {
-  let fetch =
-    "SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type FROM bill b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.bn_del = '0'";
+  let fetch = `SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type , q.quotation_id , i.iv_id
+    FROM bill b JOIN employee e ON b.employee_id = e.employee_id 
+    JOIN customer c ON c.customer_id = b.customer_id 
+    Left JOIN quotation_has_bill q on b.bn_id = q.bn_id  
+    Left JOIN bill_has_invoice i on b.bn_id = i.bn_id 
+    WHERE b.bn_del = '0'`;
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -3279,7 +3278,7 @@ app.post("/bill/insert", async (req, res) => {
 
 app.get("/getbill/:id", function (req, res) {
   const bnId = req.params.id;
-  const sqlBill = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend FROM bill WHERE bn_id = ?;`;
+  const sqlBill = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend ,bn_status FROM bill WHERE bn_id = ?;`;
 
   db.query(sqlBill, [bnId], (err, bnDetail) => {
     if (err) {
@@ -3496,8 +3495,14 @@ app.delete("/bill/delete/:id", (req, res) => {
 });
 
 app.get("/invoice", function (req, res) {
-  let fetch =
-    "SELECT i.iv_id, i.iv_date, c.customer_fname,e.employee_fname, i.iv_total, i.iv_status FROM invoice i JOIN employee e ON i.employee_id = e.employee_id JOIN customer c ON c.customer_id = i.customer_id WHERE i.iv_del = '0'";
+  let fetch = `SELECT i.iv_id, i.iv_date, c.customer_fname,e.employee_fname,
+    i.iv_total, i.iv_status ,q.quotation_id , b.bn_id ,r.rc_id
+    FROM invoice i JOIN employee e ON i.employee_id = e.employee_id 
+    JOIN customer c ON c.customer_id = i.customer_id 
+    Left JOIN quotation_has_invoice q on i.iv_id = q.iv_id  
+    Left JOIN bill_has_invoice b on i.iv_id = b.iv_id 
+    Left JOIN invoice_has_receipt r on i.iv_id = r.iv_id 
+    WHERE i.iv_del = '0'`;
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -3628,7 +3633,7 @@ app.post("/invoice/insert", async (req, res) => {
 
 app.get("/getinvoice/:id", function (req, res) {
   const ivId = req.params.id;
-  const sqlInvoice = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend FROM invoice WHERE iv_id = ?;`;
+  const sqlInvoice = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend ,iv_status FROM invoice WHERE iv_id = ?;`;
 
   db.query(sqlInvoice, [ivId], (err, ivDetail) => {
     if (err) {
@@ -3844,8 +3849,12 @@ app.delete("/invoice/delete/:id", (req, res) => {
 
 //ทำเสร็จแล้วอย่าลืมดูว่า rc_type ต้องใช้ฤป่าว
 app.get("/receipt", function (req, res) {
-  let fetch =
-    "SELECT b.rc_id, b.rc_date, c.customer_fname,e.employee_fname, b.rc_total, b.rc_status,b.rc_type,b.rc_tax,rc_detail FROM receipt b JOIN employee e ON b.employee_id = e.employee_id JOIN customer c ON c.customer_id = b.customer_id WHERE b.rc_del = '0'";
+  let fetch = `SELECT b.rc_id, b.rc_date, c.customer_fname,e.employee_fname, b.rc_total, b.rc_status,b.rc_type, b.rc_tax ,b.rc_detail ,
+    i.iv_id
+    FROM receipt b JOIN employee e ON b.employee_id = e.employee_id 
+    JOIN customer c ON c.customer_id = b.customer_id 
+    Left JOIN invoice_has_receipt i on b.rc_id = i.rc_id
+    WHERE b.rc_del = '0'`;
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -4050,11 +4059,11 @@ app.put("/receipt/status", function (req, res) {
 });
 
 app.put("/receipt/money", function (req, res) {
-  const { rc_id, rc_date, rc_detail, rc_pay, bank_id } = req.body;
+  const { rc_id, rc_payday, rc_detail, rc_pay, bank_id } = req.body;
   let sql =
     // ลบอัพเดท สเตตัสออกมาลองดูว่า error ไหม
-    "update receipt set  rc_date =? ,rc_detail =? ,rc_pay =? ";
-  let values = [rc_date, rc_detail, rc_pay];
+    "update receipt set  rc_payday =? ,rc_detail =? ,rc_pay =? ";
+  let values = [rc_payday, rc_detail, rc_pay];
   if (bank_id) {
     sql += ", bank_id =? ";
     values.push(bank_id);
@@ -4063,7 +4072,7 @@ app.put("/receipt/money", function (req, res) {
   values.push(rc_id);
   db.query(sql, values, (err) => {
     if (err) {
-      console.err(err);
+      console.error(err);
       res.json(err);
     } else {
       res.json("บันทึกการรับเงินเรียบร้อย");
@@ -4622,6 +4631,26 @@ app.post("/out/edit/:id", uploadExpense.array("img"), async (req, res) => {
   }
 });
 
+app.put("/out/money", function (req, res) {
+  const { out_id, out_date, out_pay, bank_id } = req.body;
+  let sql = "update receipt set  rc_payday =? ,rc_detail =? ,rc_pay =? ";
+  let values = [rc_payday, rc_detail, rc_pay];
+  if (bank_id) {
+    sql += ", bank_id =? ";
+    values.push(bank_id);
+  }
+  sql += "where rc_id = ?";
+  values.push(rc_id);
+  db.query(sql, values, (err) => {
+    if (err) {
+      console.error(err);
+      res.json(err);
+    } else {
+      res.json("บันทึกการรับเงินเรียบร้อย");
+    }
+  });
+});
+
 app.get("/getout/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -4634,7 +4663,7 @@ app.get("/getout/:id", async (req, res) => {
     const [listData] = await db
       .promise()
       .query(
-        `SELECT listo_number,listo_name,listo_price,listo_amount,listo_total,expensetype_name FROM listout join expensetype on listout.expensetype_id = expensetype.expensetype_id WHERE Out_id = ?`,
+        `SELECT listo_number,listo_name,listo_price,listo_amount,listo_total,expensetype_name,listout.expensetype_id FROM listout join expensetype on listout.expensetype_id = expensetype.expensetype_id WHERE Out_id = ?`,
         [id]
       );
     const [imagesData] = await db
@@ -4750,176 +4779,168 @@ app.get("/img/expense/:imageName", (req, res) => {
   // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
   res.sendFile(imagePath);
 });
+app.get("/img/logo/:imageName", (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(__dirname, "img", "logo", imageName);
 
-app.get("/pdf", async (req, res) => {
-  console.log("am in");
-  const id = req.query.id;
-  let sqlSelect;
-  let sqlList;
-
-  let header;
-  let tableName;
-  let idField;
-  let listname;
-  let numberQT;
-
-  if (id.startsWith("QT")) {
-    header = `ใบเสนอราคา`;
-    tableName = "quotation";
-    idField = "quotation";
-    listname = "listq";
-    numberQT = req.query.numberQT;
-    sqlSelect = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
-    sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ?;`;
-  } else if (id.startsWith("BN")) {
-    header = `ใบวางบิล`;
-    tableName = "bill";
-    idField = "bn";
-    listname = "listb";
-    sqlSelect = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend FROM bill WHERE bn_id = ?;`;
-    sqlList = `SELECT listb_number, listb_price, listb_amount, listb_total, product_id, lot_number FROM listb WHERE bn_id = ?;`;
-  } else if (id.startsWith("IV")) {
-    header = `ใบแจ้งหนี้`;
-    tableName = "invoice";
-    idField = "iv";
-    listname = "listi";
-    sqlSelect = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend FROM invoice WHERE iv_id = ?;`;
-    sqlList = `SELECT listi_number, listi_price, listi_amount, listi_total, product_id, lot_number FROM listi WHERE iv_id = ?;`;
-  } else if (id.startsWith("RC")) {
-    header = `ใบเสร็จรับเงิน`;
-    tableName = "receipt";
-    idField = "rc";
-    listname = "listr";
-    sqlSelect = `SELECT rc_date, rc_total,  rc_detail, rc_vat, rc_tax, employee_id, customer_id ,rc_type FROM receipt WHERE rc_id = ?;`;
-    sqlList = `SELECT listr_number, listr_price, listr_amount, listr_total, product_id, lot_number FROM listr WHERE rc_id = ?;`;
-  } else {
-    return res.status(400).send("ไม่มีใบที่คุณให้มา");
-  }
-  const [result] = await db
-    .promise()
-    .query(sqlSelect, [id, numberQT ? numberQT : ""]);
-
-  const sqlEmployee_name =
-    'SELECT CONCAT(employee_fname, " ", employee_lname) as employee_name FROM employee WHERE employee_id = ?;';
-  const [employee_nameResult] = await db
-    .promise()
-    .query(sqlEmployee_name, [result[0].employee_id]);
-  const employee_name = employee_nameResult[0].employee_name;
-
-  const [lists] = await db
-    .promise()
-    .query(sqlList, [id, numberQT ? numberQT : ""]);
-
-  // ข้อมูลรายละเอียดลูกค้า
-  const customerDetails = await db
-    .promise()
-    .query(
-      "SELECT concat(customer_fname +' '+ customer_lname) as customer_name , customer_address FROM customer WHERE customer_id = ?",
-      [result[0].customer_id]
-    );
-  const customer = customerDetails[0][0];
-
-  console.log(result, employee_name, lists);
-
-  const doc = new PDFDocument({ size: "A4" });
-
-  doc.pipe(fs.createWriteStream(header + id + `.pdf`));
-  // Embed the Thai font
-  doc.registerFont("THSarabunNew", "fonts/THSarabunNew.ttf");
-  doc.font("THSarabunNew");
-
-  // Header Section
-  doc.fontSize(20).text(header, 390, 40);
-
-  // หัวข้อทางด้านขวา
-  doc.fontSize(14).text("บริษัท ฮับ วอเตอร์เทค จำกัด (สำนักงานใหญ่)", 48, 80);
-  doc.text("โทร. 123547896", 48, 95);
-
-  doc.text("ลูกค้า: " + customer.customer_name, 48, 120);
-  doc.text(customer.customer_address, 48, 140);
-
-  //หัวข้อทางด้านซ้าย
-  const rightSide = 350;
-  doc.text("เลขที่ ", rightSide, 80);
-  doc.text(id, rightSide + 40, 80);
-  doc.text("วันที่", rightSide, 100);
-  doc.text(
-    moment(result[0][`${idField}_date`]).format("DD-MM-YYYY"),
-    rightSide + 40,
-    100
-  );
-  doc.text("เครดิต", rightSide, 120);
-  doc.text(result[0][`${idField}_credit`], rightSide + 40, 120);
-  doc.text("ผู้ขาย", rightSide, 140);
-  doc.text(employee_name, rightSide + 40, 140);
-  let hight = 80;
-
-  for (let index = 0; index < 4; index++) {
-    doc.text(":", 380, hight);
-    hight += 20;
-  }
-
-  //ความสูงของบตารารางเป็นต้นไป
-  let y = 210;
-  // หัวข้อตาราง
-  doc.text("ลำดับ", 48, y, { width: 22, align: "center" });
-  doc.text("ชื่อสินค้า", 100, y, { width: 70, align: "center" });
-  doc.text("เลขล็อต", 170, y, { width: 140, align: "center" });
-  doc.text("ราคาต่อหน่วย", 310, y, { width: 80, align: "right" });
-  doc.text("จำนวน", 390, y, { width: 60, align: "right" });
-  doc.text("ยอดรวม", 450, y, { width: 60, align: "right" });
-
-  lists.forEach((item, index) => {
-    doc.text(item[`${listname}_number`], 48, y + 20, {
-      width: 22,
-      align: "center",
-    });
-    doc.text(item.product_id, 100, y + 20, { width: 70, align: "center" });
-    doc.text(item.lot_number, 170, y + 20, { width: 140, align: "center" });
-    doc.text(item[`${listname}_price`], 310, y + 20, {
-      width: 80,
-      align: "right",
-    });
-    doc.text(item[`${listname}_amount`], 390, y + 20, {
-      width: 60,
-      align: "right",
-    });
-    doc.text(item[`${listname}_total`], 450, y + 20, {
-      width: 60,
-      align: "right",
-    });
-    y += 20;
-  });
-
-  doc.text("รวมเป็นเงิน", rightSide, y + 40);
-  doc.text(result[0][`${idField}_total`] + " บาท", rightSide + 100, y + 40);
-  doc.text("ภาษีมูลค่าเพิ่ม 7%", rightSide, y + 60);
-  doc.text(result[0][`${idField}_vat`] + " บาท", rightSide + 100, y + 60);
-  doc.text("จำนวนเงินรวมทั้งสิ้น", rightSide, y + 80);
-  doc.text(
-    result[0][`${idField}_total`] + result[0][`${idField}_vat`] + " บาท",
-    rightSide + 100,
-    y + 80
-  );
-  doc.text("หักภาษี ณ ที่จ่าย 3%", rightSide, y + 100);
-  doc.text(result[0][`${idField}_tax`] + " บาท", rightSide + 100, y + 100);
-  doc.text("ยอดชำระ", rightSide, y + 120);
-  doc.text(
-    result[0][`${idField}_total`] +
-      result[0][`${idField}_vat`] -
-      result[0][`${idField}_tax`] +
-      " บาท",
-    rightSide + 100,
-    y + 120
-  );
-
-  doc.end();
-
-  // stream.on('finish', function() {
-  //   res.download(header);
-  // });
-  // }
+  // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
+  res.sendFile(imagePath);
 });
+app.get("/img/signature/:imageName", (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(__dirname, "img", "signature", imageName);
+
+  // ส่งไฟล์ภาพกลับไปให้กับผู้ใช้
+  res.sendFile(imagePath);
+});
+
+app.get("/getcompany", function (req, res) {
+  let sql = `SELECT company_name, company_address, company_phone, 
+  company_email, company_taxpayer ,
+  subdistrict_code,s.zip_code , p.code as province, d.code as district 
+  FROM company c
+  LEFT JOIN subdistrict s ON c.subdistrict_code = s.code
+  LEFT JOIN district d ON s.district_code = d.code
+  LEFT JOIN provinces p ON d.province_code = p.code;`;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json(err); // ส่งกลับ error พร้อมสถานะ 500
+    } else {
+      res.json(results[0]); // ส่งผลลัพธ์การ query กลับไปยัง client
+    }
+  });
+});
+
+app.put(
+  "/company/edit",
+  uploadComany.fields([{ name: "logo" }, { name: "signature" }]),
+  async (req, res) => {
+    const {
+      company_name,
+      company_address,
+      company_phone,
+      company_email,
+      company_taxpayer,
+      subdistrict_code,
+    } = req.body;
+    const imageFiles = req.file;
+    let sql = `
+    UPDATE company 
+    SET 
+      company_name = ?,
+      company_address = ?,
+      company_phone = ?,
+      company_email = ?,
+      company_taxpayer = ?,
+      subdistrict_code = ?
+    WHERE id = 1;
+  `;
+
+    db.query(
+      sql,
+      [
+        company_name,
+        company_address,
+        company_phone,
+        company_email,
+        company_taxpayer,
+        subdistrict_code,
+      ],
+      (err, results) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json(err); // ส่งกลับ error พร้อมสถานะ 500
+        } else {
+          res.json("บันทึกค่าคงที่บริษัทเสร็จสิ้น"); // ส่งผลลัพธ์การ query กลับไปยัง client
+        }
+      }
+    );
+  }
+);
+
+app.put("/stockcut", async (req, res) => {
+  let connection;
+
+  try {
+    connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+    const sqlListInvoice = `SELECT listi_amount, product_id, lot_number FROM listi WHERE iv_id = ?;`;
+    const sqlLotCut = `UPDATE lot SET lot_amount = lot_amount - ? WHERE lot_number =? AND product_id =?`;
+    const sqlProductCut = `UPDATE product SET product_amount = product_amount - ? WHERE product_id =?`;
+    let id_or_item;
+    if (req.body.id) {
+      const [result] = await connection.query(sqlListInvoice, [req.body.id]);
+      id_or_item = result;
+    } else {
+      id_or_item = req.body.item;
+    }
+    for (const item of id_or_item) {
+      await connection.query(sqlLotCut, [
+        item.listi_amount,
+        item.lot_number,
+        item.product_id,
+      ]);
+      await connection.query(sqlProductCut, [
+        item.listi_amount,
+        item.product_id,
+      ]);
+    }
+
+    await connection.commit();
+    res.json({ msg: "ตัดสต๊อกสินค้าสำเร็จ" });
+  } catch (err) {
+    console.error(err);
+    if (connection) {
+      await connection.rollback();
+    }
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการตัดสต๊อกสินค้า" });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+app.put("/returestock", async (req, res) => {
+  let connection;
+  const { id } = req.body;
+  try {
+    connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+    const sqlListInvoice = `SELECT listi_amount, product_id, lot_number FROM listi WHERE iv_id = ?;`;
+    const sqlLotCut = `UPDATE lot SET lot_amount = lot_amount + ? WHERE lot_number =? AND product_id =?`;
+    const sqlProductCut = `UPDATE product SET product_amount = product_amount + ? WHERE product_id =?`;
+    const [listInvoice] = await connection.query(sqlListInvoice, [id]);
+    for (const item of listInvoice) {
+      await connection.query(sqlLotCut, [
+        item.listi_amount,
+        item.lot_number,
+        item.product_id,
+      ]);
+      await connection.query(sqlProductCut, [
+        item.listi_amount,
+        item.product_id,
+      ]);
+    }
+
+    await connection.commit();
+    res.json({ msg: "คืนสต๊อกสินค้าสำเร็จ" });
+  } catch (err) {
+    console.error(err);
+    if (connection) {
+      await connection.rollback();
+    }
+    res.status(500).json({ msg: "เกิดข้อผิดพลาดในการคืนสต๊อกสินค้า" });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+app.use(pdfRoutes);
+app.use(DashboardRoutes);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -71,6 +71,8 @@ import ReceiptCash from "./components/ReceiptCash.jsx";
 import I_receiptcash from "./components/insert/I_receiptcash.jsx";
 import E_receiptcash from "./components/edit/E_receiptcash.jsx";
 import View_receiptcash from "./components/views/View_receiptcash.jsx";
+import Company from "./components/Company.jsx";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -263,7 +265,7 @@ const router = createBrowserRouter([
         element: <I_bill />,
       },
       {
-        path: "bill/view",
+        path: "bill/view/:id",
         element: <View_bill />,
       },
       {
@@ -279,7 +281,7 @@ const router = createBrowserRouter([
         element: <I_invoice />,
       },
       {
-        path: "invoice/view",
+        path: "invoice/view/:id",
         element: <View_invoice />,
       },
       {
@@ -329,6 +331,10 @@ const router = createBrowserRouter([
       {
         path: "receiptcash/view/:id",
         element: <View_receiptcash />,
+      },
+      {
+        path: "company",
+        element: <Company />,
       },
     ],
   },

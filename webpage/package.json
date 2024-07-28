@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "axios": "^1.6.7",
-    "chart.js": "^4.4.1",
+    "chart.js": "^4.4.3",
     "dayjs": "^1.11.10",
     "formik": "^2.4.5",
     "lucide-react": "^0.338.0",

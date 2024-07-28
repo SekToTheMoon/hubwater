@@ -111,7 +111,7 @@ function Out() {
       const Out_id = OutMoney.out_id;
       await handleOutMoney();
       setOutMoney(null);
-      await handleChangeStatus("เก็บเงินแล้ว", Out_id);
+      await handleChangeStatus("จ่ายแล้ว", Out_id);
     } catch (error) {
       console.error("Error in handleSubmit:", error);
     }
@@ -119,7 +119,6 @@ function Out() {
 
   const handleOutMoney = async () => {
     try {
-      console.log("Starting handleOutMoney");
       const response = await axios.put(
         "http://localhost:3001/out/money",
         OutMoney
