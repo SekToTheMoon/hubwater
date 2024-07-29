@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { Link, useParams } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -29,7 +29,7 @@ function Stock() {
     // เพิ่ม validationSchema ต่อไปตามต้องการ
   });
   const fetchlots = async () => {
-    let url = `http://localhost:3001/stock?id=${id}&page=${currentPage}&per_page=${perPage}`;
+    let url = `/stock?id=${id}&page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -72,10 +72,7 @@ function Stock() {
   };
   const handleInsert = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:3001/stock/insert",
-        values
-      );
+      const response = await axios.post("/stock/insert", values);
       console.log("Success:", response.data);
       toast.success("Employee inserted successfully", {
         position: "top-right",
@@ -103,10 +100,7 @@ function Stock() {
   };
   const handleEditLot = async () => {
     try {
-      const response = await axios.put(
-        `http://localhost:3001/stock/edit/` + id,
-        editLot
-      );
+      const response = await axios.put(`/stock/edit/` + id, editLot);
       fetchlots();
       toast.success("Employee inserted successfully", {
         position: "top-right",

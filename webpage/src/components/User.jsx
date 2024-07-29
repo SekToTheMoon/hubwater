@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 
 function User() {
   const columns = [
@@ -50,9 +50,7 @@ function User() {
   const fetchUsers = async (page) => {
     setLoading(true);
 
-    const response = await axios.get(
-      `http://localhost:3001/user?page=${page}&per_page=${perPage}`
-    );
+    const response = await axios.get(`/user?page=${page}&per_page=${perPage}`);
 
     setData(response.data.data);
     setTotalRows(response.data.total);
@@ -66,9 +64,7 @@ function User() {
   const handlePerRowsChange = async (newPerPage, page) => {
     setLoading(true);
 
-    const response = await axios.get(
-      `http://localhost:3001/user?page=${page}&per_page=${perPage}`
-    );
+    const response = await axios.get(`/user?page=${page}&per_page=${perPage}`);
 
     setData(response.data.data);
     setPerPage(newPerPage);

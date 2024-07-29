@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -28,7 +28,7 @@ function Quotation() {
   let messageSuccess = state && state.msg;
 
   const fetchQuotations = async () => {
-    let url = `http://localhost:3001/Quotation?page=${currentPage}&per_page=${perPage}`;
+    let url = `/Quotation?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -54,9 +54,7 @@ function Quotation() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/quotation/delete/" + id
-      );
+      const response = await axios.delete("/quotation/delete/" + id);
       setQuotationfordel(null);
       fetchQuotations();
       if (response.data && response.data.msg) {

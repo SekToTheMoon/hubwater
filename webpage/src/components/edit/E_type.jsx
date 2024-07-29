@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -33,7 +33,7 @@ function E_type() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("http://localhost:3001/type/edit/" + id, values)
+        .put("/type/edit/" + id, values)
         .then((res) => navigate("/all/type", { state: { msg: res.data.msg } }));
     } catch (error) {
       toast.error(error.response.data.msg, {
@@ -51,7 +51,7 @@ function E_type() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/gettype/" + id)
+      .get("/gettype/" + id)
       .then((res) =>
         setValues({
           type_name: res.data[0].type_name,

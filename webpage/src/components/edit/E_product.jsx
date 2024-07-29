@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -71,7 +71,7 @@ function E_product() {
 
     try {
       await axios
-        .put(`http://localhost:3001/product/edit/${id}`, formData, {
+        .put(`/product/edit/${id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
         .then((res) =>
@@ -94,7 +94,7 @@ function E_product() {
   //เอาแผนกท้ังหมด
   const fetchType = async () => {
     await axios
-      .get("http://localhost:3001/gettype/all")
+      .get("/gettype/all")
       .then((res) => {
         setSelecttype(res.data);
         console.log(selectType);
@@ -103,7 +103,7 @@ function E_product() {
   };
   const fetchUnit = async () => {
     await axios
-      .get("http://localhost:3001/getunit/all")
+      .get("/getunit/all")
       .then((res) => {
         setSelectunit(res.data);
       })
@@ -111,7 +111,7 @@ function E_product() {
   };
   const fetchUnit_m = async () => {
     await axios
-      .get("http://localhost:3001/getunit_m/all")
+      .get("/getunit_m/all")
       .then((res) => {
         setSelectunit_m(res.data);
       })
@@ -119,7 +119,7 @@ function E_product() {
   };
   const fetchBrand = async () => {
     await axios
-      .get("http://localhost:3001/getbrand/all")
+      .get("/getbrand/all")
       .then((res) => {
         setSelectbrand(res.data);
       })
@@ -127,9 +127,7 @@ function E_product() {
   };
   const fetchProduct = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getproduct/${id}`
-      );
+      const response = await axios.get(`/getproduct/${id}`);
       const productData = response.data[0];
       setValues({
         product_name: productData.product_name,

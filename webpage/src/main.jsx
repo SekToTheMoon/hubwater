@@ -10,8 +10,6 @@ import Dashboard from "./components/Dashboard.jsx";
 import User from "./components/User.jsx";
 import Error from "./Error.jsx";
 import Sidebar from "./components/Sidebar.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-
 import All from "./All.jsx";
 import E_dep from "./components/edit/E_dep.jsx";
 import I_dep from "./components/insert/I_dep.jsx";

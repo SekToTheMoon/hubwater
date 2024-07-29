@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -40,7 +40,7 @@ function I_out() {
   });
 
   const fetchExpense = async () => {
-    let url = `http://localhost:3001/getexpensetype/all`;
+    let url = `/getexpensetype/all`;
     try {
       const res = await axios.get(url);
       setExpenseType(res.data);
@@ -154,7 +154,7 @@ function I_out() {
         formData.append(`img`, image);
       });
 
-      await axios.post("http://localhost:3001/out/insert", formData, {
+      await axios.post("/out/insert", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -32,7 +32,7 @@ function E_expensetype() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("http://localhost:3001/expensetype/edit/" + id, values)
+        .put("/expensetype/edit/" + id, values)
         .then((res) =>
           navigate("/all/expensetype", { state: { msg: res.data.msg } })
         );
@@ -52,7 +52,7 @@ function E_expensetype() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getexpensetype/" + id)
+      .get("/getexpensetype/" + id)
       .then((res) =>
         setValues({ expensetype_name: res.data[0].expensetype_name })
       )

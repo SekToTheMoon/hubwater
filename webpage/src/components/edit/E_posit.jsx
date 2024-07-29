@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -43,10 +43,7 @@ function E_posit() {
 
   const handleEdit = async (values) => {
     try {
-      const response = await axios.put(
-        `http://localhost:3001/position/edit/${id}`,
-        values
-      );
+      const response = await axios.put(`/position/edit/${id}`, values);
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,
@@ -87,7 +84,7 @@ function E_posit() {
 
   const fetchDep = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/getdep/all");
+      const res = await axios.get("/getdep/all");
       setSelectdep(res.data);
     } catch (err) {
       console.log(err);
@@ -97,7 +94,7 @@ function E_posit() {
   useEffect(() => {
     fetchDep();
     axios
-      .get(`http://localhost:3001/getposit/${id}`)
+      .get(`/getposit/${id}`)
       .then((res) => {
         const positionData = res.data[0];
         setValues({

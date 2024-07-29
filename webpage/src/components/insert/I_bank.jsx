@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -74,10 +74,7 @@ function I_bank() {
 
   const handleInsert = async (values) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3001/bank/insert",
-        values
-      );
+      const response = await axios.post("/bank/insert", values);
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,

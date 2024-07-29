@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -72,7 +72,7 @@ function E_bank() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("http://localhost:3001/bank/edit/" + id, values)
+        .put("/bank/edit/" + id, values)
         .then((res) => navigate("/all/bank", { state: { msg: res.data.msg } }));
     } catch (error) {
       toast.error(error.response.data.msg, {
@@ -90,7 +90,7 @@ function E_bank() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getbank/" + id)
+      .get("/getbank/" + id)
       .then((res) =>
         setValues({
           bank_name: res.data[0].bank_name,

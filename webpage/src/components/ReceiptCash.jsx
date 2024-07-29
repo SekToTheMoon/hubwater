@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -31,7 +31,7 @@ function ReceiptCash() {
   let messageSuccess = state && state.msg;
 
   const fetchReceiptCashs = async () => {
-    let url = `http://localhost:3001/ReceiptCash?page=${currentPage}&per_page=${perPage}`;
+    let url = `/ReceiptCash?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -45,7 +45,7 @@ function ReceiptCash() {
   };
 
   const fetchBank = async () => {
-    let url = `http://localhost:3001/getbank/all`;
+    const url = `/getbank/all`;
     try {
       const response = await axios.get(url);
       setBanks(response.data);
@@ -61,9 +61,7 @@ function ReceiptCash() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/receiptCash/delete/" + id
-      );
+      const response = await axios.delete("/receiptCash/delete/" + id);
       setReceiptCashfordel(null);
       fetchReceiptCashs();
       if (response.data && response.data.msg) {
@@ -121,10 +119,7 @@ function ReceiptCash() {
   const handleReceiptCashMoney = async () => {
     try {
       console.log("Starting handleReceiptCashMoney");
-      const response = await axios.put(
-        "http://localhost:3001/receiptCash/money",
-        ReceiptCashMoney
-      );
+      const response = await axios.put("/receiptCash/money", ReceiptCashMoney);
       console.log("Completed handleReceiptCashMoney", response.data);
       toast.success(response.data, {
         position: "top-right",

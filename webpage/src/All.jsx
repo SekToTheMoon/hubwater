@@ -2,14 +2,14 @@ import React, { useEffect } from "react";
 import Sidebar, { SidebarItem } from "./components/Sidebar";
 import Sidebar_ from "./components/Sidebar_";
 import { Outlet } from "react-router-dom";
-import axios from "axios";
+import axios from "./api/axios";
 
 function All() {
   const checkTokenValidity = async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://localhost:3001/auth",
+        "/auth",
         {},
         {
           headers: { Authorization: "Bearer " + token },

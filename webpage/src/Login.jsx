@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "./api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -8,7 +8,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const handleLogin = async () => {
     try {
-      const response = await axios.post("http://localhost:3001/login", {
+      const response = await axios.post("/login", {
         username: username,
         password: password,
       });

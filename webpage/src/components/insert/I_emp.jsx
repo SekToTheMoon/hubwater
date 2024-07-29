@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -123,7 +123,7 @@ function I_emp() {
 
   const fetchProvince = async () => {
     await axios
-      .get("http://localhost:3001/getprovince")
+      .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
       })
@@ -131,7 +131,7 @@ function I_emp() {
   };
   const fetchDistrict = async (province) => {
     await axios
-      .get(`http://localhost:3001/getdistrict/${province}`)
+      .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
       })
@@ -139,7 +139,7 @@ function I_emp() {
   };
   const fetchSubdistrict = async (district) => {
     await axios
-      .get(`http://localhost:3001/getsubdistrict/${district}`)
+      .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
       })
@@ -147,7 +147,7 @@ function I_emp() {
   };
   const fetchDep = async () => {
     await axios
-      .get("http://localhost:3001/getdep/all")
+      .get("/getdep/all")
       .then((res) => {
         setSelectdep(res.data);
       })
@@ -155,7 +155,7 @@ function I_emp() {
   };
   const fetchPosit = async (dep) => {
     await axios
-      .get(`http://localhost:3001/getempselectposit/${dep}`)
+      .get(`/getempselectposit/${dep}`)
       .then((res) => {
         setSelectposit(res.data);
       })
@@ -218,13 +218,9 @@ function I_emp() {
       formData.append("phone", phone);
     });
     try {
-      const response = await axios.post(
-        "http://localhost:3001/employee/insert",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.post("/employee/insert", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       console.log("Success:", response.data);
       toast.success("Employee inserted successfully", {
         position: "top-right",

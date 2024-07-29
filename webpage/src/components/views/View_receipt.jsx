@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,9 +28,7 @@ function View_receipt() {
 
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
-      );
+      const res = await axios.get("/getcustomer/" + customer_id);
       setSelectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -43,9 +41,7 @@ function View_receipt() {
   // ดึงข้อมูล ใบแจ้งหนี้
   const fetchReceipt = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getreceipt/${receipt}`
-      );
+      const response = await axios.get(`/getreceipt/${receipt}`);
       const rcDetail = response.data.rcDetail[0];
       const receiptList = response.data.listrDetail;
       const productDetail = response.data.productDetail;
@@ -96,7 +92,7 @@ function View_receipt() {
               <button
                 className="btn btn-info text-base-100"
                 onClick={() => {
-                  axios.get(`http://localhost:3001/pdf?id=${receipt}`);
+                  axios.get(`/pdf?id=${receipt}`);
                 }}
               >
                 print / download

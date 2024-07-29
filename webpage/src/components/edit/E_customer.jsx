@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -57,7 +57,7 @@ function E_customer() {
 
   const fetchProvince = async () => {
     await axios
-      .get("http://localhost:3001/getprovince")
+      .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
       })
@@ -66,7 +66,7 @@ function E_customer() {
 
   const fetchDistrict = async (province) => {
     await axios
-      .get(`http://localhost:3001/getdistrict/${province}`)
+      .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
       })
@@ -75,7 +75,7 @@ function E_customer() {
 
   const fetchSubdistrict = async (district) => {
     await axios
-      .get(`http://localhost:3001/getsubdistrict/${district}`)
+      .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
       })
@@ -84,7 +84,7 @@ function E_customer() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getcustomer/" + id)
+      .get("/getcustomer/" + id)
       .then((res) => {
         const customerData = res.data.data[0];
         console.log(res.data.zip_code[0].zip_code);
@@ -148,10 +148,7 @@ function E_customer() {
   const handleEdit = async () => {
     console.log(values);
     try {
-      const response = await axios.put(
-        "http://localhost:3001/customer/edit/" + id,
-        values
-      );
+      const response = await axios.put("/customer/edit/" + id, values);
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,

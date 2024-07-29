@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -32,7 +32,7 @@ function E_brand() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("http://localhost:3001/brand/edit/" + id, values)
+        .put("/brand/edit/" + id, values)
         .then((res) =>
           navigate("/all/brand", { state: { msg: res.data.msg } })
         );
@@ -52,7 +52,7 @@ function E_brand() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getbrand/" + id)
+      .get("/getbrand/" + id)
       .then((res) => setValues({ brand_name: res.data[0].brand_name }))
       .catch((err) => console.log(err));
   }, []);

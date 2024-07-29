@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -48,7 +48,7 @@ function I_customer({ isLoggedIn = false }) {
 
   const fetchProvince = async () => {
     await axios
-      .get("http://localhost:3001/getprovince")
+      .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
         console.log(selectprovince);
@@ -57,7 +57,7 @@ function I_customer({ isLoggedIn = false }) {
   };
   const fetchDistrict = async (province) => {
     await axios
-      .get(`http://localhost:3001/getdistrict/${province}`)
+      .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
         console.log(selectdistrict);
@@ -66,7 +66,7 @@ function I_customer({ isLoggedIn = false }) {
   };
   const fetchSubdistrict = async (district) => {
     await axios
-      .get(`http://localhost:3001/getsubdistrict/${district}`)
+      .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
         console.log(selectsubdistrict);
@@ -98,10 +98,7 @@ function I_customer({ isLoggedIn = false }) {
   const handleInsert = async () => {
     console.log(values);
     try {
-      const response = await axios.post(
-        "http://localhost:3001/customer/insert",
-        values
-      );
+      const response = await axios.post("/customer/insert", values);
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,

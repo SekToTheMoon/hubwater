@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import moment from "moment";
 import { useParams } from "react-router-dom";
 
@@ -23,7 +23,7 @@ function View_out() {
   const [imageURL, setImageURL] = useState(null);
 
   const fetchOut = async () => {
-    let url = `http://localhost:3001/getout/${id}`;
+    let url = `/getout/${id}`;
     try {
       const response = await axios.get(url);
       const outData = response.data.outData;
@@ -47,7 +47,7 @@ function View_out() {
     }
   };
   const fetchExpense = async () => {
-    let url = `http://localhost:3001/getexpensetype/all`;
+    let url = `/getexpensetype/all`;
     try {
       const res = await axios.get(url);
       setExpenseType(res.data);

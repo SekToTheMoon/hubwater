@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Chart as ChartJS } from "chart.js/auto";
 import { Pie, Bar, Line, Doughnut } from "react-chartjs-2";
 import moment from "moment";
@@ -60,9 +60,7 @@ function Dashboard() {
 
   const fetchCategoryProduct = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getCategoryProduct`
-      );
+      const response = await axios.get(`/getCategoryProduct`);
       setCategoryProduct(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -70,9 +68,7 @@ function Dashboard() {
   };
   const fetchIncome = async (timeline) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getIncome?timeline=${timeline}`
-      );
+      const response = await axios.get(`/getIncome?timeline=${timeline}`);
       const data = response.data;
       setIncomeData({
         labels: data.labels,
@@ -101,9 +97,7 @@ function Dashboard() {
   };
   const fetchExpense = async (timeline) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getExpense?timeline=${timeline}`
-      );
+      const response = await axios.get(`/getExpense?timeline=${timeline}`);
       const data = response.data;
       setExpenseData({
         labels: data.labels,
@@ -132,11 +126,9 @@ function Dashboard() {
   };
   const fetchIncomeAndExpense = async (timeline) => {
     try {
-      const responseIncome = await axios.get(
-        `http://localhost:3001/getIncome?timeline=${timeline}`
-      );
+      const responseIncome = await axios.get(`/getIncome?timeline=${timeline}`);
       const responseExpense = await axios.get(
-        `http://localhost:3001/getExpense?timeline=${timeline}`
+        `/getExpense?timeline=${timeline}`
       );
       const dataIncome = responseIncome.data;
       const dataExpense = responseExpense.data;
@@ -166,7 +158,7 @@ function Dashboard() {
     }
   };
   const fetchSaleProduct = async (timeline) => {
-    let url = `http://localhost:3001/getSaleProduct?timeline=${timeline}`;
+    let url = `/getSaleProduct?timeline=${timeline}`;
     try {
       const response = await axios.get(url);
       const labels = response.data.map((item) => item.product_name);
@@ -204,7 +196,7 @@ function Dashboard() {
     }
   };
   const fetchExpenseByCategory = async (timeline) => {
-    let url = `http://localhost:3001/getExpenseByCategory?timeline=${timeline}`;
+    let url = `/getExpenseByCategory?timeline=${timeline}`;
     try {
       const response = await axios.get(url);
       const labels = response.data.map((item) => item.expensetype_name);
@@ -242,7 +234,7 @@ function Dashboard() {
     }
   };
   const fetchCommition = async (timeline) => {
-    let url = `http://localhost:3001/getCommition?timeline=${timeline}`;
+    let url = `/getCommition?timeline=${timeline}`;
     try {
       const response = await axios.get(url);
 
@@ -254,7 +246,7 @@ function Dashboard() {
   const fetchTopSale = async (startDate, endDate, category) => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`
+        `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`
       );
       const data = response.data;
       setTopSale(data);

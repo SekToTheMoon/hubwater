@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -17,7 +17,7 @@ function Employee() {
   let messageSuccess = state && state.msg;
   const fetchEmployees = async () => {
     try {
-      let url = `http://localhost:3001/employee?page=${currentPage}&per_page=${perPage}`;
+      let url = `/employee?page=${currentPage}&per_page=${perPage}`;
       if (search !== "") {
         url += `&search=${search}`;
       }
@@ -31,9 +31,7 @@ function Employee() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/employee/delete/" + id
-      );
+      const response = await axios.delete("/employee/delete/" + id);
       fetchEmployees();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {

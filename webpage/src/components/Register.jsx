@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ErrorMessage, Formik, Form, Field } from "formik";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -83,7 +83,7 @@ function Register({ isLoggedIn = false }) {
       formData.append("address", values.address);
       formData.append("img", images);
       const response = await axios
-        .post("http://localhost:3001/register", formData, {
+        .post("/register", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
         .then((res) => {});

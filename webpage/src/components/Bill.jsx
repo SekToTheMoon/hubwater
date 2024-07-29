@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -28,7 +28,7 @@ function Bill() {
   let messageSuccess = state && state.msg;
 
   const fetchBills = async () => {
-    let url = `http://localhost:3001/Bill?page=${currentPage}&per_page=${perPage}`;
+    let url = `/Bill?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -52,9 +52,7 @@ function Bill() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/bill/delete/" + id
-      );
+      const response = await axios.delete("/bill/delete/" + id);
       setBillfordel(null);
       fetchBills();
       if (response.data && response.data.msg) {
@@ -116,7 +114,7 @@ function Bill() {
   }, [currentPage, perPage]);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
+    const socket = io("");
     socket.on("statusUpdate", ({ status, id }) => {
       if (id.startsWith("BN")) {
         setBill((oldBill) => {

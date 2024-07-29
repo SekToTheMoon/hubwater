@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -30,10 +30,7 @@ function I_type() {
 
   const handleInsert = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:3001/type/insert",
-        values
-      );
+      const response = await axios.post("/type/insert", values);
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,

@@ -17,7 +17,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { NavLink, useLocation, Link } from "react-router-dom";
-import axios from "axios";
+import axios from "../api/axios";
 
 function Sidebar_() {
   const [open, setOpen] = useState(true);
@@ -266,7 +266,7 @@ function Sidebar_() {
           <div
             className="cursor-pointer"
             onClick={async () => {
-              await axios.post("http://localhost:3001/logout", {
+              await axios.post("/logout", {
                 refreshToken: localStorage.getItem("refreshToken"),
               });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -32,7 +32,7 @@ function E_dep() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("http://localhost:3001/department/edit/" + id, values)
+        .put("/department/edit/" + id, values)
         .then((res) =>
           navigate("/all/department", { state: { msg: res.data.msg } })
         );
@@ -52,7 +52,7 @@ function E_dep() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/getdep/" + id)
+      .get("/getdep/" + id)
       .then((res) => setValues({ dep_name: res.data[0].dep_name }))
       .catch((err) => console.log(err));
   }, []);

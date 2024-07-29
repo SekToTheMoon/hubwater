@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -44,7 +44,7 @@ function Company() {
 
   const fetchProvince = async () => {
     await axios
-      .get("http://localhost:3001/getprovince")
+      .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
       })
@@ -53,7 +53,7 @@ function Company() {
 
   const fetchDistrict = async (province) => {
     await axios
-      .get(`http://localhost:3001/getdistrict/${province}`)
+      .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
       })
@@ -62,7 +62,7 @@ function Company() {
 
   const fetchSubdistrict = async (district) => {
     await axios
-      .get(`http://localhost:3001/getsubdistrict/${district}`)
+      .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
       })
@@ -71,7 +71,7 @@ function Company() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:3001/getcompany`)
+      .get(`/getcompany`)
       .then((res) => {
         const companyData = res.data;
         setValues((prevValues) => ({
@@ -86,10 +86,7 @@ function Company() {
           subdistrict: companyData.subdistrict_code,
           zip_code: companyData.zip_code,
         }));
-        setImageURL([
-          `http://localhost:3001/img/logo/logo.png`,
-          `http://localhost:3001/img/signature/signature.png`,
-        ]);
+        setImageURL([`/img/logo/logo.png`, `/img/signature/signature.png`]);
       })
       .catch((err) => console.log(err));
     fetchProvince();
@@ -163,13 +160,9 @@ function Company() {
     formData.append("signature", images.signature);
     console.log(formData.values);
     try {
-      const response = await axios.put(
-        `http://localhost:3001/company/edit`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.put(`/company/edit`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.success(response.data, {
         position: "top-right",
         autoClose: 3000,

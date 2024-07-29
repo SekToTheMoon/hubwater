@@ -1,7 +1,7 @@
-import axios from "axios";
+import axios from "../api/axios";
 
 export const handleChangeStatus = async (status, id) => {
-  let url = `http://localhost:3001/updateStatus`;
+  let url = `/updateStatus`;
   try {
     await axios.put(url, {
       status: status,

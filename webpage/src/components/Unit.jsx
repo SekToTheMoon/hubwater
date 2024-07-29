@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -16,7 +16,7 @@ function Unit() {
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
   const fetchUnits = async () => {
-    let url = `http://localhost:3001/Unit?page=${currentPage}&per_page=${perPage}`;
+    let url = `/Unit?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -31,9 +31,7 @@ function Unit() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/Unit/delete/" + id
-      );
+      const response = await axios.delete("/Unit/delete/" + id);
       fetchUnits();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {

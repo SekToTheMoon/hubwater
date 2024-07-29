@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import moment from "moment";
 import { useParams } from "react-router-dom";
 
@@ -27,7 +27,7 @@ function View_bill() {
   // ดึงข้อมูล ใบเสนอราคา
   const fetchbill = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/getbill/${id}`);
+      const response = await axios.get(`/getbill/${id}`);
       const billDetail = response.data.bnDetail[0];
       const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
@@ -65,9 +65,7 @@ function View_bill() {
 
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
-      );
+      const res = await axios.get("/getcustomer/" + customer_id);
       setselectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -92,7 +90,7 @@ function View_bill() {
               <button
                 className="btn btn-info text-base-100"
                 onClick={() => {
-                  axios.get(`http://localhost:3001/pdf?id=${id}`);
+                  axios.get(`/pdf?id=${id}`);
                 }}
               >
                 print / download

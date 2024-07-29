@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -84,7 +84,7 @@ function E_bill() {
   // ดึงข้อมูล ใบวางบิล
   const fetchBill = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/getbill/${id}`);
+      const response = await axios.get(`/getbill/${id}`);
       const bnDetail = response.data.bnDetail[0];
       const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
@@ -121,9 +121,7 @@ function E_bill() {
   // fetch lot ของสินค้า
   const fetchLotNumbers = async (productID) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/selectstock/${productID}`
-      );
+      const response = await axios.get(`/selectstock/${productID}`);
       setLotNumbers(response.data);
     } catch (error) {
       console.error("Error fetching lot numbers:", error);
@@ -131,7 +129,7 @@ function E_bill() {
   };
   /// fetch product ตอนกดปุ่มเพิ่มสินค้า
   const fetchProduct = async () => {
-    let url = `http://localhost:3001/getproduct/all`;
+    let url = `/getproduct/all`;
     if (search !== "") {
       url += `?search=${search}`;
     }
@@ -145,7 +143,7 @@ function E_bill() {
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/getcustomers");
+      const res = await axios.get("/getcustomers");
       setSelectCustomer(res.data);
     } catch (err) {
       console.log(err);
@@ -153,9 +151,7 @@ function E_bill() {
   };
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
-      );
+      const res = await axios.get("/getcustomer/" + customer_id);
       setSelectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -265,10 +261,7 @@ function E_bill() {
   };
   const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.put(
-        "http://localhost:3001/bill/edit/" + id,
-        updatedValues
-      );
+      const response = await axios.put("/bill/edit/" + id, updatedValues);
       console.log("Success:", response.data);
       toast.success("bill inserted successfully", {
         position: "top-right",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -30,7 +30,7 @@ function Out() {
   let messageSuccess = state && state.msg;
 
   const fetchOuts = async () => {
-    let url = `http://localhost:3001/Out?page=${currentPage}&per_page=${perPage}`;
+    let url = `/Out?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -44,7 +44,7 @@ function Out() {
   };
 
   const fetchBank = async () => {
-    let url = `http://localhost:3001/getbank/all`;
+    let url = `/getbank/all`;
     try {
       const response = await axios.get(url);
       setBanks(response.data);
@@ -60,9 +60,7 @@ function Out() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/out/delete/" + id
-      );
+      const response = await axios.delete("/out/delete/" + id);
       setOutfordel(null);
       fetchOuts();
       if (response.data && response.data.msg) {
@@ -119,10 +117,7 @@ function Out() {
 
   const handleOutMoney = async () => {
     try {
-      const response = await axios.put(
-        "http://localhost:3001/out/money",
-        OutMoney
-      );
+      const response = await axios.put("/out/money", OutMoney);
       console.log("Completed handleOutMoney", response.data);
       toast.success(response.data, {
         position: "top-right",

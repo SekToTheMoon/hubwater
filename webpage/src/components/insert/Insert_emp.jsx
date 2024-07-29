@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ErrorMessage, Formik, Form, Field } from "formik";
-import axios from "axios";
+import axios from "../../api/axios";
 import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -86,7 +86,7 @@ function Test({ isLoggedIn = false }) {
     const fetchEmployees = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3001/employee?page=${currentPage}&per_page=${perPage}`
+          `/employee?page=${currentPage}&per_page=${perPage}`
         );
 
         setProvince(response.data.data);
@@ -97,13 +97,9 @@ function Test({ isLoggedIn = false }) {
     };
 
     try {
-      const response = await axios.post(
-        "http://localhost:3001/employee/insert",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.post("/employee/insert", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       // Check if the response contains the expected message
       if (response.data && response.data.msg) {

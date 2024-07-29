@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -28,7 +28,7 @@ function Invoice() {
   let messageSuccess = state && state.msg;
 
   const fetchInvoices = async () => {
-    let url = `http://localhost:3001/Invoice?page=${currentPage}&per_page=${perPage}`;
+    let url = `/Invoice?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
     }
@@ -58,7 +58,7 @@ function Invoice() {
 
   const handleRetureStock = async (iv_id) => {
     try {
-      const response = await axios.put(`http://localhost:3001/returestock`, {
+      const response = await axios.put(`/returestock`, {
         id: iv_id,
       });
     } catch (error) {
@@ -78,7 +78,7 @@ function Invoice() {
 
   const handleStockCut = async (iv_id) => {
     try {
-      axios.put(`http://localhost:3001/stockcut`, { id: iv_id });
+      axios.put(`/stockcut`, { id: iv_id });
     } catch (err) {
       console.error("ตัดสต๊อกสินค้าไม่สำเร็จ:", err);
       toast.error("ตัดสต๊อกสินค้าไม่สำเร็จ", {
@@ -97,9 +97,7 @@ function Invoice() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(
-        "http://localhost:3001/invoice/delete/" + id
-      );
+      const response = await axios.delete("/invoice/delete/" + id);
       setInvoicefordel(null);
       fetchInvoices();
       if (response.data && response.data.msg) {
@@ -161,7 +159,7 @@ function Invoice() {
   }, [currentPage, perPage]);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
+    const socket = io("");
     socket.on("statusUpdate", ({ status, id }) => {
       if (id.startsWith("IV")) {
         setInvoice((oldInvoice) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
@@ -48,9 +48,7 @@ function I_receipt() {
 
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
-      );
+      const res = await axios.get("/getcustomer/" + customer_id);
       setSelectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -62,9 +60,7 @@ function I_receipt() {
 
   const fetchCustomerName = async (customer_id) => {
     try {
-      const res = await axios.get(
-        "http://localhost:3001/getcustomers?sqlWhere=" + customer_id
-      );
+      const res = await axios.get("/getcustomers?sqlWhere=" + customer_id);
       setValues((prevState) => ({
         ...prevState,
         customer_name: res.data[0].customer_name,
@@ -77,9 +73,7 @@ function I_receipt() {
   // ดึงข้อมูล ใบแจ้งหนี้
   const fetchInvoice = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/getinvoice/${invoice}`
-      );
+      const response = await axios.get(`/getinvoice/${invoice}`);
       const rcDetail = response.data.ivDetail[0];
       const receiptList = response.data.listiDetail;
       const productDetail = response.data.productDetail;
@@ -140,10 +134,7 @@ function I_receipt() {
 
   const handleInsert = async (updatedValues) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3001/receipt/insert",
-        updatedValues
-      );
+      const response = await axios.post("/receipt/insert", updatedValues);
       console.log("Success:", response.data);
       toast.success("receipt inserted successfully", {
         position: "top-right",

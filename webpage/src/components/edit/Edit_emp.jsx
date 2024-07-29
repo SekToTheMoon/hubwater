@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -65,7 +65,7 @@ function Edit_emp() {
   const handleDelete = (i) => {
     const deletVal = [...values.phone];
     axios
-      .delete(`http://localhost:3001/employeephone/delete/${id}/${deletVal[i]}`)
+      .delete(`/employeephone/delete/${id}/${deletVal[i]}`)
       .then((response) => {
         console.log(response.data);
         deletVal.splice(i, 1);
@@ -78,7 +78,7 @@ function Edit_emp() {
 
   const fetchProvince = async () => {
     await axios
-      .get("http://localhost:3001/getprovince")
+      .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
       })
@@ -87,7 +87,7 @@ function Edit_emp() {
 
   const fetchDistrict = async (province) => {
     await axios
-      .get(`http://localhost:3001/getdistrict/${province}`)
+      .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
       })
@@ -96,7 +96,7 @@ function Edit_emp() {
 
   const fetchSubdistrict = async (district) => {
     await axios
-      .get(`http://localhost:3001/getsubdistrict/${district}`)
+      .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
       })
@@ -104,7 +104,7 @@ function Edit_emp() {
   };
   const fetchDep = async () => {
     await axios
-      .get("http://localhost:3001/getdep/all")
+      .get("/getdep/all")
       .then((res) => {
         setSelectdep(res.data);
       })
@@ -112,7 +112,7 @@ function Edit_emp() {
   };
   const fetchPosit = async (dep) => {
     await axios
-      .get(`http://localhost:3001/getempselectposit/${dep}`)
+      .get(`/getempselectposit/${dep}`)
       .then((res) => {
         setSelectposit(res.data);
       })
@@ -121,7 +121,7 @@ function Edit_emp() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:3001/getemployee/${id}`)
+      .get(`/getemployee/${id}`)
       .then((res) => {
         const employeeData = res.data.data[0];
         const bdate = moment(employeeData.employee_bdate).format("YYYY-MM-DD");
@@ -232,13 +232,9 @@ function Edit_emp() {
       formData.append("phone", phone);
     });
     try {
-      const response = await axios.put(
-        `http://localhost:3001/employee/edit/${id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await axios.put(`/employee/edit/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.info(response.data.msg, {
         position: "top-right",
         autoClose: 3000,
