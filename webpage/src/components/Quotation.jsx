@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,11 +8,13 @@ import statusOptions from "../constants/statusOptions";
 import { handleChangeStatus } from "../utils/changeStatus";
 import io from "socket.io-client";
 import DocumentLink from "./component/DocumentLink";
-
+import useAuth from "../hooks/useAuth";
 function Quotation() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
 
   const [Quotation, setQuotation] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
@@ -44,9 +46,9 @@ function Quotation() {
   const handleSelectChange = (event, quotation) => {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบวางบิล") {
-      navigate(`/all/bill/insert?quotation=${quotation.quotation_id}`);
+      navigate(`/bill/insert?quotation=${quotation.quotation_id}`);
     } else if (selectedValue === "สร้างใบแจ้งหนี้") {
-      navigate(`/all/invoice/insert?quotation=${quotation.quotation_id}`);
+      navigate(`/invoice/insert?quotation=${quotation.quotation_id}`);
     } else {
       handleChangeStatus(selectedValue, quotation.quotation_id);
     }
@@ -111,7 +113,7 @@ function Quotation() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Quotation");
+      navigate("/Quotation");
     }
   }, [currentPage, perPage]);
 
@@ -233,11 +235,11 @@ function Quotation() {
                           <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
                           <div className="flex flex-col space-y-2">
                             <DocumentLink
-                              to={`/all/bill/view/${quotation.bn_id}`}
+                              to={`/bill/view/${quotation.bn_id}`}
                               id={quotation.bn_id}
                             />
                             <DocumentLink
-                              to={`/all/invoice/view/${quotation.iv_id}`}
+                              to={`/invoice/view/${quotation.iv_id}`}
                               id={quotation.iv_id}
                             />
                           </div>

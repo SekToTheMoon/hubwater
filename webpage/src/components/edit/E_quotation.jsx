@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -7,6 +8,8 @@ import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
 
 function E_quotation() {
+  const axios = useAxiosPrivate();
+
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -274,7 +277,7 @@ function E_quotation() {
         theme: "dark",
       });
       // setTimeout(
-      //   () => navigate("/all/quotation", { state: { msg: response.data } }),
+      //   () => navigate("/quotation", { state: { msg: response.data } }),
       //   4000
       // );
     } catch (error) {

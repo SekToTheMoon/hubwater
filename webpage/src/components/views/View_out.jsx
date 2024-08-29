@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import moment from "moment";
 import { useParams } from "react-router-dom";
 
 function View_out() {
+  const axios = useAxiosPrivate();
   const { id } = useParams();
   const employee_fullname =
     localStorage.getItem("employee_fname") +

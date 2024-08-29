@@ -1,12 +1,18 @@
+// ทำการ validate ข้อมูล items เมื่อไม่ได้เพิ่มสินค้า และ สินค้าที่ ล๊อตซ้ำ โดย ยับ ไปแล้ว
+// เหลือเช็ค ว่า ถ้ามี quotation เช็คพร้อมกับ insert document อื่นๆ ด้วย
+// ยังไม่ได้เช็ต ตรง if (quotaion)
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
-
+import useAuth from "../../hooks/useAuth";
+import addListIndex from "../../utils/addListIndex";
 function I_bill() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   const employee_fullname =
     localStorage.getItem("employee_fname") +
     " " +
@@ -24,7 +30,7 @@ function I_bill() {
     bill_vat: true,
     bill_tax: false,
     bill_status: "รออนุมัติ",
-    employee_id: localStorage.getItem("employee_id"),
+    employee_id: auth.employee_id,
     customer_id: "",
     items: [],
     bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
@@ -49,45 +55,28 @@ function I_bill() {
     bill_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบวางบิล"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listb_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
+    items: Yup.array()
+      .of(
+        Yup.object().shape({
+          product_id: Yup.string().required("โปรดเลือกสินค้า"),
+          listb_amount: Yup.number()
+            .required("โปรดระบุจำนวนสินค้า")
+            .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
+          lot_number: Yup.string().required("โปรดเลือก Lot number"),
+        })
+      )
+      .min(1, "โปรดเพิ่มสินค้า")
+      .test("items", "มีสินค้าที่ ล็อต ซ้ำกัน", function (value) {
+        if (!value) return true; // หาก array ว่างเปล่าให้ผ่านการตรวจสอบ
+
+        const uniqueItems = new Set(
+          value.map((item) => `${item.product_id}-${item.lot_number}`)
+        );
+
+        return uniqueItems.size === value.length;
+      }),
   });
 
-  const checkItem = (items) => {
-    const seen = new Set();
-    for (let item of items) {
-      const key = `${item.product_id}-${item.lot_number}`;
-      if (seen.has(key)) {
-        return true; // Duplicate found
-      }
-      seen.add(key);
-    }
-    const updatedItems = values.items.map((item, index) => ({
-      ...item,
-      listb_number: index + 1,
-    }));
-
-    if (updatedItems.length == 0) return true;
-    let updatedValues = {
-      ...values,
-      items: updatedItems,
-    };
-    // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
-    if (quotation) {
-      updatedValues = {
-        ...updatedValues,
-        quotation_id: quotation,
-      };
-    }
-    return updatedValues;
-  };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -294,29 +283,26 @@ function I_bill() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = checkItem(values.items);
-      if (updatedValues === true) {
-        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
-        return;
+      let updatedRequestValues = addListIndex(values, "listb_number");
+      await validationSchema.validate(updatedRequestValues, {
+        abortEarly: false,
+      });
+      // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
+      if (quotation) {
+        updatedRequestValues = {
+          ...updatedRequestValues,
+          quotation_id: quotation,
+        };
       }
-      await validationSchema.validate(updatedValues, { abortEarly: false });
-      await handleInsert(updatedValues);
-      navigate("/all/bill");
+      await handleInsert(updatedRequestValues);
+      setErrors({});
+      // navigate("/bill");
     } catch (error) {
-      console.log(error.inner);
+      console.log(error);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
@@ -507,7 +493,7 @@ function I_bill() {
                   <span className="">ชื่อลูกค้า</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className="select select-bordered  "
                   value={values.customer_id}
                   onChange={(e) => {
                     const cus = e.target.value;
@@ -649,7 +635,7 @@ function I_bill() {
               </div>
             </div>
             <hr />
-            <div className="flex mt-2">
+            <div className="flex my-2">
               <label className="label">
                 <span className="">รายละเอียด:</span>
               </label>
@@ -745,7 +731,7 @@ function I_bill() {
                   <tr>
                     <td colSpan="8" className="text-center">
                       <div
-                        className="btn"
+                        className="btn m-5"
                         onClick={() => {
                           document.getElementById("my_modal_4").showModal();
                         }}
@@ -757,6 +743,7 @@ function I_bill() {
                 )}
               </tbody>
             </table>
+            {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
             <div className="ml-auto w-5/12">
               <div>

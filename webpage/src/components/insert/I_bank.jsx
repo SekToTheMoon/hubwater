@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function I_bank() {
+  const axios = useAxiosPrivate();
   const bank_type = ["ออมทรัพย์", "ฝากประจำ", "กระแสรายวัน"];
   const bank_list = [
     "ธ.กสิกรไทย",
@@ -51,8 +52,17 @@ function I_bank() {
   const [selectdep, setSelectdep] = useState([]);
 
   const validationSchema = Yup.object({
-    bank_name: Yup.string().required("กรุณาเลือกธนาคาร"),
+    bank_name: Yup.string().required("กรุณาเลือก"),
+    bank_branch: Yup.string().required("กรุณากรอกชื่อสาขา"),
     bank_owner: Yup.string().required("กรุณากรอกเจ้าของบัญชีด้วย"),
+    bank_num: Yup.string()
+      .matches(/^\d*$/, "ต้องเป็นตัวเลขเท่านั้น")
+      .test("bank_num", "กรุณาตรวจสอบเลขบัญชีธนาคารใหม่อีกครั้ง", (val) => {
+        if (val && val.length > 11 && val.length < 16) {
+          return true;
+        }
+      }),
+    bank_type: Yup.string().required("กรุณาเลือก"),
   });
 
   const handleSubmit = async (e) => {
@@ -128,7 +138,7 @@ function I_bank() {
                   ))}
                 </select>
                 {errors.bank_name && (
-                  <span className="text-error">{errors.bank_name}</span>
+                  <span className="text-error text-sm">{errors.bank_name}</span>
                 )}
               </div>
               <div className="w-5/12">
@@ -144,7 +154,9 @@ function I_bank() {
                   }
                 />
                 {errors.bank_branch && (
-                  <span className="text-error">{errors.bank_branch}</span>
+                  <span className="text-error text-sm">
+                    {errors.bank_branch}
+                  </span>
                 )}
               </div>
               <div className="w-5/12">
@@ -160,7 +172,7 @@ function I_bank() {
                   }
                 />
                 {errors.bank_num && (
-                  <span className="text-error">{errors.bank_num}</span>
+                  <span className="text-error text-sm">{errors.bank_num}</span>
                 )}
               </div>
             </div>
@@ -186,7 +198,7 @@ function I_bank() {
                   ))}
                 </select>
                 {errors.bank_type && (
-                  <span className="text-error">{errors.bank_type}</span>
+                  <span className="text-error text-sm">{errors.bank_type}</span>
                 )}
               </div>
               <div className="w-10/12">
@@ -202,7 +214,9 @@ function I_bank() {
                   }
                 />
                 {errors.bank_owner && (
-                  <span className="text-error">{errors.bank_owner}</span>
+                  <span className="text-error text-sm">
+                    {errors.bank_owner}
+                  </span>
                 )}
               </div>
             </div>

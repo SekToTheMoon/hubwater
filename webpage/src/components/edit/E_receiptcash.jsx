@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -7,8 +8,7 @@ import moment from "moment";
 import { useParams, useNavigate } from "react-router-dom";
 
 function E_receiptcash() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const axios = useAxiosPrivate();
 
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
@@ -20,7 +20,7 @@ function E_receiptcash() {
     rf_detail: "",
     rf_vat: true,
     rf_tax: false,
-    employee_id: localStorage.getItem("employee_id"),
+    employee_id: "",
     customer_id: "",
     items: [],
   });

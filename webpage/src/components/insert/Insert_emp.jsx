@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { ErrorMessage, Formik, Form, Field } from "formik";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as yup from "yup";
 
 function Test({ isLoggedIn = false }) {
+  const axios = useAxiosPrivate();
+
   //จัดการวันที่
   const [hiredate, setHiredate] = useState(new Date());
   const [bdate, setBdate] = useState(new Date());
@@ -98,7 +100,9 @@ function Test({ isLoggedIn = false }) {
 
     try {
       const response = await axios.post("/employee/insert", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       // Check if the response contains the expected message

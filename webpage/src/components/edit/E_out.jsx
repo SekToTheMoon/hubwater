@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
@@ -7,19 +8,17 @@ import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
 
 function E_out() {
+  const axios = useAxiosPrivate();
+
   const { id } = useParams();
   const navigate = useNavigate();
-  const employee_id = localStorage.getItem("employee_id");
-  const employee_fullname =
-    localStorage.getItem("employee_fname") +
-    " " +
-    localStorage.getItem("employee_lname");
 
   const [values, setValues] = useState({
     out_date: moment(new Date()).format("YYYY-MM-DD"),
     out_total: 0,
     out_detail: "",
-    employee_id: employee_id,
+    employee_id: "",
+    employee_fullname: "",
     items: [],
     OldImage: null,
   });
@@ -55,6 +54,7 @@ function E_out() {
         out_total: outData.out_total,
         out_detail: outData.out_detail,
         employee_id: outData.employee_id,
+        employee_fullname: outData.employee_fullname,
         items: outList,
         OldImage: imgs,
       });
@@ -154,7 +154,7 @@ function E_out() {
     try {
       // await validationSchema.validate(values, { abortEarly: false });
       await handleUpdate(values);
-      navigate("/all/out");
+      navigate("/out");
       setErrors({});
     } catch (error) {
       const newErrors = {};
@@ -248,7 +248,7 @@ function E_out() {
                 <span className="">พนักงาน</span>
               </label>
               <div className="input input-bordered flex items-center">
-                {employee_fullname}
+                {values.employee_fullname}
               </div>
               <label htmlFor="img" className=" mt-3   label  ">
                 หลักฐานค่าใช้จ่าย

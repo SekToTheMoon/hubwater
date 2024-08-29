@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_unit_m() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({ unit_m_name: "" });
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    unit_m_name: Yup.string().required("กรุณากรอกชื่อ หน่วยวัด"),
+    unit_m_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ หน่วยวัด"),
   });
 
   const handleSubmit = async (e) => {

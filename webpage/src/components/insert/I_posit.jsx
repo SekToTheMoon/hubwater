@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function I_posit() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     posit_name: "",
     dep_id: "",
@@ -14,7 +16,9 @@ function I_posit() {
   const [selectdep, setSelectdep] = useState([]);
 
   const validationSchema = Yup.object({
-    posit_name: Yup.string().required("กรุณากรอกชื่อ แผนก"),
+    posit_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ แผนก"),
     dep_id: Yup.string().required("กรุณาเลือกแผนกด้วย"),
   });
 
@@ -70,7 +74,7 @@ function I_posit() {
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     if (name === "selectAll") {
-      const updatedPermission = checked ? Array(11).fill(1) : Array(11).fill(0);
+      const updatedPermission = checked ? Array(12).fill(1) : Array(12).fill(0);
       setValues({ ...values, permission: updatedPermission });
     } else {
       const index = parseInt(name);

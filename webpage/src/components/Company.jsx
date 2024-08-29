@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function Company() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     company_name: "",
     company_address: "",
@@ -28,9 +30,22 @@ function Company() {
   const [imageURL, setImageURL] = useState([null, null]);
 
   const validationSchema = Yup.object({
-    company_name: Yup.string().required("กรุณากรอกชื่อ"),
-    company_address: Yup.string().required("กรุณากรอกที่อยู่"),
-    // เพิ่ม validationSchema ต่อไปตามต้องการ
+    company_name: Yup.string()
+      .max(60, "ความยาวไม่เกิน 60 ตัวอักษร")
+      .required("กรุณากรอกชื่อ"),
+    company_address: Yup.string()
+      .max(100, "ความยาวไม่เกิน 100 ตัวอักษร")
+      .required("กรุณากรอกที่อยู่"),
+    company_phone: Yup.string().length(10, "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"),
+    company_email: Yup.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+    company_taxpayer: Yup.string().length(
+      13,
+      "กรุณากรอกเลขที่ผู้เสียภาษีให้ครบ 13 ตัว"
+    ),
+    province: Yup.string().required("กรุณาเลือก"),
+    district: Yup.string().required("กรุณาเลือก"),
+    subdistrict: Yup.string().required("กรุณาเลือก"),
+    zip_code: Yup.string().required("กรุณาเลือก"),
   });
 
   // จัดการไฟล์รูปภาพ
@@ -86,7 +101,10 @@ function Company() {
           subdistrict: companyData.subdistrict_code,
           zip_code: companyData.zip_code,
         }));
-        setImageURL([`/img/logo/logo.png`, `/img/signature/signature.png`]);
+        setImageURL([
+          `http://localhost:3001/img/logo/logo.png`,
+          `http://localhost:3001/img/signature/signature.png`,
+        ]);
       })
       .catch((err) => console.log(err));
     fetchProvince();
@@ -119,7 +137,7 @@ function Company() {
   }, [images.logo]);
 
   useEffect(() => {
-    if (images.logo == "logo") return;
+    if (images.signature == "signature") return;
     const newImageURL = URL.createObjectURL(images.signature);
     setImageURL((prevImageURL) => {
       const updatedImageURL = [...prevImageURL];
@@ -161,7 +179,9 @@ function Company() {
     console.log(formData.values);
     try {
       const response = await axios.put(`/company/edit`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       toast.success(response.data, {
         position: "top-right",

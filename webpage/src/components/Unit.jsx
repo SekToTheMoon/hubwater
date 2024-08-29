@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
 function Unit() {
+  const axios = useAxiosPrivate();
   const [Unit, setUnit] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -14,6 +16,9 @@ function Unit() {
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
+
+  const headers = ["รหัสหน่วยนับ", "ชื่อหน่วยนับ"];
+
   let messageSuccess = state && state.msg;
   const fetchUnits = async () => {
     let url = `/Unit?page=${currentPage}&per_page=${perPage}`;
@@ -87,7 +92,7 @@ function Unit() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Unit");
+      navigate("/Unit");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +132,7 @@ function Unit() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัสหน่วยนับ</th>
@@ -190,7 +195,8 @@ function Unit() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Unit} onDelete={handleDelete} />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

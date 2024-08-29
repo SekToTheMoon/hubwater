@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { Link, useParams } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,6 +8,8 @@ import * as Yup from "yup";
 import moment from "moment";
 
 function Stock() {
+  const axios = useAxiosPrivate();
+
   const [lot, setLot] = useState([]);
   const { id } = useParams();
   const [values, setValues] = useState({
@@ -59,6 +61,7 @@ function Stock() {
     try {
       await validationSchema.validate(values, { abortEarly: false });
       await handleInsert();
+      await fetchlots();
       setErrors({});
     } catch (error) {
       console.log(error.inner);
@@ -155,79 +158,77 @@ function Stock() {
                   ✕
                 </button>
                 <h3 className="font-bold text-lg">เพิ่มล็อตสินค้า</h3>
-                <form onSubmit={handleSubmit}>
-                  <div className="mt-4">
-                    <label className="block mb-2 font-medium">ราคาทุน</label>
-                    <input
-                      type="text"
-                      placeholder=""
-                      name="lot_price"
-                      className="input input-bordered w-full mb-1"
-                      value={values.lot_price}
-                      onChange={(e) =>
-                        setValues({ ...values, lot_price: e.target.value })
-                      }
-                    />
-                    {errors.lot_price && (
-                      <span className="text-error">{errors.lot_price}</span>
-                    )}
-                  </div>
-                  <div className="mt-4">
-                    <label className="block mb-2 font-medium">
-                      จำนวนสินค้า
-                    </label>
-                    <input
-                      type="text"
-                      placeholder=""
-                      name="lot_amount"
-                      className="input input-bordered w-full mb-1"
-                      value={values.lot_amount}
-                      onChange={(e) =>
-                        setValues({ ...values, lot_amount: e.target.value })
-                      }
-                    />
-                    {errors.lot_amount && (
-                      <span className="text-error">{errors.lot_amount}</span>
-                    )}
-                  </div>
-                  <div className="mt-4">
-                    <label className="block mb-2 text-sm font-medium">
-                      วันที่นำเข้าล็อต
-                    </label>
-                    <input
-                      type="date"
-                      name="lot_date"
-                      className="input input-bordered w-full mb-1"
-                      value={values.lot_date}
-                      onChange={(e) =>
-                        setValues({ ...values, lot_date: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <label className="block mb-2 text-sm font-medium">
-                      วันที่หมดอายุ
-                    </label>
-                    <input
-                      type="date"
-                      name="lot_exp"
-                      className="input input-bordered w-full mb-1"
-                      value={values.lot_exp}
-                      onChange={(e) =>
-                        setValues({ ...values, lot_exp: e.target.value })
-                      }
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn btn-primary mt-4"
-                    onClick={() =>
-                      document.getElementById("addLotModal").close()
+
+                <div className="mt-4">
+                  <label className="block mb-2 font-medium">ราคาทุน</label>
+                  <input
+                    type="text"
+                    placeholder=""
+                    name="lot_price"
+                    className="input input-bordered w-full mb-1"
+                    value={values.lot_price}
+                    onChange={(e) =>
+                      setValues({ ...values, lot_price: e.target.value })
                     }
-                  >
-                    เพิ่มล็อต
-                  </button>
-                </form>
+                  />
+                  {errors.lot_price && (
+                    <span className="text-error">{errors.lot_price}</span>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <label className="block mb-2 font-medium">จำนวนสินค้า</label>
+                  <input
+                    type="text"
+                    placeholder=""
+                    name="lot_amount"
+                    className="input input-bordered w-full mb-1"
+                    value={values.lot_amount}
+                    onChange={(e) =>
+                      setValues({ ...values, lot_amount: e.target.value })
+                    }
+                  />
+                  {errors.lot_amount && (
+                    <span className="text-error">{errors.lot_amount}</span>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <label className="block mb-2 text-sm font-medium">
+                    วันที่นำเข้าล็อต
+                  </label>
+                  <input
+                    type="date"
+                    name="lot_date"
+                    className="input input-bordered w-full mb-1"
+                    value={values.lot_date}
+                    onChange={(e) =>
+                      setValues({ ...values, lot_date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="mt-4">
+                  <label className="block mb-2 text-sm font-medium">
+                    วันที่หมดอายุ
+                  </label>
+                  <input
+                    type="date"
+                    name="lot_exp"
+                    className="input input-bordered w-full mb-1"
+                    value={values.lot_exp}
+                    onChange={(e) =>
+                      setValues({ ...values, lot_exp: e.target.value })
+                    }
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary mt-4"
+                  onClick={() => {
+                    handleSubmit();
+                    document.getElementById("addLotModal").close();
+                  }}
+                >
+                  เพิ่มล็อต
+                </button>
               </div>
             </dialog>
             {editLot && (

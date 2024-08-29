@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,11 +8,13 @@ import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
-
+import useAuth from "../hooks/useAuth";
 function Bill() {
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
+
+  const axios = useAxiosPrivate();
 
   const [Bill, setBill] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
@@ -44,7 +46,7 @@ function Bill() {
   const handleSelectChange = (event, bill) => {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบแจ้งหนี้") {
-      navigate(`/all/invoice/insert?bill=${bill.bn_id}`);
+      navigate(`/invoice/insert?bill=${bill.bn_id}`);
     } else {
       handleChangeStatus(selectedValue, bill.bn_id);
     }
@@ -109,7 +111,7 @@ function Bill() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Bill");
+      navigate("/Bill");
     }
   }, [currentPage, perPage]);
 
@@ -228,11 +230,11 @@ function Bill() {
                           <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
                           <div className="flex flex-col space-y-2">
                             <DocumentLink
-                              to={`/all/quotation/view/${bill.quotation_id}`}
+                              to={`/quotation/view/${bill.quotation_id}`}
                               id={bill.quotation_id}
                             />
                             <DocumentLink
-                              to={`/all/invoice/view/${bill.iv_id}`}
+                              to={`/invoice/view/${bill.iv_id}`}
                               id={bill.iv_id}
                             />
                           </div>

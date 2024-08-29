@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -7,27 +7,30 @@ import * as Yup from "yup";
 import moment from "moment";
 
 function Edit_emp() {
+  const axios = useAxiosPrivate();
   const [values, setValues] = useState({
     fname: "",
     lname: "",
-    bdate: new Date(),
+    bdate: "",
+    hiredate: "",
     sex: "",
     salary: "",
-    hiredate: new Date(),
     username: "",
     password: "",
+    confirmation: "",
     nid: "",
     address: "",
     email: "",
     line: "",
     commit: "",
-    position: "",
-    province: "",
-    confirmation: "",
     phone: [""],
     dep: "",
+    position: "",
+    province: "",
+    district: "",
     subdistrict: "",
     zip_code: "",
+    images: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -42,9 +45,58 @@ function Edit_emp() {
   const { id } = useParams();
 
   const validationSchema = Yup.object({
-    fname: Yup.string().required("กรุณากรอกชื่อ"),
-    lname: Yup.string().required("กรุณากรอกนามสกุล"),
-    // เพิ่ม validationSchema ต่อไปตามต้องการ
+    fname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกชื่อจริงไม่ถูกต้อง")
+      .required("ต้องกรอกชื่อ"),
+    lname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกนามสกุลไม่ถูกต้อง")
+      .required("ต้องกรอกนามสกุล"),
+
+    password: Yup.string()
+      .min(6, "กรอกรหัสผ่านไม่น้อยกว่า 6 หลัก")
+      // .matches(/[!@#$%^&*(),.?":{}|<>]/,"รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว")
+      // .matches(/[0-9]/,"รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
+      // .matches(/A-Z]/,"รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
+      // .matches(/a-z]/,"รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
+      .nullable(),
+
+    confirmation: Yup.string()
+      .oneOf([Yup.ref("password"), null], "รหัสไม่ตรงกัน")
+      .nullable(),
+    bdate: Yup.string().required("ต้องเลือกวันเกิดของพนักงาน"),
+    sex: Yup.string().required("ต้องเลือกเพศของพนักงาน"),
+    salary: Yup.string()
+      .required("ต้องกรอกเงินเดือน")
+      .matches(/^\d+$/, "เงินเดือนต้องเป็นตัวเลขเท่านั้น"),
+    commit: Yup.string()
+      .required("ต้องกรอกค่าคอมมิสชั่น")
+      .test("commit", "ค่าคอมมิสชั่นต้องอยู่ระหว่าง 0 ถึง 100", (value) => {
+        if (!value) return true; // ถ้าไม่มีค่า ให้ผ่านการตรวจสอบนี้
+        const num = parseInt(value, 10);
+        return num >= 0 && num <= 100;
+      }),
+    hiredate: Yup.string().required("ต้องเลือกวันเริ่มทำงานของพนักงาน"),
+    username: Yup.string().required("ต้องกรอกชื่อบัญชี"),
+    nid: Yup.string()
+      .required("ต้องกรอกเลขประจำตัวประชาชน")
+      .matches(/^\d+$/, "ต้องเป็นตัวเลขเท่านั้น")
+      .length(13, "ต้องมีเลข 13 หลัก"),
+    phone: Yup.array()
+      .of(
+        Yup.string().test(
+          "is-number-valid",
+          "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
+          (value) => value === "" || /^[0-9]{10}$/.test(value)
+        )
+      )
+      .notRequired(),
+    address: Yup.string().required("ต้องกรอกที่อยู่"),
+    position: Yup.string().required("ต้องเลือกตำแหน่งงาน"),
+    province: Yup.string().required("ต้องเลือกจังหวัด"),
+    dep: Yup.string().required("ต้องเลือกแผนก"),
+    subdistrict: Yup.string().required("ต้องเลือกตำบล"),
+    district: Yup.string().required("ต้องเลือกอำเภอ"),
+    zip_code: Yup.string().required("ต้องเลือกรหัสไปรษณีย์"),
   });
 
   //จัดการไฟล์รูปภาพ
@@ -233,7 +285,9 @@ function Edit_emp() {
     });
     try {
       const response = await axios.put(`/employee/edit/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       toast.info(response.data.msg, {
         position: "top-right",
@@ -245,18 +299,28 @@ function Edit_emp() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/employee");
+      navigate("/employee");
     } catch (error) {
-      toast.error(error.response.data.msg, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
+      if (!error?.response) {
+        console.log(error);
+        console.log("error จากการ validate ข้อมูลไม่ถูกต้อง");
+        const newErrors = {};
+        error?.inner?.forEach((err) => {
+          newErrors[err.path] = err.message;
+        });
+        setErrors(newErrors);
+      } else {
+        toast.error(error.response.data.msg, {
+          position: "top-right",
+          autoClose: 5000,
+          hibankrogressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      }
     }
   };
 
@@ -589,6 +653,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="เงินเดือน"
                 />
+                {errors.salary && (
+                  <span className="text-error">{errors.salary}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -607,6 +674,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="เปอร์เซ็นต์"
                 />
+                {errors.commit && (
+                  <span className="text-error">{errors.commit}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -711,6 +781,9 @@ function Edit_emp() {
                     })}
                   </div>
                 </div>
+                {Object.keys(errors).some((key) => key.startsWith("phone")) && (
+                  <span className="text-error">รูปแบบเบอร์โทรศัพท์ผิด</span>
+                )}
               </div>
             </div>
             <hr />
@@ -732,13 +805,16 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Username"
                 />
+                {errors.username && (
+                  <span className="text-error">{errors.username}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="password"
                   className="block mb-2 text-sm font-medium  "
                 >
-                  Your password
+                  รหัสผ่าน
                 </label>
                 <input
                   type="password"
@@ -749,13 +825,16 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Password"
                 />
+                {errors.password && (
+                  <span className="text-error">{errors.password}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="confirm password"
                   className="block mb-2 text-sm font-medium  "
                 >
-                  Confirm password
+                  ยืนยันรหัสผ่าน
                 </label>
                 <input
                   type="password"
@@ -766,6 +845,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Confirm Password"
                 />
+                {errors.confirmation && (
+                  <span className="text-error">{errors.confirmation}</span>
+                )}
               </div>
             </div>
 

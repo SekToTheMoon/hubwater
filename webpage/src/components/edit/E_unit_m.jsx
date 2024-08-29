@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
 function E_unit_m() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({ unit_m_name: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -33,9 +36,7 @@ function E_unit_m() {
     try {
       await axios
         .put("/unit_m/edit/" + id, values)
-        .then((res) =>
-          navigate("/all/unit_m", { state: { msg: res.data.msg } })
-        );
+        .then((res) => navigate("/unit_m", { state: { msg: res.data.msg } }));
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",

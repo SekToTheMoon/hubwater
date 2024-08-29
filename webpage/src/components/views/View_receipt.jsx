@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import moment from "moment";
 
 function View_receipt() {
+  const axios = useAxiosPrivate();
+
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const receipt = searchParams.get("receipt");
@@ -45,6 +47,7 @@ function View_receipt() {
       const rcDetail = response.data.rcDetail[0];
       const receiptList = response.data.listrDetail;
       const productDetail = response.data.productDetail;
+      setEmployee(response.data.employee_name);
 
       //วนเซ้ตค่า list
       receiptList.forEach((list) => {
@@ -57,7 +60,7 @@ function View_receipt() {
           }
         });
       });
-      setEmployee(response.data.employee_name);
+
       setValues({
         ...values,
         receipt_total: parseFloat(rcDetail.rc_total),

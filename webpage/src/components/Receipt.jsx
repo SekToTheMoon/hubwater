@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
+
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -9,11 +10,12 @@ import io from "socket.io-client";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
-
+import useAuth from "../hooks/useAuth";
 function Receipt() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
 
   const [Receipt, setReceipt] = useState([]);
   const [Banks, setBanks] = useState([]);
@@ -162,7 +164,7 @@ function Receipt() {
         theme: "dark",
       });
       //   messageSuccess = false; ทำไมไม่ทำอย่างนี้
-      navigate("/all/Receipt");
+      navigate("/Receipt");
     }
   }, [currentPage, perPage]);
 
@@ -254,7 +256,7 @@ function Receipt() {
                           <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
                           <div className="flex flex-col space-y-2">
                             <DocumentLink
-                              to={`/all/invoice/view/${receipt.iv_id}`}
+                              to={`/invoice/view/${receipt.iv_id}`}
                               id={receipt.iv_id}
                             />
                           </div>

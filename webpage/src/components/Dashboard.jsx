@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Chart as ChartJS } from "chart.js/auto";
 import { Pie, Bar, Line, Doughnut } from "react-chartjs-2";
 import moment from "moment";
-
 function selectTimeline(onChangeFunc) {
   return (
     <select
@@ -29,6 +29,8 @@ function StackedBarChart(data) {
 }
 
 function Dashboard() {
+  const axiosPrivate = useAxiosPrivate();
+
   const [incomeData, setIncomeData] = useState(null);
   const [expenseData, setExpenseData] = useState(null);
   const [incomeAndExpense, setIncomeAndExpense] = useState(null);
@@ -46,6 +48,12 @@ function Dashboard() {
     startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
     endDate: moment(new Date()).format("YYYY-MM-DD"),
   });
+
+  const [saleProductDateRanges, setSaleProductDateRanges] = useState({
+    startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
+    endDate: moment(new Date()).format("YYYY-MM-DD"),
+  });
+
   const [selectCategory, setSelectCategory] = useState("ทั้งหมด");
 
   const handleSubmitTopSale = (e) => {
@@ -57,10 +65,22 @@ function Dashboard() {
       alert("Please select a valid date range");
     }
   };
+  const handleSubmitSaleProduct = (e) => {
+    e.preventDefault();
+
+    if (saleProductDateRanges.endDate > saleProductDateRanges.startDate) {
+      fetchSaleProduct(
+        saleProductDateRanges.startDate,
+        saleProductDateRanges.endDate
+      );
+    } else {
+      alert("Please select a valid date range");
+    }
+  };
 
   const fetchCategoryProduct = async () => {
     try {
-      const response = await axios.get(`/getCategoryProduct`);
+      const response = await axiosPrivate.get(`/getCategoryProduct`);
       setCategoryProduct(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -68,7 +88,9 @@ function Dashboard() {
   };
   const fetchIncome = async (timeline) => {
     try {
-      const response = await axios.get(`/getIncome?timeline=${timeline}`);
+      const response = await axiosPrivate.get(
+        `/getIncome?timeline=${timeline}`
+      );
       const data = response.data;
       setIncomeData({
         labels: data.labels,
@@ -97,7 +119,9 @@ function Dashboard() {
   };
   const fetchExpense = async (timeline) => {
     try {
-      const response = await axios.get(`/getExpense?timeline=${timeline}`);
+      const response = await axiosPrivate.get(
+        `/getExpense?timeline=${timeline}`
+      );
       const data = response.data;
       setExpenseData({
         labels: data.labels,
@@ -126,8 +150,10 @@ function Dashboard() {
   };
   const fetchIncomeAndExpense = async (timeline) => {
     try {
-      const responseIncome = await axios.get(`/getIncome?timeline=${timeline}`);
-      const responseExpense = await axios.get(
+      const responseIncome = await axiosPrivate.get(
+        `/getIncome?timeline=${timeline}`
+      );
+      const responseExpense = await axiosPrivate.get(
         `/getExpense?timeline=${timeline}`
       );
       const dataIncome = responseIncome.data;
@@ -157,40 +183,13 @@ function Dashboard() {
       console.error("Error fetching data:", error);
     }
   };
-  const fetchSaleProduct = async (timeline) => {
-    let url = `/getSaleProduct?timeline=${timeline}`;
+  const fetchSaleProduct = async (startDate, endDate) => {
+    let url = `/getSaleProduct?startDate=${startDate}&&endDate=${endDate}`;
     try {
-      const response = await axios.get(url);
-      const labels = response.data.map((item) => item.product_name);
-      const data = response.data.map((item) =>
-        parseInt(item.total_sales_amount)
-      );
-      setCrossTab({
-        labels: labels,
-        datasets: [
-          {
-            label: "ยอดขาย",
-            data: data,
-            backgroundColor: [
-              "rgba(255, 99, 132, 0.8)",
-              "rgba(54, 162, 235, 0.8)",
-              "rgba(255, 206, 86, 0.8)",
-              "rgba(75, 192, 192, 0.8)",
-              "rgba(153, 102, 255, 0.8)",
-              "rgba(255, 159, 64, 0.8)",
-            ],
-            borderColor: [
-              "rgba(255, 99, 132, 1)",
-              "rgba(54, 162, 235, 1)",
-              "rgba(255, 206, 86, 1)",
-              "rgba(75, 192, 192, 1)",
-              "rgba(153, 102, 255, 1)",
-              "rgba(255, 159, 64, 1)",
-            ],
-            borderWidth: 1,
-          },
-        ],
-      });
+      const response = await axiosPrivate.get(url);
+      // const labels = response.data.map((item) => item.product_name);
+      const data = response.data;
+      setCrossTab(data);
     } catch (error) {
       console.error("Error fetching sales data:", error);
     }
@@ -198,7 +197,7 @@ function Dashboard() {
   const fetchExpenseByCategory = async (timeline) => {
     let url = `/getExpenseByCategory?timeline=${timeline}`;
     try {
-      const response = await axios.get(url);
+      const response = await axiosPrivate.get(url);
       const labels = response.data.map((item) => item.expensetype_name);
       const data = response.data.map((item) =>
         parseInt(item.total_expense_amount)
@@ -236,7 +235,7 @@ function Dashboard() {
   const fetchCommition = async (timeline) => {
     let url = `/getCommition?timeline=${timeline}`;
     try {
-      const response = await axios.get(url);
+      const response = await axiosPrivate.get(url);
 
       setCommition(response.data);
     } catch (error) {
@@ -245,7 +244,7 @@ function Dashboard() {
   };
   const fetchTopSale = async (startDate, endDate, category) => {
     try {
-      const response = await axios.get(
+      const response = await axiosPrivate.get(
         `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`
       );
       const data = response.data;
@@ -258,7 +257,10 @@ function Dashboard() {
   useEffect(() => {
     fetchIncome("year");
     fetchExpense("year");
-    fetchSaleProduct("year");
+    fetchSaleProduct(
+      saleProductDateRanges.startDate,
+      saleProductDateRanges.endDate
+    );
     fetchIncomeAndExpense("year");
     fetchExpenseByCategory("year");
     fetchCommition("year");
@@ -266,40 +268,253 @@ function Dashboard() {
     fetchCategoryProduct();
   }, []);
 
+  // useEffect(() => {
+  //   let isMounted = true;
+  //   const controller = new AbortController();
+
+  //   const fetchCategoryProduct1 = async () => {
+  //     try {
+  //       const response = await axiosPrivate.get(`/getCategoryProduct`, {
+  //         signal: controller.signal,
+  //       });
+  //       setCategoryProduct(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+  //   const fetchIncome1 = async (timeline) => {
+  //     try {
+  //       const response = await axiosPrivate.get(
+  //         `/getIncome?timeline=${timeline}`,
+  //         {
+  //           signal: controller.signal,
+  //         }
+  //       );
+  //       const data = response.data;
+  //       setIncomeData({
+  //         labels: data.labels,
+  //         datasets: [
+  //           {
+  //             label: "รายได้รวม",
+  //             data: data.totalIncomeData,
+  //             backgroundColor: "rgba(75, 192, 192, 0.5)",
+  //             borderColor: "rgba(75, 192, 192, 1)",
+  //             borderWidth: 1,
+  //           },
+  //           {
+  //             label: "เก็บเงินแล้ว",
+  //             data: data.incomeData,
+  //             backgroundColor: "rgba(54, 162, 235, 1)",
+  //             borderColor: "rgba(54, 162, 235, 1)",
+  //             borderWidth: 1,
+  //           },
+  //         ],
+  //       });
+  //       setTotalIncome(data.totalIncomeSum);
+  //       setTotalReceived(data.totalReceivedSum);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+  //   const fetchExpense1 = async (timeline) => {
+  //     try {
+  //       const response = await axiosPrivate.get(
+  //         `/getExpense?timeline=${timeline}`,
+  //         {
+  //           signal: controller.signal,
+  //         }
+  //       );
+  //       const data = response.data;
+  //       setExpenseData({
+  //         labels: data.labels,
+  //         datasets: [
+  //           {
+  //             label: "ค่าใช้จ่ายรวม",
+  //             data: data.totalExpenseData,
+  //             backgroundColor: "rgba(255, 99, 132, 0.5)",
+  //             borderColor: "rgba(255, 99, 132, 1)",
+  //             borderWidth: 1,
+  //           },
+  //           {
+  //             label: "ชำระเงินแล้ว",
+  //             data: data.expenseData,
+  //             backgroundColor: "rgba(255, 99, 132, 1)",
+  //             borderColor: "rgba(255, 99, 132, 1)",
+  //             borderWidth: 1,
+  //           },
+  //         ],
+  //       });
+  //       // setTotalIncome(data.totalIncomeSum);
+  //       // setTotalReceived(data.totalReceivedSum);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+  //   const fetchIncomeAndExpense1 = async (timeline) => {
+  //     try {
+  //       const responseIncome = await axiosPrivate.get(
+  //         `/getIncome?timeline=${timeline}`,
+  //         {
+  //           signal: controller.signal,
+  //         }
+  //       );
+  //       const responseExpense = await axiosPrivate.get(
+  //         `/getExpense?timeline=${timeline}`,
+  //         {
+  //           signal: controller.signal,
+  //         }
+  //       );
+  //       const dataIncome = responseIncome.data;
+  //       const dataExpense = responseExpense.data;
+
+  //       setIncomeAndExpense({
+  //         labels: dataIncome.labels,
+  //         datasets: [
+  //           {
+  //             label: "รายได้รวม",
+  //             data: dataIncome.totalIncomeData,
+  //             backgroundColor: "rgba(54, 162, 235, 0.2)",
+  //             borderColor: "rgba(54, 162, 235, 1)",
+  //             borderWidth: 1,
+  //           },
+  //           {
+  //             label: "ค่าใช้จ่ายรวม",
+  //             data: dataExpense.totalExpenseData,
+  //             backgroundColor: "rgba(255, 99, 132, 0.2)",
+  //             borderColor: "rgba(255, 99, 132, 1)",
+
+  //             borderWidth: 1,
+  //           },
+  //         ],
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+  //   const fetchSaleProduct1 = async (startDate, endDate) => {
+  //     let url = `/getSaleProduct?startDate=${startDate}&&endDate=${endDate}`;
+  //     try {
+  //       const response = await axiosPrivate.get(url, {
+  //         signal: controller.signal,
+  //       });
+  //       // const labels = response.data.map((item) => item.product_name);
+  //       const data = response.data;
+  //       setCrossTab(data);
+  //     } catch (error) {
+  //       console.error("Error fetching sales data:", error);
+  //     }
+  //   };
+  //   const fetchExpenseByCategory1 = async (timeline) => {
+  //     let url = `/getExpenseByCategory?timeline=${timeline}`;
+  //     try {
+  //       const response = await axiosPrivate.get(url, {
+  //         signal: controller.signal,
+  //       });
+  //       const labels = response.data.map((item) => item.expensetype_name);
+  //       const data = response.data.map((item) =>
+  //         parseInt(item.total_expense_amount)
+  //       );
+  //       setExpenseTypeData({
+  //         labels: labels,
+  //         datasets: [
+  //           {
+  //             label: "ยอดชำระ",
+  //             data: data,
+  //             backgroundColor: [
+  //               "rgba(255, 99, 132, 0.8)",
+  //               "rgba(54, 162, 235, 0.8)",
+  //               "rgba(255, 206, 86, 0.8)",
+  //               "rgba(75, 192, 192, 0.8)",
+  //               "rgba(153, 102, 255, 0.8)",
+  //               "rgba(255, 159, 64, 0.8)",
+  //             ],
+  //             borderColor: [
+  //               "rgba(255, 99, 132, 1)",
+  //               "rgba(54, 162, 235, 1)",
+  //               "rgba(255, 206, 86, 1)",
+  //               "rgba(75, 192, 192, 1)",
+  //               "rgba(153, 102, 255, 1)",
+  //               "rgba(255, 159, 64, 1)",
+  //             ],
+  //             borderWidth: 1,
+  //           },
+  //         ],
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching sales data:", error);
+  //     }
+  //   };
+  //   const fetchCommition1 = async (timeline) => {
+  //     let url = `/getCommition?timeline=${timeline}`;
+  //     try {
+  //       const response = await axiosPrivate.get(url, {
+  //         signal: controller.signal,
+  //       });
+
+  //       setCommition(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching sales data:", error);
+  //     }
+  //   };
+  //   const fetchTopSale1 = async (startDate, endDate, category) => {
+  //     try {
+  //       const response = await axiosPrivate.get(
+  //         `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`,
+  //         {
+  //           signal: controller.signal,
+  //         }
+  //       );
+  //       const data = response.data;
+  //       setTopSale(data);
+  //     } catch (error) {
+  //       console.error("Error fetching data:", error);
+  //     }
+  //   };
+  //   fetchIncome1("year");
+  //   fetchExpense1("year");
+  //   fetchSaleProduct1(
+  //     saleProductDateRanges.startDate,
+  //     saleProductDateRanges.endDate
+  //   );
+  //   fetchIncomeAndExpense1("year");
+  //   fetchExpenseByCategory1("year");
+  //   fetchCommition1("year");
+  //   fetchTopSale1(DateRanges.startDate, DateRanges.endDate, selectCategory);
+  //   fetchCategoryProduct1();
+
+  //   return () => {
+  //     isMounted = false;
+  //     controller.abort();
+  //   };
+  // }, []);
+
   return (
     <>
       <h1 className="text-3xl mb-5 text-neutral-content">ภาพรวมบริษัท</h1>
       <main className="grid grid-cols-3  gap-4">
-        <div className="rounded-lg bg-base-100 p-5  shadow-xl">
+        {/* <div className="rounded-lg bg-base-100 p-5  shadow-xl">
           <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
           {selectTimeline(fetchSaleProduct)}
           <figure className="h-full mt-3 ">
-            {CrossTab && <Doughnut data={CrossTab} />}
+            {CrossTab && <Line data={CrossTab} options={{ fill: true }}/>}
           </figure>
-        </div>
-        <div className="col-span-2 bg-base-100 shadow-xl p-5 rounded-lg">
+        </div> */}
+        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
           <h2 className="card-title my-2">สรุปยอดเก็บเงิน</h2>
           {selectTimeline(fetchIncome)}
           <figure className="h-full mt-3 ">
             {incomeData && StackedBarChart(incomeData)}
           </figure>
         </div>
-        <div className=" rounded-lg bg-base-100 p-5  shadow-xl">
-          <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
 
-          {selectTimeline(fetchExpenseByCategory)}
-
-          <figure className="h-full mt-3">
-            {expenseTypeData && <Doughnut data={expenseTypeData} />}
-          </figure>
-        </div>
-        <div className="col-span-2 bg-base-100 shadow-xl p-5 rounded-lg">
+        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
           <h2 className="card-title my-2">สรุปยอดชำระเงิน</h2>
           {selectTimeline(fetchExpense)}
           <figure className="h-full mt-3 ">
             {expenseData && StackedBarChart(expenseData)}
           </figure>
         </div>
+
         <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
           <h2 className="card-title my-2">รายได้และค่าใช้จ่ายตามเอกสาร</h2>
           {selectTimeline(fetchIncomeAndExpense)}
@@ -415,15 +630,26 @@ function Dashboard() {
             </div>
           </figure>
         </div>
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
+
+        <div className=" rounded-lg bg-base-100 p-5  shadow-xl">
+          <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
+
+          {selectTimeline(fetchExpenseByCategory)}
+
+          <figure className="h-full mt-3">
+            {expenseTypeData && <Doughnut data={expenseTypeData} />}
+          </figure>
+        </div>
+
+        <div className="col-span-2 bg-base-100 shadow-xl p-5 rounded-lg">
           <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
           {selectTimeline(fetchCommition)}
-          <figure className="h-full mt-3 ">
+          <figure className="h-full mt-3 overflow-y-auto">
             <ul>
               {Commition.length > 0 ? (
                 Commition.map((item, index) => (
                   <li key={index}>
-                    <div className="flex justify-between w-1/2 ">
+                    <div className="flex justify-between p-1">
                       <div className="">
                         {item.employee_id}{" "}
                         {item.employee_fname + " " + item.employee_lname}
@@ -436,6 +662,56 @@ function Dashboard() {
                 <li>ไม่มีข้อมูล</li>
               )}
             </ul>
+          </figure>
+        </div>
+
+        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
+          <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
+          <form onSubmit={handleSubmitSaleProduct}>
+            <div className="flex justify-between gap-2">
+              <div className=" mb-4 ">
+                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={saleProductDateRanges.startDate}
+                    onChange={(e) =>
+                      setSaleProductDateRanges({
+                        ...saleProductDateRanges,
+                        startDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className=" mb-4 ">
+                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={saleProductDateRanges.endDate}
+                    onChange={(e) =>
+                      setSaleProductDateRanges({
+                        ...saleProductDateRanges,
+                        endDate: e.target.value,
+                      })
+                    }
+                  />
+                  <span className="text-danger"> </span>
+                </div>
+              </div>
+              <div className="mb-4 ">
+                <label className="col-sm-2 col-form-label"></label>
+                <div className="col-sm-5">
+                  <button className="btn btn-primary"> ค้นหา </button>
+                </div>
+              </div>
+            </div>
+          </form>
+          <figure className="h-full mt-3 ">
+            {CrossTab && <Line data={CrossTab} options={{ fill: false }} />}
           </figure>
         </div>
       </main>

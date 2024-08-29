@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,11 +8,12 @@ import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
-
+import useAuth from "../hooks/useAuth";
 function Invoice() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
 
   const [Invoice, setInvoice] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
@@ -44,7 +45,7 @@ function Invoice() {
   const handleSelectChange = async (event, invoice) => {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบเสร็จรับเงิน") {
-      navigate(`/all/receipt/insert?invoice=${invoice.iv_id}`);
+      navigate(`/receipt/insert?invoice=${invoice.iv_id}`);
     } else if (selectedValue === "ยกเลิก") {
       await handleRetureStock(invoice.iv_id);
       handleChangeStatus(selectedValue, invoice.iv_id);
@@ -154,7 +155,7 @@ function Invoice() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Invoice");
+      navigate("/Invoice");
     }
   }, [currentPage, perPage]);
 
@@ -275,15 +276,15 @@ function Invoice() {
                           <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
                           <div className="flex flex-col space-y-2">
                             <DocumentLink
-                              to={`/all/quotation/view/${invoice.quotation_id}`}
+                              to={`/quotation/view/${invoice.quotation_id}`}
                               id={invoice.quotation_id}
                             />
                             <DocumentLink
-                              to={`/all/invoice/view/${invoice.bn_id}`}
+                              to={`/invoice/view/${invoice.bn_id}`}
                               id={invoice.bn_id}
                             />
                             <DocumentLink
-                              to={`/all/receipt/view?receipt=${invoice.rc_id}`}
+                              to={`/receipt/view?receipt=${invoice.rc_id}`}
                               id={invoice.rc_id}
                             />
                           </div>

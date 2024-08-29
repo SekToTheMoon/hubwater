@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+import useAuth from "../../hooks/useAuth";
 
 function I_out() {
-  const employee_id = localStorage.getItem("employee_id");
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   const employee_fullname =
     localStorage.getItem("employee_fname") +
     " " +
@@ -16,7 +18,7 @@ function I_out() {
     out_date: moment(new Date()).format("YYYY-MM-DD"),
     out_total: 0,
     out_detail: "",
-    employee_id: employee_id,
+    employee_id: auth.employee_id,
     items: [],
     images: [],
   });

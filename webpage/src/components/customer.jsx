@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Customer() {
+  const axios = useAxiosPrivate();
   const [Customer, setCustomer] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,8 @@ function Customer() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+  const headers = ["รหัสลูกค้า", "ชื่อลูกค้า", "เบอร์โทร", "อีเมล", "ประเภท"];
+
   const fetchCustomers = async () => {
     try {
       let url = `/customer?page=${currentPage}&per_page=${perPage}`;
@@ -87,7 +92,7 @@ function Customer() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Customer");
+      navigate("/Customer");
     }
   }, [currentPage, perPage]);
 
@@ -126,7 +131,7 @@ function Customer() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัสลูกค้า</th>
@@ -197,7 +202,9 @@ function Customer() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Customer} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

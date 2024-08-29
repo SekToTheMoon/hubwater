@@ -1,15 +1,20 @@
 import React, { useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_type() {
+  const axios = useAxiosPrivate();
   const [values, setValues] = useState({ type_name: "", type_category: "" });
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    type_name: Yup.string().required("กรุณากรอกชื่อ ประเภท"),
-    type_category: Yup.string().required("กรุณากรอกชื่อ หมวดหมู่"),
+    type_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ ประเภท"),
+    type_category: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ หมวดหมู่"),
   });
 
   const handleSubmit = async (e) => {
@@ -84,7 +89,7 @@ function I_type() {
                 setValues({ ...values, type_category: e.target.value })
               }
             />
-            {errors.type_name && (
+            {errors.type_category && (
               <span className="text-error">{errors.type_category}</span>
             )}
             <button type="submit" className="btn btn-primary w-full">

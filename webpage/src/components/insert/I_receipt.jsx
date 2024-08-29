@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,6 +7,7 @@ import * as Yup from "yup";
 import moment from "moment";
 
 function I_receipt() {
+  const axios = useAxiosPrivate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const invoice = searchParams.get("invoice");

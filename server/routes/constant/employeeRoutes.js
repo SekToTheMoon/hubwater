@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../database");
+const { db } = require("../../database");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
-const { uploadAvatar } = require("../middleware/diskStorage");
-const { getNextID } = require("../utils/generateId");
+const { uploadAvatar } = require("../../middleware/diskStorage");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/employee", function (req, res) {
   let fetchUser =

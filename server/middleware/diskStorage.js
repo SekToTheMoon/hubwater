@@ -29,9 +29,9 @@ const storageExpense = multer.diskStorage({
 const storageCompany = multer.diskStorage({
   destination: function (req, file, cb) {
     if (file.fieldname && file.fieldname === "logo") {
-      cb(null, path.join(__dirname, "img", "logo"));
+      cb(null, path.join(__dirname, "..", "img", "logo"));
     } else if (file.fieldname && file.fieldname === "signature") {
-      cb(null, path.join(__dirname, "img", "signature"));
+      cb(null, path.join(__dirname, "..", "img", "signature"));
     } else {
       cb(new Error("Invalid image order"));
     }

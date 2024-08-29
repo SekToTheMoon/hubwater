@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+import useAuth from "../../hooks/useAuth";
+import addListIndex from "../../utils/addListIndex";
 
 function I_quotation() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   const employee_fname = localStorage.getItem("employee_fname");
   const employee_lname = localStorage.getItem("employee_lname");
   const [search, setSearch] = useState("");
@@ -19,7 +23,7 @@ function I_quotation() {
     quotation_detail: "",
     quotation_vat: true,
     quotation_tax: false,
-    employee_id: localStorage.getItem("employee_id"),
+    employee_id: auth.employee_id,
     customer_id: "",
     items: [],
     quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
@@ -40,38 +44,49 @@ function I_quotation() {
     quotation_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listq_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
+    items: Yup.array()
+      .of(
+        Yup.object().shape({
+          product_id: Yup.string().required("โปรดเลือกสินค้า"),
+          listq_amount: Yup.number()
+            .required("โปรดระบุจำนวนสินค้า")
+            .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
+          lot_number: Yup.string().required("โปรดเลือก Lot number"),
+        })
+      )
+      .min(1, "โปรดเพิ่มสินค้า")
+      .test("items", "มีสินค้าที่ ล็อต ซ้ำกัน", function (value) {
+        if (!value) return true; // หาก array ว่างเปล่าให้ผ่านการตรวจสอบ
+
+        const uniqueItems = new Set(
+          value.map((item) => `${item.product_id}-${item.lot_number}`)
+        );
+
+        return uniqueItems.size === value.length;
+      }),
   });
 
-  const checkItem = (items) => {
-    const seen = new Set();
-    for (let item of items) {
-      const key = `${item.product_id}-${item.lot_number}`;
-      if (seen.has(key)) {
-        return true; // Duplicate found
-      }
-      seen.add(key);
-    }
-    const updatedItems = values.items.map((item, index) => ({
-      ...item,
-      listq_number: index + 1,
-    }));
+  // const checkItem = (items) => {
+  //   const seen = new Set();
+  //   for (let item of items) {
+  //     const key = `${item.product_id}-${item.lot_number}`;
+  //     if (seen.has(key)) {
+  //       return true; // Duplicate found
+  //     }
+  //     seen.add(key);
+  //   }
+  //   const updatedItems = values.items.map((item, index) => ({
+  //     ...item,
+  //     listq_number: index + 1,
+  //   }));
 
-    if (updatedItems.length == 0) return true;
-    const updatedValues = {
-      ...values,
-      items: updatedItems,
-    };
-    return updatedValues;
-  };
+  //   if (updatedItems.length == 0) return true;
+  //   const updatedValues = {
+  //     ...values,
+  //     items: updatedItems,
+  //   };
+  //   return updatedValues;
+  // };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -211,30 +226,20 @@ function I_quotation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = checkItem(values.items);
+      const updatedRequestValues = addListIndex(values, "listq_number");
+      await validationSchema.validate(updatedRequestValues, {
+        abortEarly: false,
+      });
 
-      if (updatedValues === true) {
-        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
-        return;
-      }
-      await validationSchema.validate(updatedValues, { abortEarly: false });
-      await handleInsert(updatedValues);
+      await handleInsert(updatedRequestValues);
       setErrors({});
+      // navigate("/quotation");
     } catch (error) {
-      console.log(error.inner);
+      console.log(error);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
@@ -653,7 +658,7 @@ function I_quotation() {
                 <tr>
                   <td colSpan="8" className="text-center">
                     <div
-                      className="btn"
+                      className="btn m-5"
                       onClick={() => {
                         document.getElementById("my_modal_4").showModal();
                       }}
@@ -664,6 +669,7 @@ function I_quotation() {
                 </tr>
               </tbody>
             </table>
+            {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
             <div className="ml-auto w-5/12">
               <div>

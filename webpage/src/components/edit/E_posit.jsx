@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
 
 function E_posit() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     posit_name: "",
     dep_id: "",
@@ -54,7 +56,7 @@ function E_posit() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/position");
+      navigate("/position");
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",
@@ -72,7 +74,7 @@ function E_posit() {
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     if (name === "selectAll") {
-      const updatedPermission = checked ? Array(10).fill(1) : Array(10).fill(0);
+      const updatedPermission = checked ? Array(12).fill(1) : Array(12).fill(0);
       setValues({ ...values, permission: updatedPermission });
     } else {
       const index = parseInt(name);

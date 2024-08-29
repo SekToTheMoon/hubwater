@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Position() {
+  const axios = useAxiosPrivate();
   const [position, setPosition] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,8 @@ function Position() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
+  const headers = ["รหัสตำแหน่ง", "ชื่อตำแหน่ง", "แผนก"];
   const fetchpositions = async () => {
     let url = `/position?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -87,7 +92,7 @@ function Position() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/position");
+      navigate("/position");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +132,7 @@ function Position() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัสตำแหน่ง</th>
@@ -193,7 +198,9 @@ function Position() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={position} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

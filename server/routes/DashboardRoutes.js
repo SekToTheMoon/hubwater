@@ -658,41 +658,110 @@ ORDER BY
   }
 });
 
+// router.get("/getSaleProduct", async (req, res) => {
+//   const { startDate, endDate } = req.query;
+
+//   const sql = `SELECT
+//       P.product_name,
+//       SUM(I.listi_amount) AS total_quantity_sold,
+//       SUM(I.listi_amount * I.listi_price) AS total_sales_amount
+// FROM
+//       listi I
+// JOIN
+//       Product P ON I.product_id = P.product_id
+// WHERE
+//       I.iv_id IN (SELECT iv_id FROM invoice WHERE iv_del = '0'
+//       AND iv_date BETWEEN ? AND ?)
+// GROUP BY
+//       P.product_name;
+// `;
+
+// // สร้างอาร์เรย์สำหรับเก็บค่า parameters
+// const params = [startDate, endDate];
+
+//   try {
+//     const [SaleProduct] = await db.promise().query(sql,params);
+
+//     res.status(200).json(SaleProduct);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+//   }
+// });
+
 router.get("/getSaleProduct", async (req, res) => {
-  const { timeline } = req.query;
-  let condition;
-  if (timeline == "year") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()";
-  } else if (timeline == "6month") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()";
-  } else if (timeline == "3month") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()";
-  } else {
-    condition =
-      " AND DATE_FORMAT(iv_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
-  }
+  const { startDate, endDate } = req.query;
+
   const sql = `SELECT 
       P.product_name, 
       SUM(I.listi_amount) AS total_quantity_sold,
-      SUM(I.listi_amount * I.listi_price) AS total_sales_amount
+      SUM(I.listi_amount * I.listi_price) AS total_sales_amount,
+      DATE_FORMAT(iv.iv_date, '%Y-%m-%d') AS sale_date
 FROM 
       listi I
 JOIN 
       Product P ON I.product_id = P.product_id
+JOIN
+      invoice iv ON I.iv_id = iv.iv_id
 WHERE 
-      I.iv_id IN (SELECT iv_id FROM invoice WHERE iv_del = '0'
-      ${condition})
+      iv.iv_del = '0'
+      AND iv.iv_date BETWEEN ? AND ?
 GROUP BY 
-      P.product_name;
-`;
+      P.product_name, sale_date
+ORDER BY
+      sale_date;`;
+
+  const params = [startDate, endDate];
 
   try {
-    const [SaleProduct] = await db.promise().query(sql);
+    const [SaleProductRows] = await db.promise().query(sql, params);
 
-    res.status(200).json(SaleProduct);
+    // Aggregate data by product name
+    const productDataMap = new Map();
+    const labels = [];
+
+    SaleProductRows.forEach((row) => {
+      const { product_name, total_sales_amount, sale_date } = row;
+
+      // Add date to labels if not already present
+      if (!labels.includes(sale_date)) {
+        labels.push(sale_date);
+      }
+
+      if (!productDataMap.has(product_name)) {
+        productDataMap.set(product_name, []);
+      }
+
+      const productSales = productDataMap.get(product_name);
+
+      // Initialize data array with zeroes up to the current length of labels
+      while (productSales.length < labels.length - 1) {
+        productSales.push(0);
+      }
+
+      productSales.push(total_sales_amount);
+    });
+
+    // Ensure all product datasets are the same length as labels
+    productDataMap.forEach((sales, productName) => {
+      while (sales.length < labels.length) {
+        sales.push(0);
+      }
+    });
+
+    const datasets = Array.from(productDataMap.entries()).map(
+      ([product_name, data]) => ({
+        label: product_name,
+        data: data,
+
+        borderWidth: 1,
+      })
+    );
+
+    res.status(200).json({
+      labels: labels,
+      datasets: datasets,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });

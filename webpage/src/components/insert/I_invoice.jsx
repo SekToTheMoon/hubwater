@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+import useAuth from "../../hooks/useAuth";
+import addListIndex from "../../utils/addListIndex";
 
 function I_invoice() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   const employee_fullname =
     localStorage.getItem("employee_fname") +
     " " +
@@ -25,7 +29,7 @@ function I_invoice() {
     invoice_tax: false,
     invoice_status: "รออนุมัติ",
     /// ต้องมาดูทำไมเซ้ตค่าแบบนี้เริ่มต้น
-    employee_id: localStorage.getItem("employee_id"),
+    employee_id: auth.employee_id,
     customer_id: "",
     items: [],
     invoice_dateend: moment(new Date()).format("YYYY-MM-DD"),
@@ -43,6 +47,7 @@ function I_invoice() {
   const navigate = useNavigate();
   const quotation = searchParams.get("quotation");
   const bill = searchParams.get("bill");
+
   const validationSchema = Yup.object({
     invoice_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
@@ -52,51 +57,28 @@ function I_invoice() {
     invoice_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบแจ้งหนี้"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listi_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
+    items: Yup.array()
+      .of(
+        Yup.object().shape({
+          product_id: Yup.string().required("โปรดเลือกสินค้า"),
+          listi_amount: Yup.number()
+            .required("โปรดระบุจำนวนสินค้า")
+            .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
+          lot_number: Yup.string().required("โปรดเลือก Lot number"),
+        })
+      )
+      .min(1, "โปรดเพิ่มสินค้า")
+      .test("items", "มีสินค้าที่ ล็อต ซ้ำกัน", function (value) {
+        if (!value) return true; // หาก array ว่างเปล่าให้ผ่านการตรวจสอบ
+
+        const uniqueItems = new Set(
+          value.map((item) => `${item.product_id}-${item.lot_number}`)
+        );
+
+        return uniqueItems.size === value.length;
+      }),
   });
 
-  const checkItem = (items) => {
-    const seen = new Set();
-    for (let item of items) {
-      const key = `${item.product_id}-${item.lot_number}`;
-      if (seen.has(key)) {
-        return true; // Duplicate found
-      }
-      seen.add(key);
-    }
-    const updatedItems = values.items.map((item, index) => ({
-      ...item,
-      listi_number: index + 1,
-    }));
-    if (updatedItems.length == 0) return true;
-    let updatedValues = {
-      ...values,
-      items: updatedItems,
-    };
-    // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
-    if (quotation) {
-      updatedValues = {
-        ...updatedValues,
-        quotation_id: quotation,
-      };
-    }
-    // ตรวจสอบว่า `bill` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
-    if (bill) {
-      updatedValues = {
-        ...updatedValues,
-        bn_id: bill,
-      };
-    }
-    return updatedValues;
-  };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -388,31 +370,32 @@ function I_invoice() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = checkItem(values.items);
-      if (updatedValues === true) {
-        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
-        return;
-      }
+      const updatedValues = addListIndex(values, "listi_number");
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleStockCut(updatedValues.items);
+      // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
+      if (quotation) {
+        updatedValues = {
+          ...updatedValues,
+          quotation_id: quotation,
+        };
+      }
+      // ตรวจสอบว่า `bill` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
+      if (bill) {
+        updatedValues = {
+          ...updatedValues,
+          bn_id: bill,
+        };
+      }
       await handleInsert(updatedValues);
-      navigate("/all/invoice");
-      // setErrors({});
+      setErrors({});
+      // navigate("/invoice");
     } catch (error) {
-      console.log(error.inner);
+      console.log(error);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
@@ -517,9 +500,6 @@ function I_invoice() {
                         <td>{product.product_amount}</td>
                         <td>{product.unit_name}</td>
                         <td>
-                          {/* <button onClick={() => handleSelectProduct(product)}>
-                            เลือก
-                          </button> */}
                           <button
                             onClick={() => {
                               document.getElementById("my_modal_3").showModal();
@@ -745,7 +725,7 @@ function I_invoice() {
               </div>
             </div>
             <hr />
-            <div className="flex mt-2">
+            <div className="flex my-2">
               <label className="label">
                 <span className="">รายละเอียด:</span>
               </label>
@@ -841,7 +821,7 @@ function I_invoice() {
                   <tr>
                     <td colSpan="8" className="text-center">
                       <div
-                        className="btn"
+                        className="btn m-5"
                         onClick={() => {
                           document.getElementById("my_modal_4").showModal();
                         }}
@@ -853,6 +833,7 @@ function I_invoice() {
                 )}
               </tbody>
             </table>
+            {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
             <div className="ml-auto w-5/12">
               <div>

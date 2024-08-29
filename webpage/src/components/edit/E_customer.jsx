@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
@@ -7,6 +8,8 @@ import * as Yup from "yup";
 import moment from "moment";
 
 function E_customer() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     fname: "",
     lname: "",
@@ -38,10 +41,66 @@ function E_customer() {
   const { id } = useParams();
 
   const validationSchema = Yup.object({
-    fname: Yup.string().required("กรุณากรอกชื่อ"),
-    lname: Yup.string().required("กรุณากรอกนามสกุล"),
-    // เพิ่ม validationSchema ต่อไปตามต้องการ
-  });
+    fname: Yup.string()
+      .matches(
+        /^[\u0E00-\u0E7F]+$/,
+        "กรอกชื่อจริงเป็นภาษาไทย และ เป็นตัวอักษรเท่านั้น"
+      )
+      .required("ต้องกรอกชื่อ"),
+    lname: Yup.string()
+      .matches(
+        /^[\u0E00-\u0E7F]+$/,
+        "กรอกนามสกุลเป็นภาษาไทย และ เป็นตัวอักษรเท่านั้น"
+      )
+      .required("ต้องกรอกชื่อ"),
+    sex: Yup.string().required("กรุณาเลือกเพศ"),
+    bdate: Yup.date().required("กรุณาเลือก ว/ด/ป เกิด"),
+    address: Yup.string().required("กรุณากรอกที่อยู่"),
+    subdistrict: Yup.string().required("กรุณาเลือกตำบล"),
+    type: Yup.string().required("กรุณาเลือกประเภท"),
+    province: Yup.string().required("กรุณาเลือกจังหวัด"),
+    district: Yup.string().required("กรุณาเลือกอำเภอ"),
+    zip_code: Yup.string().required("กรุณากรอกรหัสไปรษณีย์"),
+    nid: Yup.string()
+      .matches(/^\d*$/, "ต้องเป็นตัวเลขเท่านั้น")
+      .test("nid", "ต้องมีเลข 13 หลัก", (val) => {
+        if (val && val.length > 0) {
+          return val.length === 13;
+        }
+        return true; // ถ้าไม่มีค่า (ความยาว 0) ให้ผ่าน validation
+      }),
+    le_type: Yup.string().when("type", {
+      is: "นิติบุคคล",
+      then: () => Yup.string().required("กรุณาเลือกประเภทบริษัท"),
+    }),
+    le_name: Yup.string().when("type", {
+      is: "นิติบุคคล",
+      then: () => Yup.string().required("กรุณากรอกชื่อบริษัท"),
+    }),
+    email: Yup.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+    facebook: Yup.string(),
+    line: Yup.string(),
+    phone: Yup.array()
+      .of(
+        Yup.string().test(
+          "is-number-valid",
+          "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
+          (value) => value === "" || /^[0-9]{10}$/.test(value)
+        )
+      )
+      .notRequired(),
+  }).test(
+    "at-least-one-contact",
+    "กรุณากรอกข้อมูลติดต่ออย่างน้อยหนึ่งช่องทาง (อีเมล, Facebook, Line, หรือเบอร์โทร)",
+    function (values) {
+      return (
+        values.email ||
+        values.facebook ||
+        values.line ||
+        (values.phone && values.phone.some((p) => p))
+      );
+    }
+  );
 
   const handleChangePhone = (e, i) => {
     const inputdata = [...values.phone];
@@ -159,7 +218,7 @@ function E_customer() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/customer");
+      navigate("/customer");
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",
@@ -243,7 +302,7 @@ function E_customer() {
                   เพศ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.sex}
                   onChange={(e) =>
                     setValues({ ...values, sex: e.target.value })
@@ -300,7 +359,7 @@ function E_customer() {
                   จังหวัด
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.province}
                   onChange={(e) => {
                     const selectedProvince = e.target.value;
@@ -333,7 +392,7 @@ function E_customer() {
                   อำเภอ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;
@@ -368,7 +427,7 @@ function E_customer() {
                   ตำบล
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.subdistrict}
                   onChange={(e) => {
                     console.log(e.target.value.split(",")[1]);
@@ -412,7 +471,7 @@ function E_customer() {
             <div className="mt-5 2xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label htmlFor="email" className="block mb-2  font-medium">
-                  Your email
+                  Email
                 </label>
                 <input
                   type="email"
@@ -471,6 +530,9 @@ function E_customer() {
                       })}
                   </div>
                 </div>
+                {Object.keys(errors).some((key) => key.startsWith("phone")) && (
+                  <span className="text-error">รูปแบบเบอร์โทรศัพท์ผิด</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -493,7 +555,7 @@ function E_customer() {
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="username" className="block mb-2  font-medium">
-                  ชื่อบัญชี facebook
+                  Facebook
                 </label>
                 <input
                   type="text"
@@ -517,7 +579,7 @@ function E_customer() {
                   ประเภทลูกค้า
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.type}
                   onChange={(e) =>
                     setValues({ ...values, type: e.target.value })
@@ -583,7 +645,7 @@ function E_customer() {
                     ประเภทบริษัท
                   </label>
                   <select
-                    className="select select-bordered w-full max-w-xs mb-1"
+                    className="select select-bordered w-full  mb-1"
                     value={values.le_type}
                     onChange={(e) =>
                       setValues({ ...values, le_type: e.target.value })

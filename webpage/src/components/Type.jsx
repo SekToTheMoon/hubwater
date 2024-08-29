@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Type() {
+  const axios = useAxiosPrivate();
   const [Type, setType] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,9 @@ function Type() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
+  const headers = ["รหัสประเภท", "ชื่อประเภท", "ชื่อหมวดหมู่"];
+
   const fetchTypes = async () => {
     let url = `/Type?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -87,7 +93,7 @@ function Type() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Type");
+      navigate("/Type");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +133,7 @@ function Type() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัสประเภท</th>
@@ -190,7 +196,9 @@ function Type() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Type} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

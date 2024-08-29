@@ -2,18 +2,34 @@ import React, { useEffect, useState } from "react";
 import axios from "./api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import useAuth from "./hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import * as Yup from "yup";
 
 function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+  const { setAuth } = useAuth();
+
+  const [values, setValues] = useState({
+    username: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
+
+  const validationSchema = Yup.object({
+    username: Yup.string().required("กรุณากรอก ชื่อบัญชี"),
+    password: Yup.string()
+      .required("กรุณากรอกรหัสผ่าน")
+      .max(20, "รหัสผ่านไม่เกิน 20 ตัวอักษร"),
+  });
+
   const handleLogin = async () => {
     try {
-      const response = await axios.post("/login", {
-        username: username,
-        password: password,
-      });
+      await validationSchema.validate(values, { abortEarly: false });
+      const response = await axios.post("/login", values);
 
       if (response.status === 200) {
+        // เดี๋ยวต้องลบ
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("refreshToken", response.data.refreshToken);
         localStorage.setItem("employee_id", response.data.employee_id);
@@ -26,17 +42,46 @@ function Login() {
         );
         localStorage.setItem("posit_name", response.data.posit_name);
 
-        window.location = "/all/home";
-      } else {
-        console.error("Login failed");
+        const permissionArray = response.data.posit_permission.split("");
+        permissionArray.splice(0, 0, "1");
+        setAuth({
+          employee_id: response.data.employee_id,
+          employee_fname: response.data.employee_fname,
+          employee_lname: response.data.employee_lname,
+          employee_img: response.data.employee_img,
+          token: response.data.token,
+          refreshToken: response.data.refreshToken,
+          accessToken: response.data.token,
+          posit_permission: permissionArray,
+          posit_name: response.data.posit_name,
+        });
+        navigate("home");
       }
     } catch (error) {
-      console.error("Error occurred:", error);
+      if (!error?.response) {
+        console.log("error จากการ validate ข้อมูลไม่ถูกต้อง");
+        const newErrors = {};
+        error?.inner?.forEach((err) => {
+          newErrors[err.path] = err.message;
+        });
+        setErrors(newErrors);
+      } else {
+        toast.error(error.response.data.msg, {
+          position: "top-right",
+          autoClose: 5000,
+          hibankrogressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      }
     }
   };
 
   return (
-    <div>
+    <>
       <main className="artboard flex justify-center h-screen">
         <div
           className="hero min-h-screen "
@@ -61,11 +106,17 @@ function Login() {
                     type="text"
                     placeholder=""
                     className="input input-bordered"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={values.username}
+                    onChange={(e) =>
+                      setValues({ ...values, username: e.target.value })
+                    }
                   />
                 </div>
+                {errors.username && (
+                  <span className="text-error flex justify-start">
+                    {errors.username}
+                  </span>
+                )}
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">รหัสผ่าน</span>
@@ -74,11 +125,17 @@ function Login() {
                     type="password"
                     placeholder="password"
                     className="input input-bordered"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={values.password}
+                    onChange={(e) =>
+                      setValues({ ...values, password: e.target.value })
+                    }
                   />
                 </div>
+                {errors.password && (
+                  <span className="text-error flex justify-start">
+                    {errors.password}
+                  </span>
+                )}
                 <div className="form-control mt-6">
                   <button className="btn btn-primary" onClick={handleLogin}>
                     เข้าสู่ระบบ
@@ -89,7 +146,8 @@ function Login() {
           </div>
         </div>
       </main>
-    </div>
+      <ToastContainer position="top-right" />
+    </>
   );
 }
 

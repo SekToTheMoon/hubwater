@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   MoreVertical,
   ChevronLast,
@@ -17,20 +17,26 @@ import {
   Receipt,
 } from "lucide-react";
 import { NavLink, useLocation, Link } from "react-router-dom";
-import axios from "../api/axios";
-
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useAuth from "../hooks/useAuth";
 function Sidebar_() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
+
   const [open, setOpen] = useState(true);
   const [openSub, setOpensub] = useState(false);
-  const permission = localStorage.getItem("posit_permission");
-  const permissionArray = permission ? permission.split("") : [];
-  permissionArray.splice(0, 0, "1");
-  console.log(permissionArray);
+  const permission = auth.posit_permission;
+  console.log(
+    typeof permission +
+      permission +
+      " from Sidebar const permission หรือ สิทธิ์การเข้าถึงหน้าต่างๆ"
+  );
+
   const Menus = [
-    { title: "หน้าแรก", icon: <Home size={20} />, page: "home" },
-    { title: "Dashboard", icon: <Gauge size={20} />, page: "dashboard" },
-    { title: "พนักงาน", icon: <Contact size={20} />, page: "employee" },
-    { title: "ลูกค้า", icon: <UsersRound size={20} />, page: "customer" },
+    { title: "หน้าแรก", icon: <Home size={20} />, page: "/home" },
+    { title: "Dashboard", icon: <Gauge size={20} />, page: "/dashboard" },
+    { title: "พนักงาน", icon: <Contact size={20} />, page: "/employee" },
+    { title: "ลูกค้า", icon: <UsersRound size={20} />, page: "/customer" },
     {
       title: "เอกสารขาย",
       icon: <Files size={20} />,
@@ -38,22 +44,22 @@ function Sidebar_() {
       submenuItem: [
         {
           title: "ใบเสนอราคา",
-          page: "quotation",
+          page: "/quotation",
           icon: <MoreVertical size={24} />,
         },
         {
           title: "ใบวางบิล",
-          page: "bill",
+          page: "/bill",
           icon: <MoreVertical size={24} />,
         },
         {
           title: "ใบแจ้งหนี้/ส่งสินค้า",
-          page: "invoice",
+          page: "/invoice",
           icon: <MoreVertical size={24} />,
         },
         {
           title: "ใบเสร็จรับเงิน",
-          page: "receipt",
+          page: "/receipt",
           icon: <MoreVertical size={24} />,
         },
       ],
@@ -61,14 +67,14 @@ function Sidebar_() {
     {
       title: "ขายหน้าร้าน",
       icon: <HandCoins size={20} />,
-      page: "receiptcash",
+      page: "/receiptcash",
     },
     {
       title: "เอกสารค่าใช้จ่าย",
       icon: <Receipt size={20} />,
-      page: "out",
+      page: "/out",
     },
-    { title: "สินค้า", icon: <PackageSearch size={20} />, page: "product" },
+    { title: "สินค้า", icon: <PackageSearch size={20} />, page: "/product" },
     {
       title: "ค่าคงที่สินค้า",
       icon: <PackageOpen size={20} />,
@@ -77,34 +83,34 @@ function Sidebar_() {
         {
           title: "ยี่ห้อสินค้า",
           icon: <MoreVertical size={20} />,
-          page: "brand",
+          page: "/brand",
         },
         {
           title: "ประเภทค่าใช้จ่าย",
           icon: <MoreVertical size={20} />,
-          page: "expensetype",
+          page: "/expensetype",
         },
         {
           title: "ประเภทสินค้า",
           icon: <MoreVertical size={20} />,
-          page: "type",
+          page: "/type",
         },
         {
           title: "ประเภทหน่วยวัด",
           icon: <MoreVertical size={20} />,
-          page: "unit_m",
+          page: "/unit_m",
         },
         {
           title: "ประเภทหน่วยนับ",
           icon: <MoreVertical size={20} />,
-          page: "unit",
+          page: "/unit",
         },
       ],
     },
-    { title: "ค่าคงที่บริษัท", icon: <Home size={20} />, page: "company" },
-    { title: "แผนก", icon: <Home size={20} />, page: "department" },
-    { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "position" },
-    { title: "บัญชี", icon: <Landmark size={20} />, page: "bank" },
+    { title: "ค่าคงที่บริษัท", icon: <Home size={20} />, page: "/company" },
+    { title: "แผนก", icon: <Home size={20} />, page: "/department" },
+    { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "/position" },
+    { title: "บัญชี", icon: <Landmark size={20} />, page: "/bank" },
   ];
 
   return (
@@ -131,7 +137,7 @@ function Sidebar_() {
       </div>
       <ul className="menu">
         {Menus.map((menu, index) => {
-          if (permissionArray[index] === "1") {
+          if (permission[index] === "1") {
             return (
               <li key={index}>
                 {menu.submenu ? (

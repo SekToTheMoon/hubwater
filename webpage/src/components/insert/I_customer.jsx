@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function I_customer({ isLoggedIn = false }) {
+  const axios = useAxiosPrivate();
   //จัดการวันที่
   const [values, setValues] = useState({
     fname: "",
@@ -33,7 +34,62 @@ function I_customer({ isLoggedIn = false }) {
   const [selectprovince, setSelectProvince] = useState([]);
   const [selectdistrict, setSelectDistrict] = useState([]);
   const [selectsubdistrict, setSelectSubdistrict] = useState([]);
-  const validationSchema = Yup.object({});
+
+  const validationSchema = Yup.object({
+    fname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกชื่อจริงไม่ถูกต้อง")
+      .required("ต้องกรอกชื่อ"),
+    lname: Yup.string()
+      .matches(/^[\u0E00-\u0E7F]+$/, "กรอกชื่อจริงไม่ถูกต้อง")
+      .required("ต้องกรอกชื่อ"),
+    sex: Yup.string().required("กรุณาเลือกเพศ"),
+    bdate: Yup.date().required("กรุณาเลือก ว/ด/ป เกิด"),
+    address: Yup.string().required("กรุณากรอกที่อยู่"),
+    subdistrict: Yup.string().required("กรุณาเลือกตำบล"),
+    type: Yup.string().required("กรุณาเลือกประเภท"),
+    province: Yup.string().required("กรุณาเลือกจังหวัด"),
+    district: Yup.string().required("กรุณาเลือกอำเภอ"),
+    zip_code: Yup.string().required("กรุณากรอกรหัสไปรษณีย์"),
+    nid: Yup.string()
+      .matches(/^\d*$/, "ต้องเป็นตัวเลขเท่านั้น")
+      .test("nid", "ต้องมีเลข 13 หลัก", (val) => {
+        if (val && val.length > 0) {
+          return val.length === 13;
+        }
+        return true; // ถ้าไม่มีค่า (ความยาว 0) ให้ผ่าน validation
+      }),
+    le_type: Yup.string().when("type", {
+      is: "นิติบุคคล",
+      then: () => Yup.string().required("กรุณาเลือกประเภทบริษัท"),
+    }),
+    le_name: Yup.string().when("type", {
+      is: "นิติบุคคล",
+      then: () => Yup.string().required("กรุณากรอกชื่อบริษัท"),
+    }),
+    email: Yup.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+    facebook: Yup.string(),
+    line: Yup.string(),
+    phone: Yup.array()
+      .of(
+        Yup.string().test(
+          "is-number-valid",
+          "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
+          (value) => value === "" || /^[0-9]{10}$/.test(value)
+        )
+      )
+      .notRequired(),
+  }).test(
+    "at-least-one-contact",
+    "กรุณากรอกข้อมูลติดต่ออย่างน้อยหนึ่งช่องทาง (อีเมล, Facebook, Line, หรือเบอร์โทร)",
+    function (values) {
+      return (
+        values.email ||
+        values.facebook ||
+        values.line ||
+        (values.phone && values.phone.some((p) => p))
+      );
+    }
+  );
 
   const handleChangePhone = (e, i) => {
     const inputdata = [...values.phone];
@@ -51,7 +107,6 @@ function I_customer({ isLoggedIn = false }) {
       .get("/getprovince")
       .then((res) => {
         setSelectProvince(res.data);
-        console.log(selectprovince);
       })
       .catch((err) => console.log(err));
   };
@@ -60,7 +115,6 @@ function I_customer({ isLoggedIn = false }) {
       .get(`/getdistrict/${province}`)
       .then((res) => {
         setSelectDistrict(res.data);
-        console.log(selectdistrict);
       })
       .catch((err) => console.log(err));
   };
@@ -69,7 +123,6 @@ function I_customer({ isLoggedIn = false }) {
       .get(`/getsubdistrict/${district}`)
       .then((res) => {
         setSelectSubdistrict(res.data);
-        console.log(selectsubdistrict);
       })
       .catch((err) => console.log(err));
   };
@@ -86,17 +139,19 @@ function I_customer({ isLoggedIn = false }) {
       handleInsert();
       setErrors({});
     } catch (error) {
+      console.log(error);
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
+      error?.inner.forEach((err) => {
         console.log(err.path);
-        newErrors[err.path] = err.message;
+        err.path
+          ? (newErrors[err.path] = err.message)
+          : (newErrors["contact"] = err.message);
       });
       setErrors(newErrors);
     }
   };
   const handleInsert = async () => {
-    console.log(values);
     try {
       const response = await axios.post("/customer/insert", values);
       toast.info(response.data.msg, {
@@ -132,7 +187,7 @@ function I_customer({ isLoggedIn = false }) {
             onSubmit={handleSubmit}
             className="max-w-sm mx-auto 2xl:max-w-7xl"
           >
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label htmlFor="fname" className="block mb-2  font-medium">
                   ชื่อ
@@ -191,7 +246,7 @@ function I_customer({ isLoggedIn = false }) {
                   เพศ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.sex}
                   onChange={(e) =>
                     setValues({ ...values, sex: e.target.value })
@@ -234,7 +289,7 @@ function I_customer({ isLoggedIn = false }) {
                   type="nid"
                   name="nid"
                   className="input input-bordered w-full mb-1"
-                  placeholder="รหัส 12 หลัก"
+                  placeholder="รหัส 13 หลัก"
                   onChange={(e) =>
                     setValues({ ...values, nid: e.target.value })
                   }
@@ -248,7 +303,7 @@ function I_customer({ isLoggedIn = false }) {
                   จังหวัด
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.province}
                   onChange={(e) => {
                     const selectedProvince = e.target.value;
@@ -281,7 +336,7 @@ function I_customer({ isLoggedIn = false }) {
                   อำเภอ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;
@@ -316,7 +371,7 @@ function I_customer({ isLoggedIn = false }) {
                   ตำบล
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.subdistrict}
                   onChange={(e) => {
                     console.log(e.target.value.split(",")[1]);
@@ -343,7 +398,7 @@ function I_customer({ isLoggedIn = false }) {
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="username" className="block mb-2  font-medium">
-                  รหัสไปรษณีย์
+                  ไปรษณีย์
                 </label>
                 <input
                   type="text"
@@ -360,7 +415,7 @@ function I_customer({ isLoggedIn = false }) {
             <div className="mt-5 2xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label htmlFor="email" className="block mb-2  font-medium">
-                  Your email
+                  Email
                 </label>
                 <input
                   type="email"
@@ -420,6 +475,9 @@ function I_customer({ isLoggedIn = false }) {
                     })}
                   </div>
                 </div>
+                {Object.keys(errors).some((key) => key.startsWith("phone")) && (
+                  <span className="text-error">รูปแบบเบอร์โทรศัพท์ผิด</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -441,7 +499,7 @@ function I_customer({ isLoggedIn = false }) {
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="username" className="block mb-2  font-medium">
-                  ชื่อบัญชี facebook
+                  facebook
                 </label>
                 <input
                   type="text"
@@ -465,7 +523,7 @@ function I_customer({ isLoggedIn = false }) {
                   ประเภทลูกค้า
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.type}
                   onChange={(e) =>
                     setValues({ ...values, type: e.target.value })
@@ -531,7 +589,7 @@ function I_customer({ isLoggedIn = false }) {
                     ประเภทบริษัท
                   </label>
                   <select
-                    className="select select-bordered w-full max-w-xs mb-1"
+                    className="select select-bordered w-full  mb-1"
                     value={values.le_type}
                     onChange={(e) =>
                       setValues({ ...values, le_type: e.target.value })
@@ -590,7 +648,9 @@ function I_customer({ isLoggedIn = false }) {
                 </div>
               </div>
             </div>
-
+            {errors.contact && (
+              <span className="text-error">{errors.contact}</span>
+            )}
             {/* <div className="mt-5 2xl:flex gap-x-5"></div> */}
 
             <button className="btn btn-primary w-full mt-2">ตกลง</button>

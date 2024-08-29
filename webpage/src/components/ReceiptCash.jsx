@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,11 +8,14 @@ import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
+import useAuth from "../hooks/useAuth";
 
 function ReceiptCash() {
+  const axios = useAxiosPrivate();
+
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
 
   const [ReceiptCash, setReceiptCash] = useState([]);
   const [Banks, setBanks] = useState([]);
@@ -24,7 +27,7 @@ function ReceiptCash() {
   const [receiptCashForDel, setReceiptCashfordel] = useState(null);
   // const [indexToUpdate, setIndexToUpdate] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
-  const statusReceiptCash = statusOptions[3];
+  const statusReceiptCash = statusOptions[4];
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
@@ -162,7 +165,7 @@ function ReceiptCash() {
         theme: "dark",
       });
       //   messageSuccess = false; ทำไมไม่ทำอย่างนี้
-      navigate("/all/ReceiptCash");
+      navigate("/ReceiptCash");
     }
   }, [currentPage, perPage]);
 
@@ -245,9 +248,7 @@ function ReceiptCash() {
                     <td>{receiptCash.rf_date.substring(0, 10)}</td>
                     <td
                       className="cursor-pointer"
-                      onClick={() =>
-                        navigate(`view?receiptCash=${receiptCash.rf_id}`)
-                      }
+                      onClick={() => navigate(`view/${receiptCash.rf_id}`)}
                     >
                       {receiptCash.rf_id}
                     </td>

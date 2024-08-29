@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 function product() {
+  const axios = useAxiosPrivate();
+
   const [product, setproduct] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -87,7 +89,7 @@ function product() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/product");
+      navigate("/product");
     }
   }, [currentPage, perPage]);
 
@@ -143,8 +145,9 @@ function product() {
                 product.map((product) => (
                   <tr
                     className={
-                      product.product_reorder >= product.product_amount &&
-                      "text-error"
+                      product.product_reorder >= product.product_amount
+                        ? "text-error"
+                        : ""
                     }
                     key={product.product_id}
                   >

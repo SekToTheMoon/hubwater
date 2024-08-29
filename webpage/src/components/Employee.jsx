@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Employee() {
+  const axios = useAxiosPrivate();
   const [employees, setEmployees] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,8 @@ function Employee() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+  const headers = ["รหัสพนักงาน", "ชื่อ-นามสกุล", "เบอร์โทร", "อีเมล"];
+
   const fetchEmployees = async () => {
     try {
       let url = `/employee?page=${currentPage}&per_page=${perPage}`;
@@ -86,7 +91,7 @@ function Employee() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Employee");
+      navigate("/Employee");
     }
   }, [currentPage, perPage]);
 
@@ -126,7 +131,7 @@ function Employee() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className="text-base">
                 <th>รหัสพนักงาน</th>
@@ -195,7 +200,9 @@ function Employee() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={employees} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

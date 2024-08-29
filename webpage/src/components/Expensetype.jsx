@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Expensetype() {
+  const axios = useAxiosPrivate();
   const [Expensetype, setExpensetype] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,9 @@ function Expensetype() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
+  const headers = ["รหัสประเภทค่าใช้จ่าย", "ชื่อประเภทค่าใช้จ่าย"];
+
   const fetchExpensetypes = async () => {
     let url = `/Expensetype?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -87,7 +93,7 @@ function Expensetype() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Expensetype");
+      navigate("/Expensetype");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +133,7 @@ function Expensetype() {
               </button>
             </div>
           </div>
-          <table className="w-full">
+          {/* <table className="w-full">
             <thead className="bg-base-200 text-left">
               <tr className="border-b">
                 <th className="pl-5 py-3 ">รหัสประเภทค่าใช้จ่าย</th>
@@ -194,7 +200,9 @@ function Expensetype() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Expensetype} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

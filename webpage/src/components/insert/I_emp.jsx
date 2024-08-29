@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 
 function I_emp() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     fname: "",
     lname: "",
     bdate: "",
     hiredate: "",
     sex: "",
-    salary: Number(),
+    salary: "",
     username: "",
     password: "",
     confirmation: "",
@@ -19,7 +21,7 @@ function I_emp() {
     address: "",
     email: "",
     line: "",
-    commit: Number(0),
+    commit: "",
     phone: [""],
     dep: "",
     position: "",
@@ -59,10 +61,16 @@ function I_emp() {
       .required("ต้องกรอกยืนยันรหัสผ่าน"),
     bdate: Yup.string().required("ต้องเลือกวันเกิดของพนักงาน"),
     sex: Yup.string().required("ต้องเลือกเพศของพนักงาน"),
-    salary: Yup.number()
-      .required("ต้องกรอกเงินเดือนของพนักงาน")
-      .positive("กรอกเงินเดือนไม่ถูกต้อง")
-      .integer("เงินเดือนต้องเป็นจำนวนเต็มบวก"),
+    salary: Yup.string()
+      .required("ต้องกรอกเงินเดือน")
+      .matches(/^\d+$/, "เงินเดือนต้องเป็นตัวเลขเท่านั้น"),
+    commit: Yup.string()
+      .required("ต้องกรอกค่าคอมมิสชั่น")
+      .test("commit", "ค่าคอมมิสชั่นต้องอยู่ระหว่าง 0 ถึง 100", (value) => {
+        if (!value) return true; // ถ้าไม่มีค่า ให้ผ่านการตรวจสอบนี้
+        const num = parseInt(value, 10);
+        return num >= 0 && num <= 100;
+      }),
     hiredate: Yup.string().required("ต้องเลือกวันเริ่มทำงานของพนักงาน"),
     username: Yup.string().required("ต้องกรอกชื่อบัญชี"),
     images: Yup.string().required("ต้องเลือกรูปภาพ"),
@@ -80,17 +88,24 @@ function I_emp() {
       )
       .notRequired(),
     address: Yup.string().required("ต้องกรอกที่อยู่"),
-    commit: Yup.number()
-      .required("ต้องกรอกค่าคอมมิสชั่น")
-      .min(0, "ค่าคอมมิสชั่นต้องมากกว่าหรือเท่ากับ 0")
-      .integer("ค่าคอมมิสชั่นต้องเป็นจำนวนเต็มเท่านั้น"),
     position: Yup.string().required("ต้องเลือกตำแหน่งงาน"),
     province: Yup.string().required("ต้องเลือกจังหวัด"),
     dep: Yup.string().required("ต้องเลือกแผนก"),
     subdistrict: Yup.string().required("ต้องเลือกตำบล"),
     district: Yup.string().required("ต้องเลือกอำเภอ"),
     zip_code: Yup.string().required("ต้องเลือกรหัสไปรษณีย์"),
-  });
+  }).test(
+    "at-least-one-contact",
+    "กรุณากรอกข้อมูลติดต่ออย่างน้อยหนึ่งช่องทาง (อีเมล, Line, เบอร์โทร)",
+    function (values) {
+      return (
+        values.email ||
+        values.facebook ||
+        values.line ||
+        (values.phone && values.phone.some((p) => p))
+      );
+    }
+  );
 
   //จัดการไฟล์รูปภาพ
   const handleFileChange = (e) => {
@@ -185,14 +200,13 @@ function I_emp() {
       await handleInsert();
       setErrors({});
     } catch (error) {
-      console.log(error.inner);
+      console.log("error จากการ validate ข้อมูลไม่ถูกต้อง");
+      console.log(error);
       const newErrors = {};
       error.inner.forEach((err) => {
-        // console.log(err.path);
         newErrors[err.path] = err.message;
       });
       setErrors(newErrors);
-      console.log(errors);
     }
   };
 
@@ -219,10 +233,12 @@ function I_emp() {
     });
     try {
       const response = await axios.post("/employee/insert", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       console.log("Success:", response.data);
-      toast.success("Employee inserted successfully", {
+      toast.success("เพิ่มข้อมูลพนัก สำเร็จ", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -233,8 +249,7 @@ function I_emp() {
         theme: "dark",
       });
     } catch (error) {
-      console.error("Error during employee insertion:", error);
-      toast.error("Error during employee insertion", {
+      toast.error(error.response.data.msg, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -461,12 +476,12 @@ function I_emp() {
               )}
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
-              <div className="flex-1 mb-5">
+              <div className="flex-1 mb-5 ">
                 <label htmlFor="จังหวัด" className="block mb-2  font-medium">
                   จังหวัด
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full mb-1"
                   value={values.province}
                   onChange={(e) => {
                     const selectedProvince = e.target.value;
@@ -499,7 +514,7 @@ function I_emp() {
                   อำเภอ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;
@@ -534,7 +549,7 @@ function I_emp() {
                   ตำบล
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.subdistrict}
                   onChange={(e) => {
                     console.log(e.target.value.split(",")[1]);
@@ -587,6 +602,7 @@ function I_emp() {
                 <input
                   type="text"
                   name="salary"
+                  value={values.salary}
                   onChange={(e) =>
                     setValues({ ...values, salary: e.target.value })
                   }
@@ -607,6 +623,7 @@ function I_emp() {
                 <input
                   type="text"
                   name="commit"
+                  value={values.commit}
                   onChange={(e) =>
                     setValues({ ...values, commit: e.target.value })
                   }
@@ -789,7 +806,9 @@ function I_emp() {
                 )}
               </div>
             </div>
-
+            {errors.contact && (
+              <span className="text-error">{errors.contact}</span>
+            )}
             <button type="submit" className="btn btn-primary w-full mb-5">
               ตกลง
             </button>

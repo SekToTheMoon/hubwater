@@ -5,11 +5,13 @@ import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
 
 function E_bill() {
   const { id } = useParams();
-  const employee_fname = localStorage.getItem("employee_fname");
-  const employee_lname = localStorage.getItem("employee_lname");
+  const { auth } = useAuth();
+
+  const token = auth?.accessToken;
 
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
@@ -84,7 +86,9 @@ function E_bill() {
   // ดึงข้อมูล ใบวางบิล
   const fetchBill = async () => {
     try {
-      const response = await axios.get(`/getbill/${id}`);
+      const response = await axios.get(`/getbill/${id}`, {
+        headers: { Authorization: "Bearer " + token },
+      });
       const bnDetail = response.data.bnDetail[0];
       const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
@@ -121,7 +125,9 @@ function E_bill() {
   // fetch lot ของสินค้า
   const fetchLotNumbers = async (productID) => {
     try {
-      const response = await axios.get(`/selectstock/${productID}`);
+      const response = await axios.get(`/selectstock/${productID}`, {
+        headers: { Authorization: "Bearer " + token },
+      });
       setLotNumbers(response.data);
     } catch (error) {
       console.error("Error fetching lot numbers:", error);
@@ -134,7 +140,9 @@ function E_bill() {
       url += `?search=${search}`;
     }
     try {
-      const res = await axios.get(url);
+      const res = await axios.get(url, {
+        headers: { Authorization: "Bearer " + token },
+      });
       setSelectedProduct(res.data);
     } catch (error) {
       console.log(err);
@@ -143,7 +151,9 @@ function E_bill() {
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
-      const res = await axios.get("/getcustomers");
+      const res = await axios.get("/getcustomers", {
+        headers: { Authorization: "Bearer " + token },
+      });
       setSelectCustomer(res.data);
     } catch (err) {
       console.log(err);
@@ -151,7 +161,9 @@ function E_bill() {
   };
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get("/getcustomer/" + customer_id);
+      const res = await axios.get("/getcustomer/" + customer_id, {
+        headers: { Authorization: "Bearer " + token },
+      });
       setSelectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -261,7 +273,9 @@ function E_bill() {
   };
   const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.put("/bill/edit/" + id, updatedValues);
+      const response = await axios.put("/bill/edit/" + id, updatedValues, {
+        headers: { Authorization: "Bearer " + token },
+      });
       console.log("Success:", response.data);
       toast.success("bill inserted successfully", {
         position: "top-right",

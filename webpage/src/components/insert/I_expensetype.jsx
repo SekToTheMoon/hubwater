@@ -1,14 +1,19 @@
 import React, { useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_expensetype() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({ expensetype_name: "" });
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    expensetype_name: Yup.string().required("กรุณากรอกชื่อ ประเภทค่าใช้จ่าย"),
+    expensetype_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ ค่าใช้จ่าย"),
   });
 
   const handleSubmit = async (e) => {

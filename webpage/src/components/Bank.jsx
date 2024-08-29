@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
 function Bank() {
+  const axios = useAxiosPrivate();
+
   const [Bank, setBank] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,9 @@ function Bank() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
+  const headers = ["รหัส", "เลขบัญชีธนาคาร", "ธนาคาร", "ชื่อเจ้าของบัญชี"];
+
   const fetchBanks = async () => {
     let url = `/Bank?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -87,7 +93,7 @@ function Bank() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Bank");
+      navigate("/Bank");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +133,7 @@ function Bank() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัส</th>
@@ -198,7 +204,8 @@ function Bank() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Bank} onDelete={handleDelete} />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

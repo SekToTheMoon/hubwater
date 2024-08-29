@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../api/axios";
+import useAuth from "../../hooks/useAuth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
 function E_brand() {
+  const { id } = useParams();
+  const { auth } = useAuth();
+  const token = auth?.accessToken;
+
   const [values, setValues] = useState({ brand_name: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { id } = useParams();
 
   const validationSchema = Yup.object({
     brand_name: Yup.string().required("กรุณากรอกชื่อ ยี่ห้อ"),
@@ -32,10 +36,10 @@ function E_brand() {
   const handleEdit = async () => {
     try {
       await axios
-        .put("/brand/edit/" + id, values)
-        .then((res) =>
-          navigate("/all/brand", { state: { msg: res.data.msg } })
-        );
+        .put("/brand/edit/" + id, values, {
+          headers: { Authorization: "Bearer " + token },
+        })
+        .then((res) => navigate("/brand", { state: { msg: res.data.msg } }));
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",
@@ -52,7 +56,9 @@ function E_brand() {
 
   useEffect(() => {
     axios
-      .get("/getbrand/" + id)
+      .get("/getbrand/" + id, {
+        headers: { Authorization: "Bearer " + token },
+      })
       .then((res) => setValues({ brand_name: res.data[0].brand_name }))
       .catch((err) => console.log(err));
   }, []);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,11 +8,13 @@ import statusOptions from "../constants/statusOptions";
 import io from "socket.io-client";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
+import useAuth from "../hooks/useAuth";
 
 function Out() {
+  const axios = useAxiosPrivate();
+  const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
-  let roll = localStorage.getItem("posit_name");
-  if (roll !== "หัวหน้า") roll = "ลูกน้อง";
+  const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
 
   const [Out, setOut] = useState([]);
   const [Banks, setBanks] = useState([]);
@@ -160,7 +162,7 @@ function Out() {
         theme: "dark",
       });
       //   messageSuccess = false; ทำไมไม่ทำอย่างนี้
-      navigate("/all/Out");
+      navigate("/Out");
     }
   }, [currentPage, perPage]);
 

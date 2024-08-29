@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_product() {
+  const axios = useAxiosPrivate();
+
   const [values, setValues] = useState({
     product_name: "",
     product_price: "",
@@ -24,8 +26,10 @@ function I_product() {
   const [imageURL, setImageURL] = useState(null);
 
   const validationSchema = Yup.object({
-    product_name: Yup.string().required("กรุณากรอกชื่อ แผนก"),
-    type_id: Yup.string().required("กรุณาเลือกแผนกด้วย"),
+    product_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ สินค้า"),
+    type_id: Yup.string().required("กรุณาเลือกประเภทด้วย"),
   });
 
   const handleFileChange = (e) => {
@@ -45,8 +49,8 @@ function I_product() {
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
+      error?.inner?.forEach((err) => {
+        console.log(err?.path);
         newErrors[err.path] = err.message;
       });
       setErrors(newErrors);
@@ -67,7 +71,9 @@ function I_product() {
     formData.append("img", images[0]);
     try {
       const response = await axios.post("/product/insert", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
       toast.info(response.data.msg, {
         product: "top-right",
@@ -80,6 +86,7 @@ function I_product() {
         theme: "dark",
       });
     } catch (error) {
+      console.log(error + " from error handleInsert");
       toast.error(error.response.data.msg, {
         product: "top-right",
         autoClose: 3000,

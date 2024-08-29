@@ -1,14 +1,17 @@
 import React, { useState } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_brand() {
+  const axios = useAxiosPrivate();
   const [values, setValues] = useState({ brand_name: "" });
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    brand_name: Yup.string().required("กรุณากรอกชื่อ แบรนด์"),
+    brand_name: Yup.string()
+      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
+      .required("กรุณากรอกชื่อ แบรนด์"),
   });
 
   const handleSubmit = async (e) => {
@@ -66,13 +69,13 @@ function I_brand() {
             <input
               type="text"
               placeholder="กรอกชื่อแบรนด์"
-              className="input input-bordered w-full mb-2"
+              className="input input-bordered w-full my-1"
               onChange={(e) => setValues({ brand_name: e.target.value })}
             />
             {errors.brand_name && (
-              <span className="text-error">{errors.brand_name}</span>
+              <span className="text-error my-1">{errors.brand_name}</span>
             )}
-            <button type="submit" className="btn btn-primary w-full">
+            <button type="submit" className="btn btn-primary w-full my-2">
               ตกลง
             </button>
           </form>

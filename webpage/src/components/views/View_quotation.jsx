@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import moment from "moment";
 import { useParams } from "react-router-dom";
 
 function View_quotation() {
+  const axios = useAxiosPrivate();
   const { id } = useParams();
   const [values, setValues] = useState({
     quotation_date: moment(new Date()).format("YYYY-MM-DD"),

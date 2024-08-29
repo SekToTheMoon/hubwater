@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "../api/axios";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+
 function Brand() {
+  const axios = useAxiosPrivate();
   const [Brand, setBrand] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -15,6 +18,8 @@ function Brand() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+  const headers = ["รหัสแบรนด", "ชื่อแบรนด"];
+
   const fetchBrands = async () => {
     let url = `/Brand?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -87,7 +92,7 @@ function Brand() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/Brand");
+      navigate("/Brand");
     }
   }, [currentPage, perPage]);
 
@@ -127,7 +132,7 @@ function Brand() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
+          {/* <table className="table text-base">
             <thead>
               <tr className=" text-base">
                 <th>รหัสแบรนด์</th>
@@ -192,7 +197,9 @@ function Brand() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table> */}
+          <Table headers={headers} data={Brand} onDelete={handleDelete} />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
 function E_bank() {
+  const axios = useAxiosPrivate();
   const bank_type = ["ออมทรัพย์", "ฝากประจำ", "กระแสรายวัน"];
   const bank_list = [
     "ธ.กสิกรไทย",
@@ -73,7 +74,7 @@ function E_bank() {
     try {
       await axios
         .put("/bank/edit/" + id, values)
-        .then((res) => navigate("/all/bank", { state: { msg: res.data.msg } }));
+        .then((res) => navigate("/bank", { state: { msg: res.data.msg } }));
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",
