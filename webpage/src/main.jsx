@@ -14,6 +14,7 @@ import Home from "./components/Home.jsx";
 import Register from "./components/Register.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Error from "./Error.jsx";
+import Unauthorized from "./Unauthorized.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import All from "./All.jsx";
 import E_dep from "./components/edit/E_dep.jsx";
@@ -77,6 +78,7 @@ import View_receiptcash from "./components/views/View_receiptcash.jsx";
 import Company from "./components/Company.jsx";
 import { AuthProvider } from "./context/authProvider.jsx";
 import RequireAuth from "./context/requireAuth.jsx";
+import PersistLogin from "./PersistLogin.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -86,130 +88,134 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/" element={<Login />} />
           <Route path="/test" element={<Testimg />} />
           <Route path="/register" element={<Register />} />
-          <Route path="home" element={<All />}>
-            <Route index element={<Home />} />
-          </Route>
-          <Route element={<RequireAuth allowedPermission={1} />}>
-            <Route path="dashboard" element={<All />}>
-              <Route index element={<Dashboard />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route element={<PersistLogin />}>
+            <Route path="home" element={<All />}>
+              <Route index element={<Home />} />
+            </Route>
+            <Route element={<RequireAuth allowedPermission={1} />}>
+              <Route path="dashboard" element={<All />}>
+                <Route index element={<Dashboard />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={2} />}>
+              <Route path="employee" element={<All />}>
+                <Route index element={<Employee />} />
+                <Route path="insert" element={<I_emp />} />
+                <Route path="edit/:id" element={<Edit_emp />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={3} />}>
+              <Route path="customer" element={<All />}>
+                <Route index element={<Customer />} />
+                <Route path="insert" element={<I_customer />} />
+                <Route path="edit/:id" element={<E_customer />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={4} />}>
+              <Route path="quotation" element={<All />}>
+                <Route index element={<Quotation />} />
+                <Route path="insert" element={<I_quotation />} />
+                <Route path="view/:id" element={<View_quotation />} />
+                <Route path="edit/:id" element={<E_quotation />} />
+              </Route>
+              <Route path="bill" element={<All />}>
+                <Route index element={<Bill />} />
+                <Route path="insert" element={<I_bill />} />
+                <Route path="view/:id" element={<View_bill />} />
+                <Route path="edit/:id" element={<E_bill />} />
+              </Route>
+              <Route path="invoice" element={<All />}>
+                <Route index element={<Invoice />} />
+                <Route path="insert" element={<I_invoice />} />
+                <Route path="view/:id" element={<View_invoice />} />
+                <Route path="edit/:id" element={<E_invoice />} />
+              </Route>
+              <Route path="receipt" element={<All />}>
+                <Route index element={<Receipt />} />
+                <Route path="insert" element={<I_receipt />} />
+                <Route path="view" element={<View_receipt />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={5} />}>
+              <Route path="receiptcash" element={<All />}>
+                <Route index element={<ReceiptCash />} />
+                <Route path="insert" element={<I_receiptcash />} />
+                <Route path="edit/:id" element={<E_receiptcash />} />
+                <Route path="view/:id" element={<View_receiptcash />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={6} />}>
+              <Route path="out" element={<All />}>
+                <Route index element={<Out />} />
+                <Route path="insert" element={<I_out />} />
+                <Route path="edit/:id" element={<E_out />} />
+                <Route path="view/:id" element={<View_out />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={7} />}>
+              <Route path="product" element={<All />}>
+                <Route index element={<Product />} />
+                <Route path="insert" element={<I_product />} />
+                <Route path="edit/:id" element={<E_product />} />
+                <Route path="stock/:id" element={<Stock />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={8} />}>
+              <Route path="brand" element={<All />}>
+                <Route index element={<Brand />} />
+                <Route path="insert" element={<I_brand />} />
+                <Route path="edit/:id" element={<E_brand />} />
+              </Route>
+              <Route path="type" element={<All />}>
+                <Route index element={<Type />} />
+                <Route path="insert" element={<I_type />} />
+                <Route path="edit/:id" element={<E_type />} />
+              </Route>
+              <Route path="unit" element={<All />}>
+                <Route index element={<Unit />} />
+                <Route path="insert" element={<I_unit />} />
+                <Route path="edit/:id" element={<E_unit />} />
+              </Route>
+              <Route path="unit_m" element={<All />}>
+                <Route index element={<Unit_m />} />
+                <Route path="insert" element={<I_unit_m />} />
+                <Route path="edit/:id" element={<E_unit_m />} />
+              </Route>
+              <Route path="expensetype" element={<All />}>
+                <Route index element={<Expensetype />} />
+                <Route path="insert" element={<I_expensetype />} />
+                <Route path="edit/:id" element={<E_expensetype />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={9} />}>
+              <Route path="company" element={<All />}>
+                <Route index element={<Company />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={10} />}>
+              <Route path="department" element={<All />}>
+                <Route index element={<Department />} />
+                <Route path="insert" element={<I_dep />} />
+                <Route path="edit/:id" element={<E_dep />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={11} />}>
+              <Route path="position" element={<All />}>
+                <Route index element={<Position />} />
+                <Route path="insert" element={<I_posit />} />
+                <Route path="edit/:id" element={<E_posit />} />
+              </Route>
+            </Route>
+            <Route element={<RequireAuth allowedPermission={12} />}>
+              <Route path="bank" element={<All />}>
+                <Route index element={<Bank />} />
+                <Route path="insert" element={<I_bank />} />
+                <Route path="edit/:id" element={<E_bank />} />
+              </Route>
             </Route>
           </Route>
-          <Route element={<RequireAuth allowedPermission={2} />}>
-            <Route path="employee" element={<All />}>
-              <Route index element={<Employee />} />
-              <Route path="insert" element={<I_emp />} />
-              <Route path="edit/:id" element={<Edit_emp />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={3} />}>
-            <Route path="customer" element={<All />}>
-              <Route index element={<Customer />} />
-              <Route path="insert" element={<I_customer />} />
-              <Route path="edit/:id" element={<E_customer />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={4} />}>
-            <Route path="quotation" element={<All />}>
-              <Route index element={<Quotation />} />
-              <Route path="insert" element={<I_quotation />} />
-              <Route path="view/:id" element={<View_quotation />} />
-              <Route path="edit/:id" element={<E_quotation />} />
-            </Route>
-            <Route path="bill" element={<All />}>
-              <Route index element={<Bill />} />
-              <Route path="insert" element={<I_bill />} />
-              <Route path="view/:id" element={<View_bill />} />
-              <Route path="edit/:id" element={<E_bill />} />
-            </Route>
-            <Route path="invoice" element={<All />}>
-              <Route index element={<Invoice />} />
-              <Route path="insert" element={<I_invoice />} />
-              <Route path="view/:id" element={<View_invoice />} />
-              <Route path="edit/:id" element={<E_invoice />} />
-            </Route>
-            <Route path="receipt" element={<All />}>
-              <Route index element={<Receipt />} />
-              <Route path="insert" element={<I_receipt />} />
-              <Route path="view" element={<View_receipt />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={5} />}>
-            <Route path="receiptcash" element={<All />}>
-              <Route index element={<ReceiptCash />} />
-              <Route path="insert" element={<I_receiptcash />} />
-              <Route path="edit/:id" element={<E_receiptcash />} />
-              <Route path="view/:id" element={<View_receiptcash />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={6} />}>
-            <Route path="out" element={<All />}>
-              <Route index element={<Out />} />
-              <Route path="insert" element={<I_out />} />
-              <Route path="edit/:id" element={<E_out />} />
-              <Route path="view/:id" element={<View_out />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={7} />}>
-            <Route path="product" element={<All />}>
-              <Route index element={<Product />} />
-              <Route path="insert" element={<I_product />} />
-              <Route path="edit/:id" element={<E_product />} />
-              <Route path="stock/:id" element={<Stock />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={8} />}>
-            <Route path="brand" element={<All />}>
-              <Route index element={<Brand />} />
-              <Route path="insert" element={<I_brand />} />
-              <Route path="edit/:id" element={<E_brand />} />
-            </Route>
-            <Route path="type" element={<All />}>
-              <Route index element={<Type />} />
-              <Route path="insert" element={<I_type />} />
-              <Route path="edit/:id" element={<E_type />} />
-            </Route>
-            <Route path="unit" element={<All />}>
-              <Route index element={<Unit />} />
-              <Route path="insert" element={<I_unit />} />
-              <Route path="edit/:id" element={<E_unit />} />
-            </Route>
-            <Route path="unit_m" element={<All />}>
-              <Route index element={<Unit_m />} />
-              <Route path="insert" element={<I_unit_m />} />
-              <Route path="edit/:id" element={<E_unit_m />} />
-            </Route>
-            <Route path="expensetype" element={<All />}>
-              <Route index element={<Expensetype />} />
-              <Route path="insert" element={<I_expensetype />} />
-              <Route path="edit/:id" element={<E_expensetype />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={9} />}>
-            <Route path="company" element={<All />}>
-              <Route index element={<Company />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={10} />}>
-            <Route path="department" element={<All />}>
-              <Route index element={<Department />} />
-              <Route path="insert" element={<I_dep />} />
-              <Route path="edit/:id" element={<E_dep />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={11} />}>
-            <Route path="position" element={<All />}>
-              <Route index element={<Position />} />
-              <Route path="insert" element={<I_posit />} />
-              <Route path="edit/:id" element={<E_posit />} />
-            </Route>
-          </Route>
-          <Route element={<RequireAuth allowedPermission={12} />}>
-            <Route path="bank" element={<All />}>
-              <Route index element={<Bank />} />
-              <Route path="insert" element={<I_bank />} />
-              <Route path="edit/:id" element={<E_bank />} />
-            </Route>
-          </Route>
+          <Route path="*" element={<Error />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

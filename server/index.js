@@ -30,6 +30,7 @@ const io = initSocket(server);
 const pdfRoutes = require("./routes/pdfRoutes");
 const login_logout = require("./routes/login_logout");
 const logout = require("./routes/logOut");
+const refresh = require("./routes/refresh");
 const imageRoutes = require("./routes/imageRoutes");
 const DashboardRoutes = require("./routes/DashboardRoutes");
 const addressRoutes = require("./routes/addressRoutes");
@@ -56,7 +57,6 @@ const invoiceRoutes = require("./routes/document/invoiceRoutes")(io);
 const receiptRoutes = require("./routes/document/receiptRoutes")(io);
 
 const routes = [
-  logout,
   pdfRoutes,
   DashboardRoutes,
   addressRoutes,
@@ -87,18 +87,20 @@ app.put("/updateStatus", (req, res) => {
 });
 
 //อยู๋หน้า all ตรวจสอบผู้ใช้ต้องมี token
-app.post("/auth", (req, res) => {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    console.log(token + "from /auth at index.js");
-    return res.status(200).json(decoded);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
+// app.post("/auth", (req, res) => {
+//   try {
+//     const token = req.headers.authorization.split(" ")[1];
+//     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+//     console.log(token + "from /auth at index.js");
+//     return res.status(200).json(decoded);
+//   } catch (err) {
+//     res.status(500).json(err);
+//   }
+// });
 
+app.use(refresh);
 app.use(login_logout);
+app.use(logout);
 app.use(imageRoutes);
 
 // ต้องทำการ decode jwt ก่อนการ ทำงาน

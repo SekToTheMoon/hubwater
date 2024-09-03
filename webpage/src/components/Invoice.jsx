@@ -316,8 +316,22 @@ function Invoice() {
                           tabIndex={0}
                           className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                         >
-                          <li>
-                            <Link to={`edit/${invoice.iv_id}`}>แก้ไข</Link>
+                          <li
+                            className={
+                              invoice.iv_status === "ดำเนินการแล้ว"
+                                ? "disabled"
+                                : ""
+                            }
+                          >
+                            <Link
+                              onClick={(e) =>
+                                invoice.iv_status === "ดำเนินการแล้ว" &&
+                                e.preventDefault()
+                              }
+                              to={`edit/${invoice.iv_id}`}
+                            >
+                              แก้ไข
+                            </Link>
                           </li>
                           <li>
                             <button onClick={() => setInvoicefordel(invoice)}>

@@ -37,18 +37,27 @@ router.post("/login", (req, res) => {
                 if (err) {
                   return res.status(500).json({ msg: err });
                 }
-                const token = generateAccessToken(emp[0]);
-                const refreshToken = generateRefreshToken(emp[0]);
+
+                const logTime = require("moment")().format(
+                  "YYYY-MM-DD HH:mm:ss"
+                );
+                console.log(logTime);
 
                 db.query(
                   "INSERT INTO log_time (employee_id, login_date) VALUES (?, ?)",
-                  [emp[0].employee_id, new Date()],
+                  [emp[0].employee_id, logTime],
                   (err) =>
                     err && console.log(err + "จากการ insert ข้อมูล login ")
                 );
-                // refreshTokens.push(refreshToken);
-                // console.log(refreshTokens);
-                // console.log(refreshTokens); เอาไว้ดูว่ามี refreshtoken กี่ตัวแล้ว
+
+                const token = generateAccessToken({
+                  ...emp[0],
+                  login_date: logTime,
+                });
+                const refreshToken = generateRefreshToken({
+                  ...emp[0],
+                  login_date: logTime,
+                });
 
                 // Creates Secure Cookie with refresh token
                 res.cookie("jwt", refreshToken, {

@@ -66,7 +66,6 @@ module.exports = (io) => {
 
   router.post("/invoice/insert", async (req, res) => {
     const sqlInsertInvoice = `insert into invoice (iv_id,iv_date,iv_status,iv_credit,iv_total,iv_del,iv_detail,iv_vat,iv_tax,employee_id,customer_id,iv_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
-    // const sqlSelectNext = `select LPAD(IFNULL(Max(SUBSTR(iv_id, 12, 5)),0)+1,5,'0') as next from invoice ;`;
     const sqlInertQtIv = `INSERT INTO quotation_has_invoice (iv_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
     const sqlInertBnIv = `INSERT INTO bill_has_invoice (iv_id, bn_id ) VALUES (?,?)`;
 
@@ -75,13 +74,6 @@ module.exports = (io) => {
       await connection.beginTransaction();
 
       try {
-        // const [next] = await connection.query(sqlSelectNext);
-
-        // const idnext =
-        //   "IV" +
-        //   moment(req.body.invoice_date).format("YYYYMMDD") +
-        //   "-" +
-        //   next[0].next;
         const idnext = await getTransactionID(
           "IV",
           "invoice",
@@ -224,7 +216,10 @@ module.exports = (io) => {
                                 SET iv_date = ?, iv_credit = ?, iv_total = ?, iv_detail = ?, 
                                     iv_vat = ?, iv_tax = ?, employee_id = ?, customer_id = ?, iv_dateend = ?
                                 WHERE iv_id = ?`;
-
+    if (req.body.iv_status == "ดำเนินการแล้ว")
+      return res
+        .status(501)
+        .json({ msg: "ไม่สามารถแก้ไขใบแจ้งหนี้ที่ดำเนินการแล้วได้" });
     db.query(
       updateInvoiceSql,
       [

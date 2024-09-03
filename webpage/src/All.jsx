@@ -5,26 +5,27 @@ import { Outlet } from "react-router-dom";
 import axios from "./api/axios";
 
 function All() {
-  const checkTokenValidity = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(
-        "/auth",
-        {},
-        {
-          headers: { Authorization: "Bearer " + token },
-        }
-      );
+  // const checkTokenValidity = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const response = await axios.post(
+  //       "/auth",
+  //       {},
+  //       {
+  //         headers: { Authorization: "Bearer " + token },
+  //       }
+  //     );
 
-      if (response.status === 200) {
-      } else {
-        window.location = "/";
-      }
-    } catch (error) {
-      console.error("Error occurred:", error);
-      window.location = "/";
-    }
-  };
+  //     if (response.status === 200) {
+  //     } else {
+  //       console.log("token is expires");
+  //       // window.location = "/";
+  //     }
+  //   } catch (error) {
+  //     console.error("Error occurred:", error);
+  //     // window.location = "/";
+  //   }
+  // };
   //การขอ access token ใหม่ทุก 5วิ ปิดไวก่อนยังไม่ต้องใช้ เหลือการ auth ทุกครับที่เข้าไปดึง แก้ไข ลบ ในdatabase และก็ protectroute
   // setInterval(async () => {
   //   try {
@@ -42,9 +43,9 @@ function All() {
   //   }
   // }, 5000);
 
-  useEffect(() => {
-    checkTokenValidity();
-  }, []);
+  // useEffect(() => {
+  //   checkTokenValidity();
+  // }, []);
   return (
     <div className="flex">
       <Sidebar_ />

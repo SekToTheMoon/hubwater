@@ -4,7 +4,7 @@ const { db } = require("../../database");
 const moment = require("moment");
 
 router.get("/quotation", function (req, res) {
-  let fetch = `SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status 
+  let fetch = `SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status ,q.quotation_num 
       , b.bn_id , i.iv_id FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id 
       Left JOIN quotation_has_bill b on q.quotation_id = b.quotation_id  
       Left JOIN quotation_has_invoice i on q.quotation_id = i.quotation_id  
@@ -144,15 +144,16 @@ router.post("/quotation/insert", async (req, res) => {
 
 router.get("/getquotation/:id", function (req, res) {
   const quotationId = req.params.id;
-  const sqlQuotation = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
-  db.query(sqlQuotation, [quotationId], (err, quotationDetail) => {
+  const version = req.query.version;
+  const sqlQuotation = `SELECT quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ? and quotation_num = ?;`;
+  db.query(sqlQuotation, [quotationId, version], (err, quotationDetail) => {
     if (err) {
       console.log(err);
       return res.json(err);
     }
 
-    const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ?;`;
-    db.query(sqlListq, [quotationId], (err, listqDetail) => {
+    const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ? and quotation_num = ?;`;
+    db.query(sqlListq, [quotationId, version], (err, listqDetail) => {
       if (err) {
         console.log(err);
         return res.json(err);
@@ -205,72 +206,49 @@ router.get("/getquotation/:id", function (req, res) {
 
 router.put("/quotation/edit/:id", async (req, res) => {
   const quotationId = req.params.id;
+  const oldVersion = parseInt(req.query.version);
+  const version = oldVersion + 1;
+  const updateQuotationSql = `insert into quotation 
+  (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,
+  quotation_total,quotation_del,quotation_detail,quotation_vat,
+  quotation_tax,employee_id,customer_id,quotation_dateend)
+   values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const SQLDeleteOldVersion =
+    "update quotation set quotation_del = 1 where quotation_id = ? and quotation_num = ? ;";
 
-  const updateQuotationSql = `UPDATE quotation 
-                                SET quotation_date = ?, quotation_credit = ?, quotation_total = ?, quotation_detail = ?, 
-                                    quotation_vat = ?, quotation_tax = ?, employee_id = ?, customer_id = ?, quotation_dateend = ?
-                                WHERE quotation_id = ?`;
-
-  db.query(
-    updateQuotationSql,
-    [
+  console.log(req.body.quotation_status);
+  if (req.body.quotation_status == "ดำเนินการแล้ว")
+    return res
+      .status(501)
+      .json({ msg: "ไม่สามารถแก้ไขใบเสนอราคาที่ดำเนินการแล้วได้" });
+  const quotationDetail = db
+    .promise()
+    .query(updateQuotationSql, [
+      quotationId,
+      version,
       req.body.quotation_date,
+      "รออนุมัติ",
       req.body.quotation_credit,
       req.body.quotation_total,
+      "0",
       req.body.quotation_detail,
       req.body.quotation_vat,
       req.body.quotation_tax,
       req.body.employee_id,
       req.body.customer_id,
       req.body.quotation_dateend,
-      quotationId,
-    ],
-    async (err) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
-      }
+    ]);
 
-      const sqlListq = `SELECT listq_number, 
-        product_id
-                          FROM listq WHERE quotation_id = ?`;
+  const DeleteOldQuotation = db
+    .promise()
+    .query(SQLDeleteOldVersion, [quotationId, oldVersion]);
 
-      const [existingItems] = await db.promise().query(sqlListq, [quotationId]);
-
-      const existingItemMap = new Map();
-      existingItems.forEach((item) => {
-        const key = `${item.product_id}-${item.listq_number}`;
-        existingItemMap.set(key, item);
-      });
-
-      const newItemMap = new Map();
-      req.body.items.forEach((item) => {
-        const key = `${item.product_id}-${item.listq_number}`;
-        newItemMap.set(key, item);
-      });
-
-      const toInsert = [];
-      const toUpdate = [];
-      const toDelete = [];
-
-      newItemMap.forEach((item, key) => {
-        if (existingItemMap.has(key)) {
-          toUpdate.push(item);
-          existingItemMap.delete(key);
-        } else {
-          toInsert.push(item);
-        }
-      });
-      console.log(toUpdate);
-
-      existingItemMap.forEach((item, key) => {
-        toDelete.push(item);
-      });
-
-      const insertPromises = toInsert.map((item, index) => {
-        return db.promise().query(
-          `INSERT INTO listq (listq_number, listq_price, listq_amount, listq_total, product_id, lot_number, quotation_id, quotation_num)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  if (req.body.items && req.body.items.length > 0) {
+    const InsertData = req.body.items.map((item, index) => {
+      return db
+        .promise()
+        .query(
+          `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
           [
             item.listq_number,
             item.product_price,
@@ -279,53 +257,148 @@ router.put("/quotation/edit/:id", async (req, res) => {
             item.product_id,
             item.lot_number,
             quotationId,
-            1,
+            version,
           ]
         );
-      });
+    });
 
-      const updatePromises = toUpdate.map((item) => {
-        return db.promise().query(
-          `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ? 
-             WHERE listq_number = ? AND quotation_id = ?`,
-          [
-            item.listq_price,
-            item.listq_amount,
-            item.listq_total,
-            item.lot_number,
-            item.listq_number,
-            quotationId,
-          ]
-        );
-      });
-
-      const deletePromises = toDelete.map((item) => {
-        return db
-          .promise()
-          .query(
-            `DELETE FROM listq WHERE listq_number = ? AND quotation_id = ?`,
-            [item.listq_number, quotationId]
-          );
-      });
-
-      try {
-        await Promise.all([
-          ...insertPromises,
-          ...updatePromises,
-          ...deletePromises,
-        ]);
-        res
-          .status(200)
-          .json({ msg: "แก้ไขใบเสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
-      } catch (err) {
-        console.log(err);
-        res
-          .status(500)
-          .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
-      }
+    try {
+      await Promise.all([...InsertData, quotationDetail, DeleteOldQuotation]);
+      res.status(200).json({ msg: "แก้ไขข้อมูลใบเสนอราคาสำเร็จ" });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ msg: "เกิดข้อผิดพลาดในการแก้ไขใบเสนอราคา" });
     }
-  );
+  } else {
+    res.status(201).json({
+      msg: "เกิดข้อผิดพลาดกับ รายการสินค้า",
+    });
+  }
 });
+
+// router.put("/quotation/edit/:id", async (req, res) => {
+//   const quotationId = req.params.id;
+
+//   const updateQuotationSql = `UPDATE quotation
+//                                 SET quotation_date = ?, quotation_credit = ?, quotation_total = ?, quotation_detail = ?,
+//                                     quotation_vat = ?, quotation_tax = ?, employee_id = ?, customer_id = ?, quotation_dateend = ?
+//                                 WHERE quotation_id = ?`;
+
+//   db.query(
+//     updateQuotationSql,
+//     [
+//       req.body.quotation_date,
+//       req.body.quotation_credit,
+//       req.body.quotation_total,
+//       req.body.quotation_detail,
+//       req.body.quotation_vat,
+//       req.body.quotation_tax,
+//       req.body.employee_id,
+//       req.body.customer_id,
+//       req.body.quotation_dateend,
+//       quotationId,
+//     ],
+//     async (err) => {
+//       if (err) {
+//         console.log(err);
+//         return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
+//       }
+
+//       const sqlListq = `SELECT listq_number,
+//         product_id
+//                           FROM listq WHERE quotation_id = ?`;
+
+//       const [existingItems] = await db.promise().query(sqlListq, [quotationId]);
+
+//       const existingItemMap = new Map();
+//       existingItems.forEach((item) => {
+//         const key = `${item.product_id}-${item.listq_number}`;
+//         existingItemMap.set(key, item);
+//       });
+
+//       const newItemMap = new Map();
+//       req.body.items.forEach((item) => {
+//         const key = `${item.product_id}-${item.listq_number}`;
+//         newItemMap.set(key, item);
+//       });
+
+//       const toInsert = [];
+//       const toUpdate = [];
+//       const toDelete = [];
+
+//       newItemMap.forEach((item, key) => {
+//         if (existingItemMap.has(key)) {
+//           toUpdate.push(item);
+//           existingItemMap.delete(key);
+//         } else {
+//           toInsert.push(item);
+//         }
+//       });
+//       console.log(toUpdate);
+
+//       existingItemMap.forEach((item, key) => {
+//         toDelete.push(item);
+//       });
+
+//       const insertPromises = toInsert.map((item, index) => {
+//         return db.promise().query(
+//           `INSERT INTO listq (listq_number, listq_price, listq_amount, listq_total, product_id, lot_number, quotation_id, quotation_num)
+//              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+//           [
+//             item.listq_number,
+//             item.product_price,
+//             item.listq_amount,
+//             item.listq_total,
+//             item.product_id,
+//             item.lot_number,
+//             quotationId,
+//             1,
+//           ]
+//         );
+//       });
+
+//       const updatePromises = toUpdate.map((item) => {
+//         return db.promise().query(
+//           `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ?
+//              WHERE listq_number = ? AND quotation_id = ?`,
+//           [
+//             item.listq_price,
+//             item.listq_amount,
+//             item.listq_total,
+//             item.lot_number,
+//             item.listq_number,
+//             quotationId,
+//           ]
+//         );
+//       });
+
+//       const deletePromises = toDelete.map((item) => {
+//         return db
+//           .promise()
+//           .query(
+//             `DELETE FROM listq WHERE listq_number = ? AND quotation_id = ?`,
+//             [item.listq_number, quotationId]
+//           );
+//       });
+
+//       try {
+//         await Promise.all([
+//           ...insertPromises,
+//           ...updatePromises,
+//           ...deletePromises,
+//         ]);
+//         res
+//           .status(200)
+//           .json({ msg: "แก้ไขใบเสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
+//       } catch (err) {
+//         console.log(err);
+//         res
+//           .status(500)
+//           .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
+//       }
+//     }
+//   );
+// });
 
 // เหลือการ auth ก่อนการ delete
 router.delete("/quotation/delete/:id", (req, res) => {

@@ -370,7 +370,7 @@ function I_invoice() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = addListIndex(values, "listi_number");
+      let updatedValues = addListIndex(values, "listi_number");
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleStockCut(updatedValues.items);
       // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`

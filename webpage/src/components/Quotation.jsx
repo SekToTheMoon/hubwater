@@ -225,7 +225,9 @@ function Quotation() {
                       <span
                         className="cursor-pointer hover:underline "
                         onClick={() =>
-                          navigate(`view/${quotation.quotation_id}`)
+                          navigate(
+                            `view/${quotation.quotation_id}?version=${quotation.quotation_num}`
+                          )
                         }
                       >
                         {quotation.quotation_id}{" "}
@@ -271,8 +273,20 @@ function Quotation() {
                           tabIndex={0}
                           className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                         >
-                          <li>
-                            <Link to={`edit/${quotation.quotation_id}`}>
+                          <li
+                            className={
+                              quotation.quotation_status === "ดำเนินการแล้ว"
+                                ? "disabled"
+                                : ""
+                            }
+                          >
+                            <Link
+                              onClick={(e) =>
+                                quotation.quotation_status ===
+                                  "ดำเนินการแล้ว" && e.preventDefault()
+                              }
+                              to={`edit/${quotation.quotation_id}?version=${quotation.quotation_num}`}
+                            >
                               แก้ไข
                             </Link>
                           </li>

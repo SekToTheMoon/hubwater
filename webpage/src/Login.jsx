@@ -26,20 +26,17 @@ function Login() {
   const handleLogin = async () => {
     try {
       await validationSchema.validate(values, { abortEarly: false });
-      const response = await axios.post("/login", values);
+      const response = await axios.post("/login", values, {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      });
 
       if (response.status === 200) {
         // เดี๋ยวต้องลบ
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("refreshToken", response.data.refreshToken);
         localStorage.setItem("employee_id", response.data.employee_id);
         localStorage.setItem("employee_fname", response.data.employee_fname);
         localStorage.setItem("employee_lname", response.data.employee_lname);
         localStorage.setItem("employee_img", response.data.employee_img);
-        localStorage.setItem(
-          "posit_permission",
-          response.data.posit_permission
-        );
         localStorage.setItem("posit_name", response.data.posit_name);
 
         const permissionArray = response.data.posit_permission.split("");
@@ -49,7 +46,6 @@ function Login() {
           employee_fname: response.data.employee_fname,
           employee_lname: response.data.employee_lname,
           employee_img: response.data.employee_img,
-          token: response.data.token,
           refreshToken: response.data.refreshToken,
           accessToken: response.data.token,
           posit_permission: permissionArray,

@@ -67,17 +67,7 @@ module.exports = (io) => {
     const sql = `insert into receipt (rc_id,rc_date,rc_status,rc_total,rc_del,rc_detail,rc_vat,rc_tax,employee_id,customer_id,rc_type) values (?,?,?,?,?,?,?,?,?,?,?)`;
     const sqlInertIvRc =
       "insert into invoice_has_receipt (rc_id,iv_id) values (?,?)";
-    // const next = await db
-    //   .promise()
-    //   .query(
-    //     `select LPAD(IFNULL(Max(SUBSTR(rc_id, 12, 5)),0)+1,5,'0') as next from receipt ;`
-    //   );
 
-    // const idnext =
-    //   "RC" +
-    //   moment(req.body.receipt_date).format("YYYYMMDD") +
-    //   "-" +
-    //   next[0][0].next;
     const idnext = await getTransactionID(
       "RC",
       "receipt",

@@ -1,7 +1,10 @@
 import React from "react";
 import useAuth from "../hooks/useAuth";
+import axios from "../api/axios";
+import useRefreshToken from "../hooks/useRefreshToken";
 function Home() {
   const { auth } = useAuth();
+  const refresh = useRefreshToken();
   return (
     <>
       <div className="hero h-full bg-base-200 rounded-box">
@@ -20,6 +23,9 @@ function Home() {
               เมื่อเราเห็นพระอาทิตย์ขึ้นในยามเช้า เป็นสัญญาณบอกให้รู้ว่าสิ่งใหม่
               ๆ ของวันใหม่กำลังเริ่มต้นแล้วนะ ขอให้ทำงานอย่างมีความสุข 555
             </p>
+            <button className="btn" onClick={() => refresh()}>
+              ทดสอบ ขอ accessToken ใหม่
+            </button>
           </div>
         </div>
       </div>

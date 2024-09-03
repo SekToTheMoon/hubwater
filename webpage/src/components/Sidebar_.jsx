@@ -15,22 +15,27 @@ import {
   HandCoins,
   LogOut,
   Receipt,
+  Building2,
+  GitFork,
 } from "lucide-react";
-import { NavLink, useLocation, Link } from "react-router-dom";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import { NavLink, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import useLogout from "../hooks/useLogout";
+
 function Sidebar_() {
-  const axios = useAxiosPrivate();
+  const navigate = useNavigate();
   const { auth } = useAuth();
+  const logout = useLogout();
 
   const [open, setOpen] = useState(true);
   const [openSub, setOpensub] = useState(false);
-  const permission = auth.posit_permission;
-  console.log(
-    typeof permission +
-      permission +
-      " from Sidebar const permission หรือ สิทธิ์การเข้าถึงหน้าต่างๆ"
-  );
+  // const permission = auth?.posit_permission;
+  const permission = auth?.posit_permission;
+  // console.log(
+  //   typeof permission,
+  //   permission,
+  //   " from Sidebar const permission หรือ สิทธิ์การเข้าถึงหน้าต่างๆ"
+  // );
 
   const Menus = [
     { title: "หน้าแรก", icon: <Home size={20} />, page: "/home" },
@@ -107,11 +112,20 @@ function Sidebar_() {
         },
       ],
     },
-    { title: "ค่าคงที่บริษัท", icon: <Home size={20} />, page: "/company" },
-    { title: "แผนก", icon: <Home size={20} />, page: "/department" },
+    {
+      title: "ค่าคงที่บริษัท",
+      icon: <Building2 size={20} />,
+      page: "/company",
+    },
+    { title: "แผนก", icon: <GitFork size={20} />, page: "/department" },
     { title: "ตำแหน่ง", icon: <UserRoundCog size={20} />, page: "/position" },
     { title: "บัญชี", icon: <Landmark size={20} />, page: "/bank" },
   ];
+
+  const signOut = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <aside className="h-screen  flex flex-col bg-base-100  shadow-sm max-w-60">
@@ -137,7 +151,7 @@ function Sidebar_() {
       </div>
       <ul className="menu">
         {Menus.map((menu, index) => {
-          if (permission[index] === "1") {
+          if (permission && permission[index] === "1") {
             return (
               <li key={index}>
                 {menu.submenu ? (
@@ -269,17 +283,7 @@ function Sidebar_() {
                 localStorage.getItem("employee_lname")}
             </h3>
           </div>
-          <div
-            className="cursor-pointer"
-            onClick={async () => {
-              await axios.post("/logout", {
-                refreshToken: localStorage.getItem("refreshToken"),
-              });
-
-              localStorage.clear();
-              window.location = "/";
-            }}
-          >
+          <div className="cursor-pointer" onClick={signOut}>
             <LogOut size={20} />
           </div>
         </div>

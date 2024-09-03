@@ -69,13 +69,6 @@ router.post("/out/insert", uploadExpense.array("img"), async (req, res) => {
   await connection.beginTransaction();
 
   try {
-    // const [next] = await connection.query(
-    //   `SELECT LPAD(IFNULL(MAX(SUBSTR(out_id, 12, 5)), 0) + 1, 5, '0') AS next FROM expense;`
-    // );
-
-    // const idNext =
-    //   "OT" + moment(req.body.out_date).format("YYYYMMDD") + "-" + next[0].next;
-
     const idNext = await getTransactionID("OT", "expense", req.body.out_date);
     await connection.query(sql, [
       idNext,

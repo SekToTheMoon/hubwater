@@ -1,22 +1,29 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-
+import DocumentLink from "../component/DocumentLink";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 function E_quotation() {
   const axios = useAxiosPrivate();
 
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // สร้าง object URLSearchParams จาก query string ใน URL
+  const queryParams = new URLSearchParams(location.search);
+
+  // ดึงค่าจาก query parameters
+  const version = queryParams.get("version");
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
+  const [originalValues, setOriginalValues] = useState(null);
   const [values, setValues] = useState({
     quotation_date: moment(new Date()).format("YYYY-MM-DD"),
     quotation_credit: 0,
@@ -36,6 +43,7 @@ function E_quotation() {
     zip_code: "",
   });
   const [errors, setErrors] = useState({});
+
   const validationSchema = Yup.object({
     quotation_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
@@ -77,6 +85,45 @@ function E_quotation() {
     };
     return updatedValues;
   };
+
+  //ตรวจสอบถ้าไม่มีการเปลี่ยนแปลงของข้อมูล
+  const isDataChanged = () => {
+    if (!originalValues) return false;
+
+    // เปรียบเทียบค่าที่สำคัญ
+    const keysToCompare = [
+      "quotation_date",
+      "quotation_credit",
+      "quotation_total",
+      "quotation_detail",
+      "quotation_vat",
+      "quotation_tax",
+      "customer_id",
+      "quotation_dateend",
+    ];
+
+    for (let key of keysToCompare) {
+      if (values[key] !== originalValues[key]) return true;
+    }
+
+    // เปรียบเทียบ items
+    if (values.items.length !== originalValues.items.length) return true;
+
+    for (let i = 0; i < values.items.length; i++) {
+      const currentItem = values.items[i];
+      const originalItem = originalValues.items[i];
+
+      if (
+        currentItem.product_id !== originalItem.product_id ||
+        currentItem.listq_amount !== originalItem.listq_amount ||
+        currentItem.lot_number !== originalItem.lot_number
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues({ ...values, [name]: value });
@@ -84,7 +131,9 @@ function E_quotation() {
   // ดึงข้อมูล ใบเสนอราคา
   const fetchQuotation = async () => {
     try {
-      const response = await axios.get(`/getquotation/${id}`);
+      const response = await axios.get(
+        `/getquotation/${id}?version=${version}`
+      );
       const quotationDetail = response.data.quotationDetail[0];
       const quotationList = response.data.listqDetail;
       const productDetail = response.data.productDetail;
@@ -99,7 +148,6 @@ function E_quotation() {
           }
         });
       });
-
       setEmployee(response.data.employee_name);
       setValues({
         quotation_date: moment(quotationDetail.quotation_date).format(
@@ -110,6 +158,24 @@ function E_quotation() {
         quotation_detail: quotationDetail.quotation_detail,
         quotation_vat: quotationDetail.quotation_vat,
         quotation_tax: quotationDetail.quotation_tax,
+        quotation_status: quotationDetail.quotation_status,
+        employee_id: quotationDetail.employee_id,
+        customer_id: quotationDetail.customer_id,
+        items: quotationList || [],
+        quotation_dateend: moment(quotationDetail.quotation_dateend).format(
+          "YYYY-MM-DD"
+        ),
+      });
+      setOriginalValues({
+        quotation_date: moment(quotationDetail.quotation_date).format(
+          "YYYY-MM-DD"
+        ),
+        quotation_credit: quotationDetail.quotation_credit,
+        quotation_total: parseFloat(quotationDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
+        quotation_detail: quotationDetail.quotation_detail,
+        quotation_vat: quotationDetail.quotation_vat,
+        quotation_tax: quotationDetail.quotation_tax,
+        quotation_status: quotationDetail.quotation_status,
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
         items: quotationList || [],
@@ -235,6 +301,20 @@ function E_quotation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!isDataChanged()) {
+        toast.info("ไม่มีการเปลี่ยนแปลงข้อมูล", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+        return;
+      }
+
       const updatedValues = checkItem(values.items);
       if (updatedValues === true) {
         toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
@@ -253,20 +333,23 @@ function E_quotation() {
       await handleEdit(updatedValues);
       // setErrors({});
     } catch (error) {
-      console.log(error.inner);
+      console.log(error);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner?.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
   };
   const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.put("/quotation/edit/" + id, updatedValues);
+      const response = await axios.put(
+        `/quotation/edit/${id}?version=${version}`,
+        updatedValues
+      );
       console.log("Success:", response.data);
-      toast.success("quotation inserted successfully", {
+      toast.success(response.data.msg, {
         position: "top-right",
         autoClose: 4000,
         hideProgressBar: false,
@@ -276,13 +359,14 @@ function E_quotation() {
         progress: undefined,
         theme: "dark",
       });
+      // navigate("/quotation", { state: { msg: response.data } });
       // setTimeout(
       //   () => navigate("/quotation", { state: { msg: response.data } }),
       //   4000
       // );
     } catch (error) {
       console.error("Error during quotation insertion:", error);
-      toast.error("Error during quotation insertion", {
+      toast.error(error.response.data.msg, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -462,7 +546,30 @@ function E_quotation() {
         </div>
       </dialog>
       <div className="rounded-box bg-base-100 p-5">
-        <h1 className="ml-16 text-2xl">แก้ไขใบเสนอราคา</h1>
+        <div className="flex items-center ">
+          <h1 className="ml-16 text-2xl mr-3">แก้ไขใบเสนอราคา</h1>{" "}
+          <div className="group relative inline-block">
+            <i className="fa-solid fa-clock-rotate-left"></i>
+            <div className="absolute bg-white border py-2 px-3 rounded-md inline-block whitespace-nowrap top-[calc(100%+0.5rem)] left-1/2 transform -translate-x-1/2 text-sm z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+              <div className="absolute top-[-0.5rem] left-0 right-0 h-[0.5rem] bg-transparent"></div>
+              <p className="font-bold mb-2">ประวัติการแก้ไขเอกสาร</p>
+              <div className="flex flex-col space-y-2">
+                {Array.from({ length: version }).map((_, index) =>
+                  index + 1 == version ? (
+                    ""
+                  ) : (
+                    <DocumentLink
+                      key={index}
+                      to={`/quotation/view/${id}?version=${index + 1}`}
+                      id={`แก้ไขครั้งที่ ${index + 1}`}
+                    />
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <hr className="my-4" />
         <div className="flex items-center ">
           <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">

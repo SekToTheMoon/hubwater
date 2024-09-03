@@ -1,32 +1,29 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../database");
-
+const jwt = require("jsonwebtoken");
 const { generateAccessToken } = require("../utils/generateToken");
 
-router.post("/logout", (req, res) => {
-  // console.log(req.cookies);
-
+router.get("/logout", (req, res) => {
   const cookies = req.cookies;
   if (!cookies?.jwt) return res.sendStatus(204); //No content
-  const accessToken = cookies.jwt;
-  console.log(accessToken + " from cookies");
-  console.log(req.body.refreshToken + " from varifyJWT");
+  try {
+    const refreshToken = cookies.jwt;
+    const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-  db.query(
-    "UPDATE log_time SET logout_date = ? WHERE employee_id = ? and login_date = ?;",
-    [new Date(), req.user.employee_id, req.user.login_date]
-  );
+    console.log(decode, " from logOut -decode");
 
-  // res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-  res.sendStatus(204);
+    const logOutTime = require("moment")().format("YYYY-MM-DD HH:mm:ss");
+    db.query(
+      "UPDATE log_time SET logout_date = ? WHERE employee_id = ? and login_date = ?;",
+      [logOutTime, decode.employee_id, decode.login_date]
+    );
 
-  //   console.log("this is logout " + req.body.refreshToken);
-
-  //   refreshTokens = refreshTokens.filter(
-  //     (token) => token !== req.body.refreshToken
-  //   );
-  //   res.json({ message: "Logout successful", clearLocalStorage: true });
+    res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
+    res.sendStatus(204);
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 router.post("/token", (req, res) => {

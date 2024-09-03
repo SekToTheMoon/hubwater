@@ -210,6 +210,11 @@ module.exports = (io) => {
                                     bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?,bn_type =?, bn_dateend = ?
                                 WHERE bn_id = ?`;
 
+    if (req.body.bn_status == "ดำเนินการแล้ว")
+      return res
+        .status(501)
+        .json({ msg: "ไม่สามารถแก้ไขใบวางบิลที่ดำเนินการแล้วได้" });
+
     db.query(
       updateBillSql,
       [

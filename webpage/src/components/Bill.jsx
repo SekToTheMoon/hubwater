@@ -266,8 +266,22 @@ function Bill() {
                           tabIndex={0}
                           className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                         >
-                          <li>
-                            <Link to={`edit/${bill.bn_id}`}>แก้ไข</Link>
+                          <li
+                            className={
+                              bill.bn_status === "ดำเนินการแล้ว"
+                                ? "disabled"
+                                : ""
+                            }
+                          >
+                            <Link
+                              onClick={(e) =>
+                                bill.bn_status === "ดำเนินการแล้ว" &&
+                                e.preventDefault()
+                              }
+                              to={`edit/${bill.bn_id}`}
+                            >
+                              แก้ไข
+                            </Link>
                           </li>
                           <li>
                             <button onClick={() => setBillfordel(bill)}>

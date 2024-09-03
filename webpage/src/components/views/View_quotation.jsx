@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import moment from "moment";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 
 function View_quotation() {
   const axios = useAxiosPrivate();
   const { id } = useParams();
+  const location = useLocation();
+
+  // สร้าง object URLSearchParams จาก query string ใน URL
+  const queryParams = new URLSearchParams(location.search);
+
+  // ดึงค่าจาก query parameters
+  const version = queryParams.get("version");
   const [values, setValues] = useState({
     quotation_date: moment(new Date()).format("YYYY-MM-DD"),
     quotation_credit: 0,
@@ -29,7 +36,9 @@ function View_quotation() {
   // ดึงข้อมูล ใบเสนอราคา
   const fetchQuotation = async () => {
     try {
-      const response = await axios.get(`/getquotation/${id}`);
+      const response = await axios.get(
+        `/getquotation/${id}?version=${version}`
+      );
       const quotationDetail = response.data.quotationDetail[0];
       const quotationList = response.data.listqDetail;
       const productDetail = response.data.productDetail;

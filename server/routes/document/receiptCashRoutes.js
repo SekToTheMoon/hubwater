@@ -65,10 +65,6 @@ router.post("/receiptcash/insert", async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // const [next] = await connection.query(sqlSelectNext);
-
-      // const idnext =
-      //   "RF" + moment(req.body.rf_date).format("YYYYMMDD") + "-" + next[0].next;
       const idnext = await getTransactionID(
         "RF",
         "receiptcash",

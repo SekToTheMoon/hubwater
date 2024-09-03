@@ -112,6 +112,7 @@ function E_bill() {
         bn_detail: bnDetail.bn_detail,
         bn_vat: bnDetail.bn_vat,
         bn_tax: bnDetail.bn_tax,
+        bn_status: bnDetail.bn_status,
         employee_id: bnDetail.employee_id,
         customer_id: bnDetail.customer_id,
         items: billList || [],
@@ -289,7 +290,7 @@ function E_bill() {
       });
     } catch (error) {
       console.error("Error during bill insertion:", error);
-      toast.error("Error during bill insertion", {
+      toast.error(error.response.data.msg, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,

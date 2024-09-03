@@ -110,6 +110,7 @@ function E_invoice() {
         iv_detail: ivDetail.iv_detail,
         iv_vat: ivDetail.iv_vat,
         iv_tax: ivDetail.iv_tax,
+        iv_status: ivDetail.iv_status,
         employee_id: ivDetail.employee_id,
         customer_id: ivDetail.customer_id,
         items: invoiceList || [],
@@ -284,7 +285,7 @@ function E_invoice() {
       });
     } catch (error) {
       console.error("Error during invoice insertion:", error);
-      toast.error("Error during invoice insertion", {
+      toast.error(error.response.data.msg, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
