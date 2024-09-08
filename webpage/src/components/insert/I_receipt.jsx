@@ -20,6 +20,8 @@ function I_receipt() {
   });
   const [values, setValues] = useState({
     receipt_date: moment(new Date()).format("YYYY-MM-DD"),
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     receipt_total: 0, //รวมเป็นเงินเท่าไหร่
     receipt_detail: "",
     receipt_vat: true,
@@ -36,15 +38,6 @@ function I_receipt() {
     receipt_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสร็จรับเงิน"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listi_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
   });
 
   const fetchCustomerDetail = async (customer_id) => {
@@ -79,6 +72,8 @@ function I_receipt() {
       const receiptList = response.data.listiDetail;
       const productDetail = response.data.productDetail;
 
+      /// แปลกมากๆยังไม่ได้แก้แก้แล้วอย่าลืมลบ-------------------------------
+
       //วนเซ้ตค่า list
       receiptList.forEach((list) => {
         productDetail.forEach((product) => {
@@ -97,6 +92,8 @@ function I_receipt() {
         receipt_detail: rcDetail.iv_detail,
         receipt_vat: rcDetail.iv_vat,
         receipt_tax: rcDetail.iv_tax,
+        disc_cash: rcDetail.disc_cash,
+        disc_percent: rcDetail.disc_percent,
         employee_id: rcDetail.employee_id,
         customer_id: rcDetail.customer_id,
         items: receiptList || [],
@@ -125,9 +122,9 @@ function I_receipt() {
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
@@ -228,10 +225,7 @@ function I_receipt() {
                     type="text"
                     value={
                       values.receipt_vat
-                        ? (
-                            values.receipt_total * 0.07 +
-                            values.receipt_total
-                          ).toFixed(0)
+                        ? (values.receipt_total * 1.07).toFixed(2)
                         : values.receipt_total
                     }
                     className="input "
@@ -304,7 +298,7 @@ function I_receipt() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -314,7 +308,7 @@ function I_receipt() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         readOnly
@@ -323,7 +317,7 @@ function I_receipt() {
                         value={item.listi_amount || ""}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listi_total}</td>
                   </tr>
@@ -331,75 +325,84 @@ function I_receipt() {
               </tbody>
             </table>
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.receipt_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.receipt_vat}
-                      className="checkbox mr-2"
-                      value={values.receipt_vat}
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.receipt_vat
-                      ? (values.receipt_total * 0.07).toFixed(0)
-                      : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.receipt_vat
-                      ? (
-                          values.receipt_total * 0.07 +
-                          values.receipt_total
-                        ).toFixed(0)
-                      : values.receipt_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.receipt_tax}
-                      className="checkbox mr-2"
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.receipt_tax ? values.receipt_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.receipt_tax ? (
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{values.receipt_total}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.receipt_total * 0.07 +
-                        values.receipt_total -
-                        values.receipt_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <span className="ml-1 max-w-8 text-center">
+                    {values.disc_percent} %
+                  </span>
                 </div>
+                <div className="w1/2 ">
+                  <span className="text-right">{values.disc_cash}</span>
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.receipt_total}</div>
+              </label>
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    disabled={true}
+                    type="checkbox"
+                    checked={values.receipt_vat}
+                    className="checkbox mr-2"
+                    value={values.receipt_vat}
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.receipt_vat
+                    ? (values.receipt_total * 0.07).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.receipt_vat
+                    ? (values.receipt_total * 1.07).toFixed(2)
+                    : values.receipt_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select value={values.receipt_tax} disabled={true}>
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.receipt_tax
+                    ? (
+                        (values.receipt_tax / 100) *
+                        values.receipt_total
+                      ).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.receipt_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(
+                      values.receipt_total *
+                      (1.07 - values.receipt_tax / 100)
+                    ).toFixed(2)}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

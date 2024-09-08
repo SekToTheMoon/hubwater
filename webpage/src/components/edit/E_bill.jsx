@@ -1,35 +1,36 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
-import useAuth from "../../hooks/useAuth";
+import addListIndex from "../../utils/addListIndex";
 
 function E_bill() {
+  const axios = useAxiosPrivate();
+
   const { id } = useParams();
-  const { auth } = useAuth();
-
-  const token = auth?.accessToken;
-
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
+  const [originalValues, setOriginalValues] = useState(null);
   const [values, setValues] = useState({
     bn_date: moment(new Date()).format("YYYY-MM-DD"),
+    bn_dateend: moment(new Date()).format("YYYY-MM-DD"),
     bn_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     bn_total: 0, //รวมเป็นเงินเท่าไหร่
     bn_detail: "",
     bn_vat: true,
-    bn_tax: false,
+    bn_tax: 0,
     employee_id: "",
     customer_id: "",
     items: [],
-    bn_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
+  const [totalBeforeDisc, setTotalBeforeDisc] = useState(0);
   const [errors, setErrors] = useState({});
   const [billEmployee, setEmployee] = useState("");
   const [selectCustomer, setSelectCustomer] = useState([]);
@@ -46,37 +47,77 @@ function E_bill() {
     bn_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบวางบิล"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listb_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
+    disc_cash: Yup.number()
+      .required("โปรดใส่จำนวนเงินส่วนลด")
+      .typeError("โปรดใส่จำนวนเงินเป็นตัวเลข")
+      .test(
+        "disc_cash",
+        "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
+        function (value) {
+          const { bn_total } = this.parent;
+          return value < bn_total + value;
+        }
+      ),
+    items: Yup.array()
+      .of(
+        Yup.object().shape({
+          product_id: Yup.string().required("โปรดเลือกสินค้า"),
+          listb_amount: Yup.number()
+            .required("โปรดระบุจำนวนสินค้า")
+            .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
+          lot_number: Yup.string().required("โปรดเลือก Lot number"),
+        })
+      )
+      .min(1, "โปรดเพิ่มสินค้า")
+      .test("items", "มีสินค้าที่ ล็อต ซ้ำกัน", function (value) {
+        if (!value) return true; // หาก array ว่างเปล่าให้ผ่านการตรวจสอบ
+
+        const uniqueItems = new Set(
+          value.map((item) => `${item.product_id}-${item.lot_number}`)
+        );
+
+        return uniqueItems.size === value.length;
+      }),
   });
 
-  const checkItem = (items) => {
-    const seen = new Set();
-    for (let item of items) {
-      const key = `${item.product_id}-${item.lot_number}`;
-      if (seen.has(key)) {
-        return true; // Duplicate found
-      }
-      seen.add(key);
-    }
-    const updatedItems = values.items.map((item, index) => ({
-      ...item,
-      listb_number: index + 1,
-    }));
+  //ตรวจสอบถ้าไม่มีการเปลี่ยนแปลงของข้อมูล
+  const isDataChanged = () => {
+    if (!originalValues) return false;
 
-    if (updatedItems.length == 0) return true;
-    const updatedValues = {
-      ...values,
-      items: updatedItems,
-    };
-    return updatedValues;
+    // เปรียบเทียบค่าที่สำคัญ
+    const keysToCompare = [
+      "bn_date",
+      "bn_credit",
+      "bn_total",
+      "bn_detail",
+      "bn_vat",
+      "bn_tax",
+      "customer_id",
+      "bn_dateend",
+      "disc_cash",
+    ];
+
+    for (let key of keysToCompare) {
+      if (values[key] !== originalValues[key]) return true;
+    }
+
+    // เปรียบเทียบ items
+    if (values.items.length !== originalValues.items.length) return true;
+
+    for (let i = 0; i < values.items.length; i++) {
+      const currentItem = values.items[i];
+      const originalItem = originalValues.items[i];
+
+      if (
+        currentItem.product_id !== originalItem.product_id ||
+        currentItem.listb_amount !== originalItem.listb_amount ||
+        currentItem.lot_number !== originalItem.lot_number
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const handleChange = (e) => {
@@ -86,9 +127,7 @@ function E_bill() {
   // ดึงข้อมูล ใบวางบิล
   const fetchBill = async () => {
     try {
-      const response = await axios.get(`/getbill/${id}`, {
-        headers: { Authorization: "Bearer " + token },
-      });
+      const response = await axios.get(`/getbill/${id}`);
       const bnDetail = response.data.bnDetail[0];
       const billList = response.data.listbDetail;
       const productDetail = response.data.productDetail;
@@ -117,6 +156,23 @@ function E_bill() {
         customer_id: bnDetail.customer_id,
         items: billList || [],
         bn_dateend: moment(bnDetail.bn_dateend).format("YYYY-MM-DD"),
+        disc_cash: bnDetail.disc_cash,
+        disc_percent: bnDetail.disc_percent,
+      });
+      setOriginalValues({
+        bn_date: moment(bnDetail.bn_date).format("YYYY-MM-DD"),
+        bn_credit: bnDetail.bn_credit,
+        bn_total: parseFloat(bnDetail.bn_total), //รวมเป็นเงินเท่าไหร่
+        bn_detail: bnDetail.bn_detail,
+        bn_vat: bnDetail.bn_vat,
+        bn_tax: bnDetail.bn_tax,
+        bn_status: bnDetail.bn_status,
+        employee_id: bnDetail.employee_id,
+        customer_id: bnDetail.customer_id,
+        items: invoiceList || [],
+        bn_dateend: moment(bnDetail.bn_dateend).format("YYYY-MM-DD"),
+        disc_cash: bnDetail.disc_cash,
+        disc_percent: bnDetail.disc_percent,
       });
       fetchCustomerDetail(bnDetail.customer_id);
     } catch (error) {
@@ -126,9 +182,7 @@ function E_bill() {
   // fetch lot ของสินค้า
   const fetchLotNumbers = async (productID) => {
     try {
-      const response = await axios.get(`/selectstock/${productID}`, {
-        headers: { Authorization: "Bearer " + token },
-      });
+      const response = await axios.get(`/selectstock/${productID}`);
       setLotNumbers(response.data);
     } catch (error) {
       console.error("Error fetching lot numbers:", error);
@@ -141,9 +195,7 @@ function E_bill() {
       url += `?search=${search}`;
     }
     try {
-      const res = await axios.get(url, {
-        headers: { Authorization: "Bearer " + token },
-      });
+      const res = await axios.get(url);
       setSelectedProduct(res.data);
     } catch (error) {
       console.log(err);
@@ -152,9 +204,7 @@ function E_bill() {
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
-      const res = await axios.get("/getcustomers", {
-        headers: { Authorization: "Bearer " + token },
-      });
+      const res = await axios.get("/getcustomers");
       setSelectCustomer(res.data);
     } catch (err) {
       console.log(err);
@@ -162,9 +212,7 @@ function E_bill() {
   };
   const fetchCustomerDetail = async (customer_id) => {
     try {
-      const res = await axios.get("/getcustomer/" + customer_id, {
-        headers: { Authorization: "Bearer " + token },
-      });
+      const res = await axios.get("/getcustomer/" + customer_id);
       setSelectCustomerDetail({
         data: res.data.data[0],
         zip_code: res.data.zip_code[0].zip_code,
@@ -178,7 +226,15 @@ function E_bill() {
     setValues((prevValues) => {
       const updatedItems = [...prevValues.items];
       updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listb_total),
+        0
+      );
+      return {
+        ...prevValues,
+        items: updatedItems,
+        bn_total: newTotal.toFixed(2),
+      };
     });
   };
   //เมื่อเลือกสินค้าจะทำการ fetch lot ของสินค้า
@@ -244,12 +300,10 @@ function E_bill() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = checkItem(values.items);
-      console.log(updatedValues);
-      if (updatedValues === true) {
-        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
+      if (!isDataChanged()) {
+        toast.info("ไม่มีการเปลี่ยนแปลงข้อมูล", {
           position: "top-right",
-          autoClose: 5000,
+          autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
@@ -259,25 +313,26 @@ function E_bill() {
         });
         return;
       }
-      await validationSchema.validate(values, { abortEarly: false });
-      await handleEdit(updatedValues);
+      const updatedRequestValues = addListIndex(values, "listb_number");
+
+      await validationSchema.validate(updatedRequestValues, {
+        abortEarly: false,
+      });
+      await handleEdit(updatedRequestValues);
       setErrors({});
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner?.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
   };
   const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.put("/bill/edit/" + id, updatedValues, {
-        headers: { Authorization: "Bearer " + token },
-      });
-      console.log("Success:", response.data);
+      await axios.put("/bill/edit/" + id, updatedValues);
       toast.success("bill inserted successfully", {
         position: "top-right",
         autoClose: 5000,
@@ -312,15 +367,23 @@ function E_bill() {
   }, [values]);
 
   useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listb_total);
-    }, 0);
+    const newTotalBeforeDisc = values.items
+      .reduce((accumulator, currentItem) => {
+        return accumulator + parseInt(currentItem.listb_total);
+      }, 0)
+      .toFixed(2);
+    setTotalBeforeDisc(newTotalBeforeDisc);
+    let newDisc_cash = parseFloat(values.disc_cash);
+    if (values.disc_percent && values.disc_percent > 0) {
+      newDisc_cash = newTotalBeforeDisc * (values.disc_percent / 100);
+    }
 
     setValues((prevValues) => ({
       ...prevValues,
-      bn_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      bn_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      disc_cash: newDisc_cash.toFixed(2),
     }));
-  }, [values.items]);
+  }, [values.items, values.disc_percent]);
 
   return (
     <>
@@ -540,7 +603,7 @@ function E_bill() {
                     type="text"
                     value={
                       values.bn_vat
-                        ? (values.bn_total * 0.07 + values.bn_total).toFixed(0)
+                        ? (values.bn_total * 1.07).toFixed(2)
                         : values.bn_total
                     }
                     className="input "
@@ -645,7 +708,7 @@ function E_bill() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -655,7 +718,7 @@ function E_bill() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         className="text-center w-16"
@@ -687,7 +750,7 @@ function E_bill() {
                         }}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listb_total}</td>
                     <td>
@@ -715,80 +778,146 @@ function E_bill() {
                 </tr>
               </tbody>
             </table>
+            {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.bn_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.bn_vat}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          bn_vat: !values.bn_vat,
-                        })
-                      }
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.bn_vat ? (values.bn_total * 0.07).toFixed(0) : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.bn_vat
-                      ? (values.bn_total * 0.07 + values.bn_total).toFixed(0)
-                      : values.bn_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.bn_tax}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          bn_tax: !values.bn_tax,
-                        })
-                      }
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.bn_tax ? values.bn_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.bn_tax ? (
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{totalBeforeDisc}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.bn_total * 0.07 +
-                        values.bn_total -
-                        values.bn_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <input
+                    type="text"
+                    value={values.disc_percent}
+                    placeholder="0"
+                    className="ml-1 max-w-8 text-center"
+                    onChange={(e) => {
+                      let disc = parseInt(e.target.value);
+                      disc =
+                        isNaN(disc) || disc < 1 ? "" : disc > 100 ? 100 : disc;
+                      const handleDisc =
+                        disc == ""
+                          ? (0).toFixed(2)
+                          : ((disc / 100) * totalBeforeDisc).toFixed(2);
+                      setValues({
+                        ...values,
+                        disc_percent: disc,
+                        disc_cash: handleDisc,
+                        bn_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                      });
+                    }}
+                  />
+                  <span>%</span>
                 </div>
+                <div className="w1/2 ">
+                  <input
+                    type="text"
+                    value={values.disc_cash}
+                    className="text-right"
+                    onChange={(e) => {
+                      let disc = e.target.value;
+
+                      // อนุญาตให้ป้อนตัวเลข จุดทศนิยม และตัวเลขหลังจุดทศนิยมเท่านั้น
+                      if (/^\d*\.?\d*$/.test(disc)) {
+                        const numericDisc = parseFloat(disc);
+                        const handleDisc =
+                          isNaN(numericDisc) || numericDisc < 0
+                            ? 0
+                            : numericDisc;
+
+                        setValues({
+                          ...values,
+                          bn_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                          disc_cash: disc, // เก็บค่า input เป็น string
+                          disc_percent: "",
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setValues({
+                        ...values,
+                        disc_cash: parseFloat(
+                          values.disc_cash ? values.disc_cash : 0
+                        ).toFixed(2),
+                      });
+                    }}
+                  />
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.bn_total}</div>
+              </label>
+              {errors.disc_cash && (
+                <span className="text-error flex justify-end">
+                  {errors.disc_cash}
+                </span>
+              )}
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={values.bn_vat}
+                    className="checkbox mr-2"
+                    onChange={() =>
+                      setValues({
+                        ...values,
+                        bn_vat: !values.bn_vat,
+                      })
+                    }
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.bn_vat ? (values.bn_total * 0.07).toFixed(2) : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.bn_vat
+                    ? (values.bn_total * 1.07).toFixed(2)
+                    : values.bn_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select
+                    value={values.bn_tax}
+                    onChange={(e) => {
+                      const percentTax = parseInt(e.target.value);
+                      setValues({ ...values, bn_tax: percentTax });
+                    }}
+                  >
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.iv_tax
+                    ? ((values.bn_tax / 100) * values.bn_total).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.bn_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(values.bn_total * (1.07 - values.bn_tax / 100)).toFixed(
+                      2
+                    )}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

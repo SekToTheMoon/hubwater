@@ -10,6 +10,7 @@ import * as Yup from "yup";
 import moment from "moment";
 import useAuth from "../../hooks/useAuth";
 import addListIndex from "../../utils/addListIndex";
+
 function I_bill() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -24,17 +25,20 @@ function I_bill() {
   const [QuotationEmployee, setEmployee] = useState("");
   const [values, setValues] = useState({
     bill_date: moment(new Date()).format("YYYY-MM-DD"),
+    bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
     bill_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     bill_total: 0, //รวมเป็นเงินเท่าไหร่
     bill_detail: "",
     bill_vat: true,
-    bill_tax: false,
+    bill_tax: 0,
     bill_status: "รออนุมัติ",
     employee_id: auth.employee_id,
     customer_id: "",
     items: [],
-    bill_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
+  const [totalBeforeDisc, setTotalBeforeDisc] = useState(0);
   const [errors, setErrors] = useState({});
   const [selectcustomer, setSelectCustomer] = useState([]);
   const [selectCustomerDetail, setSelectCustomerDetail] = useState({
@@ -46,6 +50,8 @@ function I_bill() {
   const searchParams = new URLSearchParams(location.search);
   const navigate = useNavigate();
   const quotation = searchParams.get("quotation");
+  const version = searchParams.get("version");
+
   const validationSchema = Yup.object({
     bill_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
@@ -55,6 +61,17 @@ function I_bill() {
     bill_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบวางบิล"),
+    disc_cash: Yup.number()
+      .required("โปรดใส่จำนวนเงินส่วนลด")
+      .typeError("โปรดใส่จำนวนเงินเป็นตัวเลข")
+      .test(
+        "disc_cash",
+        "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
+        function (value) {
+          const { bill_total } = this.parent;
+          return value < bill_total + value;
+        }
+      ),
     items: Yup.array()
       .of(
         Yup.object().shape({
@@ -136,7 +153,9 @@ function I_bill() {
   // ดึงข้อมูล ใบเสนอราคา
   const fetchQuotation = async () => {
     try {
-      const response = await axios.get(`/getquotation/${quotation}`);
+      const response = await axios.get(
+        `/getquotation/${quotation}?version=${version}`
+      );
       const quotationDetail = response.data.quotationDetail[0];
       const quotationList = response.data.listqDetail;
       const productDetail = response.data.productDetail;
@@ -170,10 +189,12 @@ function I_bill() {
       setEmployee(response.data.employee_name);
       setValues({
         ...values,
-        bill_total: parseFloat(quotationDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
+        bill_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
         bill_detail: quotationDetail.quotation_detail,
         bill_vat: quotationDetail.quotation_vat,
         bill_tax: quotationDetail.quotation_tax,
+        disc_cash: quotationDetail.disc_cash,
+        disc_percent: quotationDetail.disc_percent,
         bill_credit: quotationDetail.quotation_credit,
         bill_status: quotationDetail.quotation_status,
         bill_dateend: moment(new Date())
@@ -227,7 +248,15 @@ function I_bill() {
     setValues((prevValues) => {
       const updatedItems = [...prevValues.items];
       updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listb_total),
+        0
+      );
+      return {
+        ...prevValues,
+        items: updatedItems,
+        bill_total: newTotal.toFixed(2),
+      };
     });
   };
 
@@ -270,15 +299,27 @@ function I_bill() {
   }, [values]);
 
   useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listb_total);
-    }, 0);
+    // ทำการรวมราคาสินค้าก่อนลดราคาใหม่
+    const newTotalBeforeDisc = values.items
+      .reduce((accumulator, currentItem) => {
+        return accumulator + parseFloat(currentItem.listb_total);
+      }, 0)
+      .toFixed(2);
+
+    setTotalBeforeDisc(newTotalBeforeDisc);
+
+    // เช็คค่ามี disc_percent ไหม ถ้ามีเซ็ต disc_cash ตามเปอร์เซ็นต์
+    let newDisc_cash = parseFloat(values.disc_cash);
+    if (values.disc_percent && values.disc_percent > 0) {
+      newDisc_cash = newTotalBeforeDisc * (values.disc_percent / 100);
+    }
 
     setValues((prevValues) => ({
       ...prevValues,
-      bill_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      bill_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      disc_cash: newDisc_cash.toFixed(2),
     }));
-  }, [values.items]);
+  }, [values.items, values.disc_percent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -486,7 +527,7 @@ function I_bill() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-5xl">
+          <form onSubmit={handleSubmit} className="mx-auto">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25 ">
                 <label className="label">
@@ -560,10 +601,7 @@ function I_bill() {
                     type="text"
                     value={
                       values.bill_vat
-                        ? (
-                            values.bill_total * 0.07 +
-                            values.bill_total
-                          ).toFixed(0)
+                        ? (values.bill_total * 1.07).toFixed(2)
                         : values.bill_total
                     }
                     className="input "
@@ -654,10 +692,10 @@ function I_bill() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                   <th></th>
@@ -668,7 +706,7 @@ function I_bill() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -678,7 +716,7 @@ function I_bill() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         disabled={quotation ? true : false}
@@ -694,7 +732,11 @@ function I_bill() {
                             updatedItems[index].listb_total =
                               (newAmount === "" ? 0 : Number(newAmount)) *
                               updatedItems[index].product_price;
-                            setValues({ ...values, items: updatedItems });
+
+                            setValues({
+                              ...values,
+                              items: updatedItems,
+                            });
                           }
                         }}
                         onBlur={() => {
@@ -711,7 +753,7 @@ function I_bill() {
                         }}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listb_total}</td>
                     {!quotation && (
@@ -745,85 +787,145 @@ function I_bill() {
             </table>
             {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.bill_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={quotation ? true : false}
-                      type="checkbox"
-                      checked={values.bill_vat}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          bill_vat: !values.bill_vat,
-                        })
-                      }
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.bill_vat
-                      ? (values.bill_total * 0.07).toFixed(0)
-                      : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.bill_vat
-                      ? (values.bill_total * 0.07 + values.bill_total).toFixed(
-                          0
-                        )
-                      : values.bill_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={quotation ? true : false}
-                      type="checkbox"
-                      checked={values.bill_tax}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          bill_tax: !values.bill_tax,
-                        })
-                      }
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.bill_tax ? values.bill_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.bill_tax ? (
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{totalBeforeDisc}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.bill_total * 0.07 +
-                        values.bill_total -
-                        values.bill_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <input
+                    type="text"
+                    disabled={quotation ? true : false}
+                    value={values.disc_percent}
+                    placeholder="0"
+                    className="ml-1 max-w-8 text-center"
+                    onChange={(e) => {
+                      let disc = parseInt(e.target.value);
+                      disc =
+                        isNaN(disc) || disc < 1 ? "" : disc > 100 ? 100 : disc;
+                      const handleDisc =
+                        disc == ""
+                          ? (0).toFixed(2)
+                          : ((disc / 100) * totalBeforeDisc).toFixed(2);
+                      setValues({
+                        ...values,
+                        disc_percent: disc,
+                        disc_cash: handleDisc,
+                        bill_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                      });
+                    }}
+                  />
+                  <span>%</span>
                 </div>
+                <div className="w1/2 ">
+                  <input
+                    type="text"
+                    disabled={quotation ? true : false}
+                    value={values.disc_cash}
+                    className="text-right"
+                    onChange={(e) => {
+                      let disc = e.target.value;
+
+                      // อนุญาตให้ป้อนตัวเลข จุดทศนิยม และตัวเลขหลังจุดทศนิยมเท่านั้น
+                      if (/^\d*\.?\d*$/.test(disc)) {
+                        const numericDisc = parseFloat(disc);
+                        const handleDisc =
+                          isNaN(numericDisc) || numericDisc < 0
+                            ? 0
+                            : numericDisc;
+
+                        setValues({
+                          ...values,
+                          bill_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                          disc_cash: disc, // เก็บค่า input เป็น string
+                          disc_percent: "",
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setValues({
+                        ...values,
+                        disc_cash: parseFloat(
+                          values.disc_cash ? values.disc_cash : 0
+                        ).toFixed(2),
+                      });
+                    }}
+                  />
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.bill_total}</div>
+              </label>
+              {errors.disc_cash && (
+                <span className="text-error flex justify-end">
+                  {errors.disc_cash}
+                </span>
+              )}
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    disabled={quotation ? true : false}
+                    type="checkbox"
+                    checked={values.bill_vat}
+                    className="checkbox mr-2"
+                    onChange={() =>
+                      setValues({
+                        ...values,
+                        bill_vat: !values.bill_vat,
+                      })
+                    }
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.bill_vat ? (values.bill_total * 0.07).toFixed(2) : ""}
+                </div>
+              </label>
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.bill_vat
+                    ? (values.bill_total * 1.07).toFixed(2)
+                    : values.bill_total}
+                </div>
+              </label>
+              <hr />
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select
+                    value={values.bill_tax}
+                    disabled={quotation ? true : false}
+                    onChange={(e) => {
+                      const percentTax = parseInt(e.target.value);
+                      setValues({ ...values, bill_tax: percentTax });
+                    }}
+                  >
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.bill_tax
+                    ? ((values.bill_tax / 100) * values.bill_total).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.bill_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(
+                      values.bill_total *
+                      (1.07 - values.bill_tax / 100)
+                    ).toFixed(2)}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

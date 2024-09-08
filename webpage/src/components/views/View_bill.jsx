@@ -9,6 +9,8 @@ function View_bill() {
   const [values, setValues] = useState({
     bn_date: moment(new Date()).format("YYYY-MM-DD"),
     bn_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     bn_total: 0, //รวมเป็นเงินเท่าไหร่
     bn_detail: "",
     bn_vat: true,
@@ -49,7 +51,7 @@ function View_bill() {
       setValues({
         bn_date: moment(billDetail.bn_date).format("YYYY-MM-DD"),
         bn_credit: billDetail.bn_credit,
-        bn_total: parseFloat(billDetail.bn_total), //รวมเป็นเงินเท่าไหร่
+        bn_total: billDetail.bn_total, //รวมเป็นเงินเท่าไหร่
         bn_detail: billDetail.bn_detail,
         bn_vat: billDetail.bn_vat,
         bn_tax: billDetail.bn_tax,
@@ -57,6 +59,8 @@ function View_bill() {
         customer_id: billDetail.customer_id,
         items: billList || [],
         bn_dateend: moment(billDetail.bn_dateend).format("YYYY-MM-DD"),
+        disc_cash: billDetail.disc_cash,
+        disc_percent: billDetail.disc_percent,
       });
       fetchCustomerDetail(billDetail.customer_id);
     } catch (error) {
@@ -219,10 +223,10 @@ function View_bill() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                 </tr>
@@ -232,7 +236,7 @@ function View_bill() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -242,9 +246,9 @@ function View_bill() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>{item.listb_amount}</td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listb_total}</td>
                   </tr>
@@ -252,70 +256,84 @@ function View_bill() {
               </tbody>
             </table>
             <hr />
-            <div className="ml-auto w-5/12 mt-3">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.bn_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.bn_vat}
-                      className="checkbox mr-2"
-                      value={values.bn_vat}
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.bn_vat ? (values.bn_total * 0.07).toFixed(0) : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.bn_vat
-                      ? (values.bn_total * 1.07).toFixed(0)
-                      : values.bn_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.bn_tax}
-                      className="checkbox mr-2"
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.bn_tax ? values.bn_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.bn_tax ? (
-                <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.bn_total * 0.07 +
-                        values.bn_total -
-                        values.bn_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">
+                  {(
+                    parseFloat(values.bn_total) + parseFloat(values.disc_cash)
+                  ).toFixed(2)}
                 </div>
+              </label>
+              <label className="label ">
+                <div>
+                  <span className="my-auto">ส่วนลด</span>
+
+                  <span className="ml-1 max-w-8 text-center">
+                    {values.disc_percent ? values.disc_percent : ""} %
+                  </span>
+                </div>
+                <div className="w1/2 ">
+                  <span className="text-right"> {values.disc_cash}</span>
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.bn_total}</div>
+              </label>
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    disabled={true}
+                    type="checkbox"
+                    checked={values.bn_vat}
+                    className="checkbox mr-2"
+                    value={values.bn_vat}
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.bn_vat ? (values.bn_total * 0.07).toFixed(2) : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.bn_vat
+                    ? (values.bn_total * 1.07).toFixed(2)
+                    : values.bn_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select value={values.bn_tax} disabled={true}>
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.bn_tax
+                    ? ((values.bn_tax / 100) * values.bn_total).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.bn_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(values.bn_total * (1.07 - values.bn_tax / 100)).toFixed(
+                      2
+                    )}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

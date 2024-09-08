@@ -5,7 +5,7 @@ const { getTransactionID } = require("../../utils/generateId");
 
 router.get("/receiptcash", function (req, res) {
   let fetch =
-    "SELECT i.rf_id, i.rf_date, c.customer_fname,e.employee_fname, i.rf_total, i.rf_status FROM receiptcash i JOIN employee e ON i.employee_id = e.employee_id LEFT OUTER JOIN customer c ON c.customer_id = i.customer_id WHERE i.rf_del = '0'";
+    "SELECT i.rf_id, i.rf_date, i.rf_vat, c.customer_fname,e.employee_fname, i.rf_total, i.rf_status FROM receiptcash i JOIN employee e ON i.employee_id = e.employee_id LEFT OUTER JOIN customer c ON c.customer_id = i.customer_id WHERE i.rf_del = '0'";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -57,8 +57,7 @@ router.get("/receiptcash", function (req, res) {
 });
 
 router.post("/receiptcash/insert", async (req, res) => {
-  const sqlInsertInvoice = `insert into receiptcash (rf_id,rf_date,rf_status,rf_total,rf_del,rf_detail,rf_vat,rf_tax,employee_id,customer_id) values (?,?,?,?,?,?,?,?,?,?)`;
-  const sqlSelectNext = `select LPAD(IFNULL(Max(SUBSTR(rf_id, 12, 5)),0)+1,5,'0') as next from receiptcash ;`;
+  const sqlInsertInvoice = `insert into receiptcash (rf_id,rf_date,rf_status,rf_total,rf_del,rf_detail,rf_vat,rf_tax,employee_id,customer_id,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
 
   try {
     const connection = await pool.promise().getConnection();
@@ -81,6 +80,8 @@ router.post("/receiptcash/insert", async (req, res) => {
         req.body.rf_tax,
         req.body.employee_id,
         req.body.customer_id ? req.body.customer_id : null,
+        req.body.disc_cash,
+        req.body.disc_percent,
       ]);
       if (req.body.items && req.body.items.length > 0) {
         const itemPromises = req.body.items.map((item, index) =>
@@ -117,7 +118,7 @@ router.post("/receiptcash/insert", async (req, res) => {
 
 router.get("/getreceiptcash/:id", function (req, res) {
   const rfId = req.params.id;
-  const sqlReceiptCash = `SELECT rf_date, rf_total, rf_detail, rf_vat, rf_tax, employee_id, customer_id  FROM receiptcash WHERE rf_id = ?;`;
+  const sqlReceiptCash = `SELECT rf_date, rf_total, rf_detail, rf_vat, rf_tax, employee_id, customer_id, disc_cash, disc_percent  FROM receiptcash WHERE rf_id = ?;`;
   const sqlListq = `SELECT listrf_number, listrf_price, listrf_amount, listrf_total, product_id, lot_number FROM listrf WHERE rf_id = ?;`;
   db.query(sqlReceiptCash, [rfId], (err, rfDetail) => {
     if (err) {
@@ -182,7 +183,8 @@ router.put("/receiptcash/edit/:id", async (req, res) => {
 
   const updateInvoiceSql = `UPDATE receiptcash 
                                 SET rf_date = ?, rf_total = ?, rf_detail = ?, 
-                                    rf_vat = ?, rf_tax = ?,  customer_id = ?
+                                    rf_vat = ?, rf_tax = ?,  customer_id = ?,
+                                    disc_cash = ?, disc_percent = ?
                                 WHERE rf_id = ?`;
 
   db.query(
@@ -194,6 +196,8 @@ router.put("/receiptcash/edit/:id", async (req, res) => {
       req.body.rf_vat,
       req.body.rf_tax,
       req.body.customer_id ? req.body.customer_id : null,
+      req.body.disc_cash,
+      req.body.disc_percent,
       rfId,
     ],
     async (err) => {

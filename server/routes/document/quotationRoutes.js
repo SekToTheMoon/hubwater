@@ -4,7 +4,7 @@ const { db } = require("../../database");
 const moment = require("moment");
 
 router.get("/quotation", function (req, res) {
-  let fetch = `SELECT q.quotation_id, q.quotation_date, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status ,q.quotation_num 
+  let fetch = `SELECT q.quotation_id, q.quotation_date, q.quotation_vat, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status ,q.quotation_num 
       , b.bn_id , i.iv_id FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id 
       Left JOIN quotation_has_bill b on q.quotation_id = b.quotation_id  
       Left JOIN quotation_has_invoice i on q.quotation_id = i.quotation_id  
@@ -60,7 +60,7 @@ router.get("/quotation", function (req, res) {
 });
 
 router.post("/quotation/insert", async (req, res) => {
-  const sql = `insert into quotation (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,quotation_total,quotation_del,quotation_detail,quotation_vat,quotation_tax,employee_id,customer_id,quotation_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const sql = `insert into quotation (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,quotation_total,quotation_del,quotation_detail,quotation_vat,quotation_tax,employee_id,customer_id,quotation_dateend,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
   const next = await db
     .promise()
     .query(
@@ -89,6 +89,8 @@ router.post("/quotation/insert", async (req, res) => {
       req.body.employee_id,
       req.body.customer_id,
       req.body.quotation_dateend,
+      req.body.disc_cash,
+      req.body.disc_percent,
     ],
     (err) => {
       if (err) {
@@ -145,7 +147,7 @@ router.post("/quotation/insert", async (req, res) => {
 router.get("/getquotation/:id", function (req, res) {
   const quotationId = req.params.id;
   const version = req.query.version;
-  const sqlQuotation = `SELECT quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ? and quotation_num = ?;`;
+  const sqlQuotation = `SELECT quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id,disc_cash,disc_percent FROM quotation WHERE quotation_id = ? and quotation_num = ?;`;
   db.query(sqlQuotation, [quotationId, version], (err, quotationDetail) => {
     if (err) {
       console.log(err);
@@ -211,8 +213,8 @@ router.put("/quotation/edit/:id", async (req, res) => {
   const updateQuotationSql = `insert into quotation 
   (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,
   quotation_total,quotation_del,quotation_detail,quotation_vat,
-  quotation_tax,employee_id,customer_id,quotation_dateend)
-   values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  quotation_tax,employee_id,customer_id,quotation_dateend,disc_cash,disc_percent)
+   values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
   const SQLDeleteOldVersion =
     "update quotation set quotation_del = 1 where quotation_id = ? and quotation_num = ? ;";
 
@@ -237,6 +239,8 @@ router.put("/quotation/edit/:id", async (req, res) => {
       req.body.employee_id,
       req.body.customer_id,
       req.body.quotation_dateend,
+      req.body.disc_cash,
+      req.body.disc_percent,
     ]);
 
   const DeleteOldQuotation = db

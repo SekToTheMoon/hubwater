@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
+import addListIndex from "../../utils/addListIndex";
 
 function E_invoice() {
   const axios = useAxiosPrivate();
@@ -15,19 +15,22 @@ function E_invoice() {
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState([]);
+  const [originalValues, setOriginalValues] = useState(null);
   const [values, setValues] = useState({
     iv_date: moment(new Date()).format("YYYY-MM-DD"),
+    iv_dateend: moment(new Date()).format("YYYY-MM-DD"),
     iv_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     iv_total: 0, //รวมเป็นเงินเท่าไหร่
     iv_detail: "",
     iv_vat: true,
-    iv_tax: false,
+    iv_tax: 0,
     employee_id: "",
     customer_id: "",
     items: [],
-    iv_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
+  const [totalBeforeDisc, setTotalBeforeDisc] = useState(0);
   const [errors, setErrors] = useState({});
   const [invoiceEmployee, setEmployee] = useState("");
   const [selectCustomer, setSelectCustomer] = useState([]);
@@ -44,39 +47,78 @@ function E_invoice() {
     iv_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบแจ้งหนี้"),
-    items: Yup.array().of(
-      Yup.object().shape({
-        product_id: Yup.string().required("โปรดเลือกสินค้า"),
-        listi_amount: Yup.number()
-          .required("โปรดระบุจำนวนสินค้า")
-          .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
-        lot_number: Yup.string().required("โปรดเลือก Lot number"),
-      })
-    ),
+    disc_cash: Yup.number()
+      .required("โปรดใส่จำนวนเงินส่วนลด")
+      .typeError("โปรดใส่จำนวนเงินเป็นตัวเลข")
+      .test(
+        "disc_cash",
+        "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
+        function (value) {
+          const { iv_total } = this.parent;
+          return value < iv_total + value;
+        }
+      ),
+    items: Yup.array()
+      .of(
+        Yup.object().shape({
+          product_id: Yup.string().required("โปรดเลือกสินค้า"),
+          listi_amount: Yup.number()
+            .required("โปรดระบุจำนวนสินค้า")
+            .min(1, "จำนวนสินค้าต้องมากกว่า 0"),
+          lot_number: Yup.string().required("โปรดเลือก Lot number"),
+        })
+      )
+      .min(1, "โปรดเพิ่มสินค้า")
+      .test("items", "มีสินค้าที่ ล็อต ซ้ำกัน", function (value) {
+        if (!value) return true; // หาก array ว่างเปล่าให้ผ่านการตรวจสอบ
+
+        const uniqueItems = new Set(
+          value.map((item) => `${item.product_id}-${item.lot_number}`)
+        );
+
+        return uniqueItems.size === value.length;
+      }),
   });
 
-  const checkItem = (items) => {
-    const seen = new Set();
-    for (let item of items) {
-      const key = `${item.product_id}-${item.lot_number}`;
-      if (seen.has(key)) {
-        return true; // Duplicate found
-      }
-      seen.add(key);
+  //ตรวจสอบถ้าไม่มีการเปลี่ยนแปลงของข้อมูล
+  const isDataChanged = () => {
+    if (!originalValues) return false;
+
+    // เปรียบเทียบค่าที่สำคัญ
+    const keysToCompare = [
+      "iv_date",
+      "iv_credit",
+      "iv_total",
+      "iv_detail",
+      "iv_vat",
+      "iv_tax",
+      "customer_id",
+      "iv_dateend",
+      "disc_cash",
+    ];
+
+    for (let key of keysToCompare) {
+      if (values[key] !== originalValues[key]) return true;
     }
-    const updatedItems = values.items.map((item, index) => ({
-      ...item,
-      listi_number: index + 1,
-    }));
 
-    if (updatedItems.length == 0) return true;
-    const updatedValues = {
-      ...values,
-      items: updatedItems,
-    };
-    return updatedValues;
+    // เปรียบเทียบ items
+    if (values.items.length !== originalValues.items.length) return true;
+
+    for (let i = 0; i < values.items.length; i++) {
+      const currentItem = values.items[i];
+      const originalItem = originalValues.items[i];
+
+      if (
+        currentItem.product_id !== originalItem.product_id ||
+        currentItem.listi_amount !== originalItem.listi_amount ||
+        currentItem.lot_number !== originalItem.lot_number
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues({ ...values, [name]: value });
@@ -115,6 +157,23 @@ function E_invoice() {
         customer_id: ivDetail.customer_id,
         items: invoiceList || [],
         iv_dateend: moment(ivDetail.iv_dateend).format("YYYY-MM-DD"),
+        disc_cash: ivDetail.disc_cash,
+        disc_percent: ivDetail.disc_percent,
+      });
+      setOriginalValues({
+        iv_date: moment(ivDetail.iv_date).format("YYYY-MM-DD"),
+        iv_credit: ivDetail.iv_credit,
+        iv_total: parseFloat(ivDetail.iv_total), //รวมเป็นเงินเท่าไหร่
+        iv_detail: ivDetail.iv_detail,
+        iv_vat: ivDetail.iv_vat,
+        iv_tax: ivDetail.iv_tax,
+        iv_status: ivDetail.iv_status,
+        employee_id: ivDetail.employee_id,
+        customer_id: ivDetail.customer_id,
+        items: invoiceList || [],
+        iv_dateend: moment(ivDetail.iv_dateend).format("YYYY-MM-DD"),
+        disc_cash: ivDetail.disc_cash,
+        disc_percent: ivDetail.disc_percent,
       });
       fetchCustomerDetail(ivDetail.customer_id);
     } catch (error) {
@@ -172,7 +231,15 @@ function E_invoice() {
     setValues((prevValues) => {
       const updatedItems = [...prevValues.items];
       updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listi_total),
+        0
+      );
+      return {
+        ...prevValues,
+        items: updatedItems,
+        iv_total: newTotal.toFixed(2),
+      };
     });
   };
   //เมื่อเลือกสินค้าจะทำการ fetch lot ของสินค้า
@@ -238,12 +305,10 @@ function E_invoice() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedValues = checkItem(values.items);
-      console.log(updatedValues);
-      if (updatedValues === true) {
-        toast.error("มีข้อมูลรายการสินค้าไม่ถูกต้อง", {
+      if (!isDataChanged()) {
+        toast.info("ไม่มีการเปลี่ยนแปลงข้อมูล", {
           position: "top-right",
-          autoClose: 5000,
+          autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
@@ -253,26 +318,28 @@ function E_invoice() {
         });
         return;
       }
-      await validationSchema.validate(values, { abortEarly: false });
-      await handleEdit(updatedValues);
+      const updatedRequestValues = addListIndex(values, "listi_number");
+      await validationSchema.validate(updatedRequestValues, {
+        abortEarly: false,
+      });
+      await handleEdit(updatedRequestValues);
       setErrors({});
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
-        console.log(err.path);
-        newErrors[err.path] = err.message;
+      error?.inner?.forEach((err) => {
+        console.log(err?.path);
+        newErrors[err?.path] = err?.message;
       });
       setErrors(newErrors);
     }
   };
   const handleEdit = async (updatedValues) => {
     try {
-      const response = await axios.put(
+      await axios.put(
         "http://localhost:3001/invoice/edit/" + id,
         updatedValues
       );
-      console.log("Success:", response.data);
       toast.success("invoice inserted successfully", {
         position: "top-right",
         autoClose: 5000,
@@ -307,15 +374,23 @@ function E_invoice() {
   }, [values]);
 
   useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listi_total);
-    }, 0);
+    const newTotalBeforeDisc = values.items
+      .reduce((accumulator, currentItem) => {
+        return accumulator + parseInt(currentItem.listi_total);
+      }, 0)
+      .toFixed(2);
+    setTotalBeforeDisc(newTotalBeforeDisc);
+    let newDisc_cash = parseFloat(values.disc_cash);
+    if (values.disc_percent && values.disc_percent > 0) {
+      newDisc_cash = newTotalBeforeDisc * (values.disc_percent / 100);
+    }
 
     setValues((prevValues) => ({
       ...prevValues,
-      iv_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      iv_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      disc_cash: newDisc_cash.toFixed(2),
     }));
-  }, [values.items]);
+  }, [values.items, values.disc_percent]);
 
   return (
     <>
@@ -466,7 +541,7 @@ function E_invoice() {
         <h1 className="ml-16 text-2xl">แก้ไขใบแจ้งหนี้</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
+          <form onSubmit={handleSubmit} className="mx-auto">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
@@ -535,7 +610,7 @@ function E_invoice() {
                     type="text"
                     value={
                       values.iv_vat
-                        ? (values.iv_total * 0.07 + values.iv_total).toFixed(0)
+                        ? (values.iv_total * 1.07).toFixed(2)
                         : values.iv_total
                     }
                     className="input "
@@ -626,10 +701,10 @@ function E_invoice() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                   <th></th>
@@ -640,7 +715,7 @@ function E_invoice() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -650,7 +725,7 @@ function E_invoice() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         className="text-center w-16"
@@ -665,7 +740,10 @@ function E_invoice() {
                             updatedItems[index].listi_total =
                               (newAmount === "" ? 0 : Number(newAmount)) *
                               updatedItems[index].product_price;
-                            setValues({ ...values, items: updatedItems });
+                            setValues({
+                              ...values,
+                              items: updatedItems,
+                            });
                           }
                         }}
                         onBlur={() => {
@@ -682,7 +760,7 @@ function E_invoice() {
                         }}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listi_total}</td>
                     <td>
@@ -710,80 +788,145 @@ function E_invoice() {
                 </tr>
               </tbody>
             </table>
+            {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.iv_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.iv_vat}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          iv_vat: !values.iv_vat,
-                        })
-                      }
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.iv_vat ? (values.iv_total * 0.07).toFixed(0) : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.iv_vat
-                      ? (values.iv_total * 0.07 + values.iv_total).toFixed(0)
-                      : values.iv_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.iv_tax}
-                      className="checkbox mr-2"
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          iv_tax: !values.iv_tax,
-                        })
-                      }
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.iv_tax ? values.iv_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.iv_tax ? (
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{totalBeforeDisc}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.iv_total * 0.07 +
-                        values.iv_total -
-                        values.iv_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <input
+                    type="text"
+                    value={values.disc_percent}
+                    placeholder="0"
+                    className="ml-1 max-w-8 text-center"
+                    onChange={(e) => {
+                      let disc = parseInt(e.target.value);
+                      disc =
+                        isNaN(disc) || disc < 1 ? "" : disc > 100 ? 100 : disc;
+                      const handleDisc =
+                        disc == ""
+                          ? (0).toFixed(2)
+                          : ((disc / 100) * totalBeforeDisc).toFixed(2);
+                      setValues({
+                        ...values,
+                        disc_percent: disc,
+                        disc_cash: handleDisc,
+                        iv_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                      });
+                    }}
+                  />
+                  <span>%</span>
                 </div>
+                <div className="w1/2 ">
+                  <input
+                    type="text"
+                    value={values.disc_cash}
+                    className="text-right"
+                    onChange={(e) => {
+                      let disc = e.target.value;
+
+                      // อนุญาตให้ป้อนตัวเลข จุดทศนิยม และตัวเลขหลังจุดทศนิยมเท่านั้น
+                      if (/^\d*\.?\d*$/.test(disc)) {
+                        const numericDisc = parseFloat(disc);
+                        const handleDisc =
+                          isNaN(numericDisc) || numericDisc < 0
+                            ? 0
+                            : numericDisc;
+
+                        setValues({
+                          ...values,
+                          iv_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                          disc_cash: disc, // เก็บค่า input เป็น string
+                          disc_percent: "",
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setValues({
+                        ...values,
+                        disc_cash: parseFloat(
+                          values.disc_cash ? values.disc_cash : 0
+                        ).toFixed(2),
+                      });
+                    }}
+                  />
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.iv_total}</div>
+              </label>
+              {errors.disc_cash && (
+                <span className="text-error flex justify-end">
+                  {errors.disc_cash}
+                </span>
+              )}
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={values.iv_vat}
+                    className="checkbox mr-2"
+                    onChange={() =>
+                      setValues({
+                        ...values,
+                        iv_vat: !values.iv_vat,
+                      })
+                    }
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.iv_vat ? (values.iv_total * 0.07).toFixed(2) : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.iv_vat
+                    ? (values.iv_total * 1.07).toFixed(2)
+                    : values.iv_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select
+                    value={values.iv_tax}
+                    onChange={(e) => {
+                      const percentTax = parseInt(e.target.value);
+                      setValues({ ...values, iv_tax: percentTax });
+                    }}
+                  >
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.iv_tax
+                    ? ((values.iv_tax / 100) * values.iv_total).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.iv_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(values.iv_total * (1.07 - values.iv_tax / 100)).toFixed(
+                      2
+                    )}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

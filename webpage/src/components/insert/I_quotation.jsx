@@ -18,17 +18,19 @@ function I_quotation() {
   const [selectedProduct, setSelectedProduct] = useState([]);
   const [values, setValues] = useState({
     quotation_date: moment(new Date()).format("YYYY-MM-DD"),
+    quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
     quotation_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     quotation_total: 0, //รวมเป็นเงินเท่าไหร่
     quotation_detail: "",
     quotation_vat: true,
-    quotation_tax: false,
+    quotation_tax: 0,
     employee_id: auth.employee_id,
     customer_id: "",
     items: [],
-    quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
-
+  const [totalBeforeDisc, setTotalBeforeDisc] = useState(0);
   const [errors, setErrors] = useState({});
   const [selectcustomer, setSelectCustomer] = useState([]);
   const [selectCustomerDetail, setSelectCustomerDetail] = useState({
@@ -44,6 +46,17 @@ function I_quotation() {
     quotation_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
+    disc_cash: Yup.number()
+      .required("โปรดใส่จำนวนเงินส่วนลด")
+      .typeError("โปรดใส่จำนวนเงินเป็นตัวเลข")
+      .test(
+        "disc_cash",
+        "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
+        function (value) {
+          const { quotation_total } = this.parent;
+          return value < quotation_total + value;
+        }
+      ),
     items: Yup.array()
       .of(
         Yup.object().shape({
@@ -66,28 +79,6 @@ function I_quotation() {
       }),
   });
 
-  // const checkItem = (items) => {
-  //   const seen = new Set();
-  //   for (let item of items) {
-  //     const key = `${item.product_id}-${item.lot_number}`;
-  //     if (seen.has(key)) {
-  //       return true; // Duplicate found
-  //     }
-  //     seen.add(key);
-  //   }
-  //   const updatedItems = values.items.map((item, index) => ({
-  //     ...item,
-  //     listq_number: index + 1,
-  //   }));
-
-  //   if (updatedItems.length == 0) return true;
-  //   const updatedValues = {
-  //     ...values,
-  //     items: updatedItems,
-  //   };
-  //   return updatedValues;
-  // };
-  //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
       const newItem = {
@@ -148,7 +139,15 @@ function I_quotation() {
     setValues((prevValues) => {
       const updatedItems = [...prevValues.items];
       updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listq_total),
+        0
+      );
+      return {
+        ...prevValues,
+        items: updatedItems,
+        quotation_total: newTotal.toFixed(2),
+      };
     });
   };
 
@@ -208,20 +207,25 @@ function I_quotation() {
   }, [values]);
 
   useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listq_total);
-    }, 0);
+    const newTotalBeforeDisc = values.items
+      .reduce((accumulator, currentItem) => {
+        return accumulator + parseFloat(currentItem.listq_total);
+      }, 0)
+      .toFixed(2);
+
+    setTotalBeforeDisc(newTotalBeforeDisc);
+
+    let newDisc_cash = parseFloat(values.disc_cash);
+    if (values.disc_percent && values.disc_percent > 0) {
+      newDisc_cash = newTotalBeforeDisc * (values.disc_percent / 100);
+    }
 
     setValues((prevValues) => ({
       ...prevValues,
-      quotation_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      quotation_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      disc_cash: newDisc_cash.toFixed(2),
     }));
-  }, [values.items]);
-  useEffect(() => {
-    values.items.map((list) => {
-      list.listq_total;
-    });
-  }, [values.items]);
+  }, [values.items, values.disc_percent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -247,8 +251,7 @@ function I_quotation() {
 
   const handleInsert = async (updatedValues) => {
     try {
-      const response = await axios.post("/quotation/insert", updatedValues);
-      console.log("Success:", response.data);
+      await axios.post("/quotation/insert", updatedValues);
       toast.success("quotation inserted successfully", {
         position: "top-right",
         autoClose: 5000,
@@ -423,7 +426,7 @@ function I_quotation() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
+          <form onSubmit={handleSubmit} className="mx-auto">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
@@ -491,10 +494,7 @@ function I_quotation() {
                     type="text"
                     value={
                       values.quotation_vat
-                        ? (
-                            values.quotation_total * 0.07 +
-                            values.quotation_total
-                          ).toFixed(0)
+                        ? (values.quotation_total * 1.07).toFixed(2)
                         : values.quotation_total
                     }
                     className="input "
@@ -585,10 +585,10 @@ function I_quotation() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                   <th></th>
@@ -599,7 +599,7 @@ function I_quotation() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -609,7 +609,7 @@ function I_quotation() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         className="text-center w-16"
@@ -624,7 +624,11 @@ function I_quotation() {
                             updatedItems[index].listq_total =
                               (newAmount === "" ? 0 : Number(newAmount)) *
                               updatedItems[index].product_price;
-                            setValues({ ...values, items: updatedItems });
+
+                            setValues({
+                              ...values,
+                              items: updatedItems,
+                            });
                           }
                         }}
                         onBlur={() => {
@@ -641,7 +645,7 @@ function I_quotation() {
                         }}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listq_total}</td>
                     <td>
@@ -671,86 +675,156 @@ function I_quotation() {
             </table>
             {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.quotation_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.quotation_vat}
-                      className="checkbox mr-2"
-                      value={values.quotation_vat}
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          quotation_vat: !values.quotation_vat,
-                        })
-                      }
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.quotation_vat
-                      ? (values.quotation_total * 0.07).toFixed(0)
-                      : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.quotation_vat
-                      ? (
-                          values.quotation_total * 0.07 +
-                          values.quotation_total
-                        ).toFixed(0)
-                      : values.quotation_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.quotation_tax}
-                      className="checkbox mr-2"
-                      value={values.quotation_vat}
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          quotation_tax: !values.quotation_tax,
-                        })
-                      }
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.quotation_tax ? values.quotation_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.quotation_tax && (
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{totalBeforeDisc}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.quotation_total * 0.07 +
-                        values.quotation_total -
-                        values.quotation_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <input
+                    type="text"
+                    value={values.disc_percent}
+                    placeholder="0"
+                    className="ml-1 max-w-8 text-center"
+                    onChange={(e) => {
+                      let disc = parseInt(e.target.value);
+                      disc =
+                        isNaN(disc) || disc < 1 ? "" : disc > 100 ? 100 : disc;
+                      const handleDisc =
+                        disc == ""
+                          ? (0).toFixed(2)
+                          : ((disc / 100) * totalBeforeDisc).toFixed(2);
+                      setValues({
+                        ...values,
+                        disc_percent: disc,
+                        disc_cash: handleDisc,
+                        quotation_total: (totalBeforeDisc - handleDisc).toFixed(
+                          2
+                        ),
+                      });
+                    }}
+                  />
+                  <span>%</span>
                 </div>
+                <div className="w1/2 ">
+                  <input
+                    type="text"
+                    value={values.disc_cash}
+                    className="text-right"
+                    onChange={(e) => {
+                      let disc = e.target.value;
+
+                      // อนุญาตให้ป้อนตัวเลข จุดทศนิยม และตัวเลขหลังจุดทศนิยมเท่านั้น
+                      if (/^\d*\.?\d*$/.test(disc)) {
+                        const numericDisc = parseFloat(disc);
+                        const handleDisc =
+                          isNaN(numericDisc) || numericDisc < 0
+                            ? 0
+                            : numericDisc;
+
+                        setValues({
+                          ...values,
+                          quotation_total: (
+                            totalBeforeDisc - handleDisc
+                          ).toFixed(2),
+                          disc_cash: disc, // เก็บค่า input เป็น string
+                          disc_percent: "",
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setValues({
+                        ...values,
+                        disc_cash: parseFloat(
+                          values.disc_cash ? values.disc_cash : 0
+                        ).toFixed(2),
+                      });
+                    }}
+                  />
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.quotation_total}</div>
+              </label>
+              {errors.disc_cash && (
+                <span className="text-error flex justify-end">
+                  {errors.disc_cash}
+                </span>
+              )}
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={values.quotation_vat}
+                    className="checkbox mr-2"
+                    value={values.quotation_vat}
+                    onChange={() =>
+                      setValues({
+                        ...values,
+                        quotation_vat: !values.quotation_vat,
+                      })
+                    }
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.quotation_vat
+                    ? (values.quotation_total * 0.07).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.quotation_vat
+                    ? (values.quotation_total * 1.07).toFixed(2)
+                    : values.quotation_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select
+                    value={values.quotation_tax}
+                    onChange={(e) => {
+                      const percentTax = parseInt(e.target.value);
+                      setValues({ ...values, quotation_tax: percentTax });
+                    }}
+                  >
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.quotation_tax
+                    ? (
+                        (values.quotation_tax / 100) *
+                        values.quotation_total
+                      ).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.quotation_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(
+                      values.quotation_total *
+                      (1.07 - values.quotation_tax / 100)
+                    ).toFixed(2)}
+                  </div>
+                </label>
+              ) : (
+                ""
               )}
             </div>
 

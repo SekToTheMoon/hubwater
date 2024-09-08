@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import moment from "moment";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 
 function View_quotation() {
   const axios = useAxiosPrivate();
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // สร้าง object URLSearchParams จาก query string ใน URL
   const queryParams = new URLSearchParams(location.search);
@@ -16,10 +17,12 @@ function View_quotation() {
   const [values, setValues] = useState({
     quotation_date: moment(new Date()).format("YYYY-MM-DD"),
     quotation_credit: 0,
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     quotation_total: 0, //รวมเป็นเงินเท่าไหร่
     quotation_detail: "",
     quotation_vat: true,
-    quotation_tax: false,
+    quotation_tax: 0,
     employee_id: "",
     customer_id: "",
     customer_name: "",
@@ -60,7 +63,7 @@ function View_quotation() {
           "YYYY-MM-DD"
         ),
         quotation_credit: quotationDetail.quotation_credit,
-        quotation_total: parseFloat(quotationDetail.quotation_total), //รวมเป็นเงินเท่าไหร่
+        quotation_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
         quotation_detail: quotationDetail.quotation_detail,
         quotation_vat: quotationDetail.quotation_vat,
         quotation_tax: quotationDetail.quotation_tax,
@@ -70,6 +73,8 @@ function View_quotation() {
         quotation_dateend: moment(quotationDetail.quotation_dateend).format(
           "YYYY-MM-DD"
         ),
+        disc_cash: quotationDetail.disc_cash,
+        disc_percent: quotationDetail.disc_percent,
       });
       fetchCustomerDetail(quotationDetail.customer_id);
     } catch (error) {
@@ -89,17 +94,24 @@ function View_quotation() {
     }
   };
 
+  const handleBack = () => {
+    navigate(-1); // นำทางไปยังหน้า e_quotation
+  };
+
   useEffect(() => {
     fetchQuotation();
   }, []);
 
   return (
     <>
-      <div className="rounded-box bg-base-100 p-5 min-h-full">
-        <h1 className="ml-32 text-2xl text-slate-500">ใบเสนอราคา</h1>
+      <div className="rounded-box bg-base-100 p-5 ">
+        <div className="flex justify-between">
+          <h1 className="ml-16 text-2xl">ใบเสนอราคา</h1>
+          <button onClick={handleBack}>กลับ</button>
+        </div>
         <hr className="my-4" />
         <div className="flex items-center">
-          <div className="mx-auto w-2/3 pr-20 2xl:max-w-5xl ">
+          <div className="mx-auto ">
             <div className="flex justify-end mt-3">
               <button
                 className="btn btn-info text-base-100"
@@ -110,7 +122,7 @@ function View_quotation() {
                 print / download
               </button>
             </div>
-            <div className=" mb-2 2xl:flex justify-between">
+            <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
@@ -232,10 +244,10 @@ function View_quotation() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                 </tr>
@@ -245,7 +257,7 @@ function View_quotation() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -255,9 +267,9 @@ function View_quotation() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>{item.listq_amount}</td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listq_total}</td>
                   </tr>
@@ -265,72 +277,89 @@ function View_quotation() {
               </tbody>
             </table>
             <hr />
-            <div className="ml-auto w-5/12 mt-3">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.quotation_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.quotation_vat}
-                      className="checkbox mr-2"
-                      value={values.quotation_vat}
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.quotation_vat
-                      ? (values.quotation_total * 0.07).toFixed(0)
-                      : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.quotation_vat
-                      ? (values.quotation_total * 1.07).toFixed(0)
-                      : values.quotation_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      disabled={true}
-                      type="checkbox"
-                      checked={values.quotation_tax}
-                      className="checkbox mr-2"
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.quotation_tax ? values.quotation_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.quotation_tax ? (
-                <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.quotation_total * 0.07 +
-                        values.quotation_total -
-                        values.quotation_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+            <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">
+                  {(
+                    parseFloat(values.quotation_total) +
+                    parseFloat(values.disc_cash)
+                  ).toFixed(2)}
                 </div>
+              </label>
+              <label className="label ">
+                <div>
+                  <span className="my-auto">ส่วนลด</span>
+
+                  <span className="ml-1 max-w-8 text-center">
+                    {values.disc_percent ? values.disc_percent : ""} %
+                  </span>
+                </div>
+                <div className="w1/2 ">
+                  <span className="text-right"> {values.disc_cash}</span>
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.quotation_total}</div>
+              </label>
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    disabled={true}
+                    type="checkbox"
+                    checked={values.quotation_vat}
+                    className="checkbox mr-2"
+                    value={values.quotation_vat}
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.quotation_vat
+                    ? (values.quotation_total * 0.07).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.quotation_vat
+                    ? (values.quotation_total * 1.07).toFixed(2)
+                    : values.quotation_total}
+                </div>
+              </label>
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select value={values.quotation_tax} disabled={true}>
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.quotation_tax
+                    ? (
+                        (values.quotation_tax / 100) *
+                        values.quotation_total
+                      ).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.quotation_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(
+                      values.quotation_total *
+                      (1.07 - values.quotation_tax / 100)
+                    ).toFixed(2)}
+                  </div>
+                </label>
               ) : (
                 ""
               )}

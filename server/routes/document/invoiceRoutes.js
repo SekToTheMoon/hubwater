@@ -6,7 +6,7 @@ const { getTransactionID } = require("../../utils/generateId");
 
 module.exports = (io) => {
   router.get("/invoice", function (req, res) {
-    let fetch = `SELECT i.iv_id, i.iv_date, c.customer_fname,e.employee_fname,
+    let fetch = `SELECT i.iv_id, i.iv_date, i.iv_vat, c.customer_fname,e.employee_fname,
       i.iv_total, i.iv_status ,q.quotation_id , b.bn_id ,r.rc_id
       FROM invoice i JOIN employee e ON i.employee_id = e.employee_id 
       JOIN customer c ON c.customer_id = i.customer_id 
@@ -65,7 +65,7 @@ module.exports = (io) => {
   });
 
   router.post("/invoice/insert", async (req, res) => {
-    const sqlInsertInvoice = `insert into invoice (iv_id,iv_date,iv_status,iv_credit,iv_total,iv_del,iv_detail,iv_vat,iv_tax,employee_id,customer_id,iv_dateend) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
+    const sqlInsertInvoice = `insert into invoice (iv_id,iv_date,iv_status,iv_credit,iv_total,iv_del,iv_detail,iv_vat,iv_tax,employee_id,customer_id,iv_dateend,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
     const sqlInertQtIv = `INSERT INTO quotation_has_invoice (iv_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
     const sqlInertBnIv = `INSERT INTO bill_has_invoice (iv_id, bn_id ) VALUES (?,?)`;
 
@@ -92,6 +92,8 @@ module.exports = (io) => {
           req.body.employee_id,
           req.body.customer_id,
           req.body.invoice_dateend,
+          req.body.disc_cash,
+          req.body.disc_percent,
         ]);
         if (req.body.items && req.body.items.length > 0) {
           const itemPromises = req.body.items.map((item) =>
@@ -141,7 +143,7 @@ module.exports = (io) => {
 
   router.get("/getinvoice/:id", function (req, res) {
     const ivId = req.params.id;
-    const sqlInvoice = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend ,iv_status FROM invoice WHERE iv_id = ?;`;
+    const sqlInvoice = `SELECT iv_date, iv_total, iv_credit, iv_detail, iv_vat, iv_tax, employee_id, customer_id ,iv_dateend ,iv_status,disc_cash,disc_percent FROM invoice WHERE iv_id = ?;`;
 
     db.query(sqlInvoice, [ivId], (err, ivDetail) => {
       if (err) {
@@ -214,7 +216,8 @@ module.exports = (io) => {
 
     const updateInvoiceSql = `UPDATE invoice 
                                 SET iv_date = ?, iv_credit = ?, iv_total = ?, iv_detail = ?, 
-                                    iv_vat = ?, iv_tax = ?, employee_id = ?, customer_id = ?, iv_dateend = ?
+                                    iv_vat = ?, iv_tax = ?, employee_id = ?, customer_id = ?,
+                                    iv_dateend = ?, disc_cash = ?, disc_percent = ?
                                 WHERE iv_id = ?`;
     if (req.body.iv_status == "ดำเนินการแล้ว")
       return res
@@ -232,6 +235,8 @@ module.exports = (io) => {
         req.body.employee_id,
         req.body.customer_id,
         req.body.iv_dateend,
+        req.body.disc_cash,
+        req.body.disc_percent,
         ivId,
       ],
       async (err) => {

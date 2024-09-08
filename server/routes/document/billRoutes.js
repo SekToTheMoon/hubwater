@@ -6,7 +6,7 @@ const { getTransactionID } = require("../../utils/generateId");
 
 module.exports = (io) => {
   router.get("/bill", function (req, res) {
-    let fetch = `SELECT b.bn_id, b.bn_date, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type , q.quotation_id , i.iv_id
+    let fetch = `SELECT b.bn_id, b.bn_date, b.bn_vat, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type , q.quotation_id , i.iv_id
       FROM bill b JOIN employee e ON b.employee_id = e.employee_id 
       JOIN customer c ON c.customer_id = b.customer_id 
       Left JOIN quotation_has_bill q on b.bn_id = q.bn_id  
@@ -63,7 +63,7 @@ module.exports = (io) => {
   });
 
   router.post("/bill/insert", async (req, res) => {
-    const sqlInsertBill = `INSERT INTO bill (bn_id, bn_date, bn_status, bn_credit, bn_total, bn_del, bn_detail, bn_vat, bn_tax, employee_id, customer_id, bn_type, bn_dateend) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+    const sqlInsertBill = `INSERT INTO bill (bn_id, bn_date, bn_status, bn_credit, bn_total, bn_del, bn_detail, bn_vat, bn_tax, employee_id, customer_id, bn_type, bn_dateend,disc_cash,disc_percent) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
     const sqlInertQtBn = `INSERT INTO quotation_has_bill (bn_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
 
     try {
@@ -87,6 +87,8 @@ module.exports = (io) => {
           req.body.customer_id,
           "เดี่ยว",
           req.body.bill_dateend,
+          req.body.disc_cash,
+          req.body.disc_percent,
         ]);
 
         if (req.body.items && req.body.items.length > 0) {
@@ -134,7 +136,7 @@ module.exports = (io) => {
 
   router.get("/getbill/:id", function (req, res) {
     const bnId = req.params.id;
-    const sqlBill = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend ,bn_status FROM bill WHERE bn_id = ?;`;
+    const sqlBill = `SELECT bn_date, bn_total, bn_credit, bn_detail, bn_vat, bn_tax, employee_id, customer_id ,bn_type,bn_dateend ,bn_status,disc_cash,disc_percent FROM bill WHERE bn_id = ?;`;
 
     db.query(sqlBill, [bnId], (err, bnDetail) => {
       if (err) {
@@ -207,7 +209,8 @@ module.exports = (io) => {
 
     const updateBillSql = `UPDATE bill 
                                 SET bn_date = ?, bn_credit = ?, bn_total = ?, bn_detail = ?, 
-                                    bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?,bn_type =?, bn_dateend = ?
+                                    bn_vat = ?, bn_tax = ?, employee_id = ?, customer_id = ?,bn_type =?, 
+                                    bn_dateend = ?, disc_cash = ?, disc_percent = ?
                                 WHERE bn_id = ?`;
 
     if (req.body.bn_status == "ดำเนินการแล้ว")
@@ -228,6 +231,8 @@ module.exports = (io) => {
         req.body.customer_id,
         "เดี่ยว",
         req.body.bn_dateend,
+        req.body.disc_cash,
+        req.body.disc_percent,
         bnId,
       ],
       async (err) => {

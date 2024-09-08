@@ -257,7 +257,11 @@ function ReceiptCash() {
                         ? receiptCash.customer_fname
                         : "cash sale / ขายเงินสด"}
                     </td>
-                    <td>{receiptCash.rf_total}</td>
+                    <td>
+                      {receiptCash.rf_vat
+                        ? receiptCash.rf_total * 1.07
+                        : receiptCash.rf_total}
+                    </td>
                     <td>{receiptCash.employee_fname}</td>
                     <td className="flex gap-2">
                       <select

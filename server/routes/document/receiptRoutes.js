@@ -7,7 +7,7 @@ const updateStatus = require("../../utils/updateStatus");
 module.exports = (io) => {
   //ทำเสร็จแล้วอย่าลืมดูว่า rc_type ต้องใช้ฤป่าว
   router.get("/receipt", function (req, res) {
-    let fetch = `SELECT b.rc_id, b.rc_date, c.customer_fname,e.employee_fname, b.rc_total, b.rc_status,b.rc_type, b.rc_tax ,b.rc_detail ,
+    let fetch = `SELECT b.rc_id, b.rc_date, b.rc_vat, c.customer_fname,e.employee_fname, b.rc_total, b.rc_status,b.rc_type, b.rc_tax ,b.rc_detail ,
       i.iv_id
       FROM receipt b JOIN employee e ON b.employee_id = e.employee_id 
       JOIN customer c ON c.customer_id = b.customer_id 
@@ -64,7 +64,7 @@ module.exports = (io) => {
   });
 
   router.post("/receipt/insert", async (req, res) => {
-    const sql = `insert into receipt (rc_id,rc_date,rc_status,rc_total,rc_del,rc_detail,rc_vat,rc_tax,employee_id,customer_id,rc_type) values (?,?,?,?,?,?,?,?,?,?,?)`;
+    const sql = `insert into receipt (rc_id,rc_date,rc_status,rc_total,rc_del,rc_detail,rc_vat,rc_tax,employee_id,customer_id,rc_type,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
     const sqlInertIvRc =
       "insert into invoice_has_receipt (rc_id,iv_id) values (?,?)";
 
@@ -88,6 +88,8 @@ module.exports = (io) => {
         req.body.employee_id,
         req.body.customer_id,
         "เดี่ยว", //ความจริงต้องเอามาจากข้อมูลใบที่สร้าง
+        req.body.disc_cash,
+        req.body.disc_percent,
       ],
       (err) => {
         if (err) {
@@ -145,7 +147,7 @@ module.exports = (io) => {
 
   router.get("/getreceipt/:id", function (req, res) {
     const rcId = req.params.id;
-    const sqlReceipt = `SELECT rc_date, rc_total,  rc_detail, rc_vat, rc_tax, employee_id, customer_id ,rc_type FROM receipt WHERE rc_id = ?;`;
+    const sqlReceipt = `SELECT rc_date, rc_total,  rc_detail, rc_vat, rc_tax, employee_id, customer_id ,rc_type,disc_cash,disc_percent FROM receipt WHERE rc_id = ?;`;
 
     db.query(sqlReceipt, [rcId], (err, rcDetail) => {
       if (err) {

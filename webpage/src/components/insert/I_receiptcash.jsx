@@ -6,6 +6,7 @@ import * as Yup from "yup";
 import moment from "moment";
 import useAuth from "../../hooks/useAuth";
 import addListIndex from "../../utils/addListIndex";
+
 function I_receiptcash() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -17,6 +18,8 @@ function I_receiptcash() {
   const [selectedProduct, setSelectedProduct] = useState([]);
   const [values, setValues] = useState({
     rf_date: moment(new Date()).format("YYYY-MM-DD"),
+    disc_cash: (0).toFixed(2),
+    disc_percent: "",
     rf_total: 0, //รวมเป็นเงินเท่าไหร่
     rf_detail: "",
     rf_vat: true,
@@ -25,7 +28,7 @@ function I_receiptcash() {
     customer_id: "",
     items: [],
   });
-
+  const [totalBeforeDisc, setTotalBeforeDisc] = useState(0);
   const [errors, setErrors] = useState({});
   const [selectcustomer, setSelectCustomer] = useState([]);
   const [selectCustomerDetail, setSelectCustomerDetail] = useState({
@@ -36,6 +39,17 @@ function I_receiptcash() {
     rf_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสร็จรับเงิน(สด)"),
+    disc_cash: Yup.number()
+      .required("โปรดใส่จำนวนเงินส่วนลด")
+      .typeError("โปรดใส่จำนวนเงินเป็นตัวเลข")
+      .test(
+        "disc_cash",
+        "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
+        function (value) {
+          const { rf_total } = this.parent;
+          return value < rf_total + value;
+        }
+      ),
     items: Yup.array()
       .of(
         Yup.object().shape({
@@ -58,27 +72,6 @@ function I_receiptcash() {
       }),
   });
 
-  // const checkItem = (items) => {
-  //   const seen = new Set();
-  //   for (let item of items) {
-  //     const key = `${item.product_id}-${item.lot_number}`;
-  //     if (seen.has(key)) {
-  //       return true; // Duplicate found
-  //     }
-  //     seen.add(key);
-  //   }
-  //   const updatedItems = values.items.map((item, index) => ({
-  //     ...item,
-  //     listrf_number: index + 1,
-  //   }));
-
-  //   if (updatedItems.length == 0) return true;
-  //   const updatedValues = {
-  //     ...values,
-  //     items: updatedItems,
-  //   };
-  //   return updatedValues;
-  // };
   //เมื่อเลือกสินค้า
   const handleSelectProduct = async (product) => {
     try {
@@ -140,7 +133,15 @@ function I_receiptcash() {
     setValues((prevValues) => {
       const updatedItems = [...prevValues.items];
       updatedItems.splice(index, 1);
-      return { ...prevValues, items: updatedItems };
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listrf_total),
+        0
+      );
+      return {
+        ...prevValues,
+        items: updatedItems,
+        rf_total: newTotal.toFixed(2),
+      };
     });
   };
 
@@ -178,20 +179,27 @@ function I_receiptcash() {
   }, [values]);
 
   useEffect(() => {
-    const total = values.items.reduce((accumulator, currentItem) => {
-      return accumulator + parseInt(currentItem.listrf_total);
-    }, 0);
+    // ทำการรวมราคาสินค้าก่อนลดราคาใหม่
+    const newTotalBeforeDisc = values.items
+      .reduce((accumulator, currentItem) => {
+        return accumulator + parseFloat(currentItem.listrf_total);
+      }, 0)
+      .toFixed(2);
+
+    setTotalBeforeDisc(newTotalBeforeDisc);
+
+    // เช็คค่ามี disc_percent ไหม ถ้ามีเซ็ต disc_cash ตามเปอร์เซ็นต์
+    let newDisc_cash = parseFloat(values.disc_cash);
+    if (values.disc_percent && values.disc_percent > 0) {
+      newDisc_cash = newTotalBeforeDisc * (values.disc_percent / 100);
+    }
 
     setValues((prevValues) => ({
       ...prevValues,
-      rf_total: total, // คำนวณและกำหนดให้เป็นสองตำแหน่งทศนิยม
+      rf_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      disc_cash: newDisc_cash.toFixed(2),
     }));
-  }, [values.items]);
-  useEffect(() => {
-    values.items.map((list) => {
-      list.listrf_total;
-    });
-  }, [values.items]);
+  }, [values.items, values.disc_percent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -217,7 +225,6 @@ function I_receiptcash() {
   const handleInsert = async (updatedValues) => {
     try {
       const response = await axios.post("/receiptcash/insert", updatedValues);
-      console.log("Success:", response.data);
       toast.success("receiptCash inserted successfully", {
         position: "top-right",
         autoClose: 5000,
@@ -392,7 +399,7 @@ function I_receiptcash() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
+          <form onSubmit={handleSubmit} className="mx-auto">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
@@ -458,7 +465,7 @@ function I_receiptcash() {
                     type="text"
                     value={
                       values.rf_vat
-                        ? (values.rf_total * 0.07 + values.rf_total).toFixed(0)
+                        ? (values.rf_total * 1.07).toFixed(0)
                         : values.rf_total
                     }
                     className="input "
@@ -520,10 +527,10 @@ function I_receiptcash() {
                 <tr className="border-b text-center ">
                   <th className="py-3">ลำดับ</th>
                   <th>ชื่อสินค้า</th>
-                  <th>รูปสินค้า</th>
-                  <th>ล็อตสินค้า</th>
+                  <th className="hidden lg:table-cell">รูปสินค้า</th>
+                  <th className="hidden md:table-cell">ล็อตสินค้า</th>
                   <th>จำนวนสินค้า</th>
-                  <th>หน่วย</th>
+                  <th className="hidden sm:table-cell">หน่วย</th>
                   <th>ราคาต่อหน่วย</th>
                   <th>ราคารวม</th>
                   <th></th>
@@ -534,7 +541,7 @@ function I_receiptcash() {
                   <tr key={index} className="text-center">
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
@@ -544,7 +551,7 @@ function I_receiptcash() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.lot_number}</td>
+                    <td className="hidden md:table-cell">{item.lot_number}</td>
                     <td>
                       <input
                         className="text-center w-16"
@@ -576,7 +583,7 @@ function I_receiptcash() {
                         }}
                       />
                     </td>
-                    <td>{item.unit_name}</td>
+                    <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
                     <td>{item.listrf_total}</td>
                     <td>
@@ -606,81 +613,145 @@ function I_receiptcash() {
             </table>
             {errors.items && <span className="text-error">{errors.items}</span>}
             <hr />
-            <div className="ml-auto w-5/12">
-              <div>
-                <label className="label ">
-                  <span className="my-auto">รวมเป็นเงิน</span>
-                  <div className="w1/2">{values.rf_total}</div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.rf_vat}
-                      className="checkbox mr-2"
-                      value={values.rf_vat}
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          rf_vat: !values.rf_vat,
-                        })
-                      }
-                    />
-                    <span>ภาษีมูลค่าเพิ่ม 7%</span>
-                  </label>
-                  <div className="w1/2 ">
-                    {values.rf_vat ? (values.rf_total * 0.07).toFixed(0) : ""}
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                  <div className="w1/2">
-                    {values.rf_vat
-                      ? (values.rf_total * 0.07 + values.rf_total).toFixed(0)
-                      : values.rf_total}
-                  </div>
-                </label>
-              </div>
-              <hr />
-              <div>
-                <label className="label">
-                  <label className="label cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={values.rf_tax}
-                      className="checkbox mr-2"
-                      value={values.rf_vat}
-                      onChange={() =>
-                        setValues({
-                          ...values,
-                          rf_tax: !values.rf_tax,
-                        })
-                      }
-                    />
-                    <span className="">หักภาษี ณ ที่จ่าย 3%</span>
-                  </label>
-                  <div className="w1/2">
-                    {values.rf_tax ? values.rf_total * 0.03 : ""}
-                  </div>
-                </label>
-              </div>
-              {values.rf_tax && (
+            <div className="ml-auto md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
+              <label className="label ">
+                <span className="my-auto">รวมเป็นเงิน</span>
+                <div className="w1/2">{totalBeforeDisc}</div>
+              </label>
+              <label className="label ">
                 <div>
-                  <label className="label">
-                    <span className="">ยอดชำระ</span>
-                    <div className="w1/2">
-                      {(
-                        values.rf_total * 0.07 +
-                        values.rf_total -
-                        values.rf_total * 0.03
-                      ).toFixed(0)}
-                    </div>
-                  </label>
+                  <span className="my-auto">ส่วนลด</span>
+                  <input
+                    type="text"
+                    value={values.disc_percent}
+                    placeholder="0"
+                    className="ml-1 max-w-8 text-center"
+                    onChange={(e) => {
+                      let disc = parseInt(e.target.value);
+                      disc =
+                        isNaN(disc) || disc < 1 ? "" : disc > 100 ? 100 : disc;
+                      const handleDisc =
+                        disc == ""
+                          ? (0).toFixed(2)
+                          : ((disc / 100) * totalBeforeDisc).toFixed(2);
+                      setValues({
+                        ...values,
+                        disc_percent: disc,
+                        disc_cash: handleDisc,
+                        rf_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                      });
+                    }}
+                  />
+                  <span>%</span>
                 </div>
+                <div className="w1/2 ">
+                  <input
+                    type="text"
+                    value={values.disc_cash}
+                    className="text-right"
+                    onChange={(e) => {
+                      let disc = e.target.value;
+
+                      // อนุญาตให้ป้อนตัวเลข จุดทศนิยม และตัวเลขหลังจุดทศนิยมเท่านั้น
+                      if (/^\d*\.?\d*$/.test(disc)) {
+                        const numericDisc = parseFloat(disc);
+                        const handleDisc =
+                          isNaN(numericDisc) || numericDisc < 0
+                            ? 0
+                            : numericDisc;
+
+                        setValues({
+                          ...values,
+                          rf_total: (totalBeforeDisc - handleDisc).toFixed(2),
+                          disc_cash: disc, // เก็บค่า input เป็น string
+                          disc_percent: "",
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setValues({
+                        ...values,
+                        disc_cash: parseFloat(
+                          values.disc_cash ? values.disc_cash : 0
+                        ).toFixed(2),
+                      });
+                    }}
+                  />
+                </div>
+              </label>
+              <label className="label">
+                <span className="">ราคาหลังหักส่วนลด</span>
+                <div className="w1/2">{values.rf_total}</div>
+              </label>
+              {errors.disc_cash && (
+                <span className="text-error flex justify-end">
+                  {errors.disc_cash}
+                </span>
+              )}
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={values.rf_vat}
+                    className="checkbox mr-2"
+                    value={values.rf_vat}
+                    onChange={() =>
+                      setValues({
+                        ...values,
+                        rf_vat: !values.rf_vat,
+                      })
+                    }
+                  />
+                  <span>ภาษีมูลค่าเพิ่ม 7%</span>
+                </label>
+                <div className="w1/2 ">
+                  {values.rf_vat ? (values.rf_total * 0.07).toFixed(2) : ""}
+                </div>
+              </label>
+              <label className="label">
+                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <div className="w1/2">
+                  {values.rf_vat
+                    ? (values.rf_total * 1.07).toFixed(2)
+                    : values.rf_total}
+                </div>
+              </label>
+
+              <hr />
+
+              <label className="label">
+                <label className="label cursor-pointer">
+                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <select
+                    value={values.rf_tax}
+                    onChange={(e) => {
+                      const percentTax = parseInt(e.target.value);
+                      setValues({ ...values, rf_tax: percentTax });
+                    }}
+                  >
+                    <option value="0">0%</option>
+                    <option value="1">1%</option>
+                    <option value="3">3%</option>
+                  </select>
+                </label>
+                <div className="w1/2">
+                  {values.rf_tax
+                    ? ((values.rf_tax / 100) * values.rf_total).toFixed(2)
+                    : ""}
+                </div>
+              </label>
+
+              {values.rf_tax ? (
+                <label className="label">
+                  <span className="">ยอดชำระ</span>
+                  <div className="w1/2">
+                    {(values.rf_total * (1.07 - values.rf_tax / 100)).toFixed(
+                      2
+                    )}
+                  </div>
+                </label>
+              ) : (
+                ""
               )}
             </div>
 

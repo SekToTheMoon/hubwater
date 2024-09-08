@@ -264,7 +264,11 @@ function Receipt() {
                       )}
                     </td>
                     <td>{receipt.customer_fname}</td>
-                    <td>{receipt.rc_total}</td>
+                    <td>
+                      {receipt.rc_vat
+                        ? receipt.rc_total * 1.07
+                        : receipt.rc_total}
+                    </td>
                     <td>{receipt.employee_fname}</td>
                     <td className="flex gap-2">
                       <select

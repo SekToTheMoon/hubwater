@@ -46,9 +46,13 @@ function Quotation() {
   const handleSelectChange = (event, quotation) => {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบวางบิล") {
-      navigate(`/bill/insert?quotation=${quotation.quotation_id}`);
+      navigate(
+        `/bill/insert?quotation=${quotation.quotation_id}&version=${quotation.quotation_num}`
+      );
     } else if (selectedValue === "สร้างใบแจ้งหนี้") {
-      navigate(`/invoice/insert?quotation=${quotation.quotation_id}`);
+      navigate(
+        `/invoice/insert?quotation=${quotation.quotation_id}&version=${quotation.quotation_num}`
+      );
     } else {
       handleChangeStatus(selectedValue, quotation.quotation_id);
     }
@@ -249,7 +253,11 @@ function Quotation() {
                       )}
                     </td>
                     <td>{quotation.customer_fname}</td>
-                    <td>{quotation.quotation_total}</td>
+                    <td>
+                      {quotation.quotation_vat
+                        ? quotation.quotation_total * 1.07
+                        : quotation.quotation_total}
+                    </td>
                     <td>{quotation.employee_fname}</td>
                     <td className="flex gap-2">
                       <select

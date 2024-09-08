@@ -242,7 +242,9 @@ function Bill() {
                       )}
                     </td>
                     <td>{bill.customer_fname}</td>
-                    <td>{bill.bn_total}</td>
+                    <td>
+                      {bill.bn_vat ? bill.bn_total * 1.07 : bill.bn_total}
+                    </td>
                     <td>{bill.employee_fname}</td>
                     <td className="flex gap-2">
                       <select

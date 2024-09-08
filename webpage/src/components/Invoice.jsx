@@ -292,7 +292,11 @@ function Invoice() {
                       )}
                     </td>
                     <td>{invoice.customer_fname}</td>
-                    <td>{invoice.iv_total}</td>
+                    <td>
+                      {invoice.iv_vat
+                        ? invoice.iv_total * 1.07
+                        : invoice.iv_total}
+                    </td>
                     <td>{invoice.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
