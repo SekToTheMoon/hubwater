@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MoreVertical,
   ChevronLast,
@@ -17,6 +17,8 @@ import {
   Receipt,
   Building2,
   GitFork,
+  Menu,
+  X,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
@@ -28,14 +30,11 @@ function Sidebar_() {
   const logout = useLogout();
 
   const [open, setOpen] = useState(true);
-  const [openSub, setOpensub] = useState(false);
-  // const permission = auth?.posit_permission;
+  const [openSub, setOpenSub] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   const permission = auth?.posit_permission;
-  // console.log(
-  //   typeof permission,
-  //   permission,
-  //   " from Sidebar const permission หรือ สิทธิ์การเข้าถึงหน้าต่างๆ"
-  // );
 
   const Menus = [
     { title: "หน้าแรก", icon: <Home size={20} />, page: "/home" },
@@ -124,171 +123,177 @@ function Sidebar_() {
 
   const signOut = async () => {
     await logout();
-    navigate("/");
+    window.location.replace("/");
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setOpen(window.innerWidth > 767);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   return (
-    <aside className="h-screen  flex flex-col bg-base-100  shadow-sm max-w-60">
-      <div className="p-4 pb-2 flex justify-between items-center h-12 ">
-        <img
-          src="http://localhost:3001/img/logo/logo.png"
-          className={`overflow-hidden transition-all ${
-            open ? "w-12" : "hidden"
-          }`}
-          alt=""
-        />
-        <span
-          className={`overflow-hidden transition-all ${open ? "" : "hidden"}`}
-        >
-          HubWater
-        </span>
-        <button
-          onClick={() => setOpen(!open)}
-          className="p-1.5 rounded-lg  hover:bg-primary/20"
-        >
-          {open ? <ChevronFirst /> : <ChevronLast />}
-        </button>
-      </div>
-      <ul className="menu">
-        {Menus.map((menu, index) => {
-          if (permission && permission[index] === "1") {
-            return (
-              <li key={index}>
-                {menu.submenu ? (
-                  open ? (
-                    <details>
-                      <summary>
-                        {menu.icon}
-                        <span
-                          className={`overflow-hidden transition-all ml-3 ${
-                            !open && "hidden"
-                          }`}
-                        >
-                          {menu.title}
-                        </span>
-                      </summary>
-                      <ul>
-                        {menu.submenuItem.map((menusub, subIndex) => {
-                          return (
-                            <li key={subIndex}>
-                              <NavLink
-                                to={menusub.page}
-                                className={`relative transition-colors group`}
-                              >
-                                <span
-                                  className={`overflow-hidden transition-all ml-3 ${
-                                    !open && "hidden"
-                                  }`}
-                                >
-                                  {menusub.title}
-                                </span>
-                                {alert && (
-                                  <div
-                                    className={`absolute right-2 w-2 h-2 rounded  ${
-                                      open ? "" : "top-2"
-                                    }`}
-                                  />
-                                )}
-                              </NavLink>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </details>
+    <div className="flex">
+      <aside
+        className={`h-screen flex flex-col bg-base-100 shadow-sm max-w-60  ${
+          isMobile ? (sidebarOpen ? "fixed block" : "hidden") : "block"
+        } `}
+      >
+        <div className="p-4 pb-2 justify-between items-center h-12 hidden md:flex">
+          <img
+            src="http://localhost:3001/img/logo/logo.png"
+            className={`overflow-hidden transition-all ${
+              open ? "w-12" : "hidden"
+            }`}
+            alt="Logo"
+          />
+          <span
+            className={`overflow-hidden transition-all ${open ? "" : "hidden"}`}
+          >
+            HubWater
+          </span>
+          <button
+            onClick={() => setOpen(!open)}
+            className={`p-1.5 rounded-lg hover:bg-primary/20 ${
+              isMobile ? "hidden" : "block"
+            }`}
+          >
+            {open ? <ChevronFirst /> : <ChevronLast />}
+          </button>
+        </div>
+        <ul className="menu">
+          {Menus.map(
+            (menu, index) =>
+              permission &&
+              permission[index] === "1" && (
+                <li key={index}>
+                  {menu.submenu ? (
+                    <Submenu
+                      open={open}
+                      openSub={openSub}
+                      setOpenSub={setOpenSub}
+                      menu={menu}
+                    />
                   ) : (
-                    <nav className={`relative transition-colors group `}>
-                      {menu.icon}
-                      {menu.submenuItem.map((menusub, subIndex) => {
-                        const topPosition = (subIndex + 1) * 2 - 2 + "rem"; // Adjust the top position as needed
-                        return (
-                          <NavLink
-                            key={subIndex}
-                            to={menusub.page}
-                            className={`${!openSub && "visible"}
-                             absolute left-full  pl-6  h-full 
-                              text-sm 
-                             invisible -translate-x-3 -translate-y-full transition-all 
-                              group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
-                           `}
-                            style={{ whiteSpace: "nowrap", top: topPosition }}
-                          >
-                            <div className="px-2 bg-indigo-100 w-full h-full rounded-md flex items-center ">
-                              {menusub.title}
-                            </div>
-                          </NavLink>
-                        );
-                      })}
-                    </nav>
-                  )
-                ) : (
-                  <NavLink
-                    to={menu.page}
-                    className={`relative transition-colors group`}
-                  >
-                    {menu.icon}
-                    <span
-                      className={`overflow-hidden transition-all ml-3 ${
-                        !open && "hidden"
-                      }`}
+                    <NavLink
+                      to={menu.page}
+                      className="relative transition-colors group"
                     >
-                      {menu.title}
-                    </span>
-                    {!open && (
-                      <div
-                        className={`
-                  absolute left-full rounded-md px-2 ml-6 h-full flex items-center 
-                  bg-indigo-100 text-sm 
-                  invisible opacity-20 -translate-x-3 transition-all
-                  group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
-                `}
-                        style={{ whiteSpace: "nowrap" }}
+                      {menu.icon}
+                      <span
+                        className={`overflow-hidden transition-all ml-3 ${
+                          !open && "hidden"
+                        }`}
                       >
                         {menu.title}
-                      </div>
-                    )}
-                  </NavLink>
-                )}
-              </li>
-            );
-          } else {
-            return null;
-          }
-        })}
-      </ul>
+                      </span>
+                    </NavLink>
+                  )}
+                </li>
+              )
+          )}
+        </ul>
+        <UserSection open={open} signOut={signOut} />
+      </aside>
+      <button
+        className="fixed top-5 left-[1.4rem] z-50 md:hidden"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X /> : <Menu />}
+      </button>
+    </div>
+  );
+}
 
-      <div className="border-t flex p-4 mt-auto ">
-        <div className={`${open ? "avatar" : "hidden"}`}>
-          <div className="w-10 rounded-full">
-            <img
-              src={`http://localhost:3001/img/avatar/${localStorage.getItem(
-                "employee_img"
-              )}`}
-              alt=""
-            />
-          </div>
-        </div>
-        <div
-          className={`
-              flex justify-between items-center
-              overflow-hidden transition-all ${open ? "w-52" : "m-auto"}
-          `}
+function Submenu({ open, openSub, setOpenSub, menu }) {
+  return open ? (
+    <details>
+      <summary>
+        {menu.icon}
+        <span
+          className={`overflow-hidden transition-all ml-3 ${!open && "hidden"}`}
         >
-          <div
-            className={`leading-4 p-1  ${open ? "" : "hidden"}
-          `}
+          {menu.title}
+        </span>
+      </summary>
+      <ul>
+        {menu.submenuItem.map((submenu, subIndex) => (
+          <li key={subIndex}>
+            <NavLink
+              to={submenu.page}
+              className="relative transition-colors group"
+            >
+              <span
+                className={`overflow-hidden transition-all ml-3 ${
+                  !open && "hidden"
+                }`}
+              >
+                {submenu.title}
+              </span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </details>
+  ) : (
+    <nav className="relative transition-colors group">
+      {menu.icon}
+      {menu.submenuItem.map((submenu, subIndex) => {
+        const topPosition = (subIndex + 1) * 2 - 2 + "rem";
+        return (
+          <NavLink
+            key={subIndex}
+            to={submenu.page}
+            className={`absolute left-full pl-6 h-full text-sm invisible -translate-x-3 -translate-y-full transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0`}
+            style={{ top: topPosition, whiteSpace: "nowrap" }}
           >
-            <h3 className="font-semibold">
-              {localStorage.getItem("employee_fname") +
-                " " +
-                localStorage.getItem("employee_lname")}
-            </h3>
-          </div>
-          <div className="cursor-pointer" onClick={signOut}>
-            <LogOut size={20} />
-          </div>
+            <div className="px-2 bg-indigo-100 w-full h-full rounded-md flex items-center">
+              {submenu.title}
+            </div>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
+function UserSection({ open, signOut }) {
+  return (
+    <div className={`${open ? "mt-auto" : ""} border-t flex p-4 `}>
+      <div className={`${open ? "avatar" : "hidden"}`}>
+        <div className="w-10 rounded-full">
+          <img
+            src={`http://localhost:3001/img/avatar/${localStorage.getItem(
+              "employee_img"
+            )}`}
+            alt="User Avatar"
+          />
         </div>
       </div>
-    </aside>
+      <div
+        className={`flex justify-between items-center overflow-hidden transition-all ${
+          open ? "w-52" : "m-auto"
+        }`}
+      >
+        <div className={`leading-4 p-1 ${open ? "" : "hidden"}`}>
+          <h3 className="font-semibold">
+            {`${localStorage.getItem("employee_fname")} ${localStorage.getItem(
+              "employee_lname"
+            )}`}
+          </h3>
+        </div>
+        <div className="cursor-pointer" onClick={signOut}>
+          <LogOut size={20} />
+        </div>
+      </div>
+    </div>
   );
 }
 

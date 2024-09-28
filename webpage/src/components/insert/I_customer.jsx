@@ -74,7 +74,7 @@ function I_customer({ isLoggedIn = false }) {
         Yup.string().test(
           "is-number-valid",
           "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
-          (value) => value === "" || /^[0-9]{10}$/.test(value)
+          (value) => value === "" || /^[0-9]{9,10}$/.test(value)
         )
       )
       .notRequired(),
@@ -368,7 +368,7 @@ function I_customer({ isLoggedIn = false }) {
                   htmlFor="subdistrict"
                   className="block mb-2  font-medium"
                 >
-                  ตำบล
+                  ตำบล / แขวง
                 </label>
                 <select
                   className="select select-bordered w-full  mb-1"

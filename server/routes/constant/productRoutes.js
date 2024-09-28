@@ -62,8 +62,9 @@ router.post(
         [req.body.product_name, req.body.brand_id]
       );
     if (rows.length === 0) {
-      const sql = `insert into product (product_id,product_name,product_price,product_amount,product_reorder,product_detail,product_img,unit_m_id,unit_id,brand_id,type_id,product_del) values (?,?,?,?,?,?,?,?,?,?,?,?)`;
+      const sql = `insert into product (product_id,product_name,product_price,product_amount,product_reorder,product_detail,product_img,unit_m_id,unit_id,brand_id,type_id,size,product_del) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
       const idnext = await getNextID("PRO", "product");
+      console.log(req.file);
       const imageName = req.file.filename;
       db.query(
         sql,
@@ -79,6 +80,7 @@ router.post(
           req.body.unit_id,
           req.body.brand_id,
           req.body.type_id,
+          req.body.size,
           "0",
         ],
         (err, data) => {
@@ -134,8 +136,8 @@ router.put(
     const [rows] = await db
       .promise()
       .query(
-        "SELECT product_id FROM product WHERE product_name = ? and brand_id =?",
-        [req.body.product_name, req.body.brand_id]
+        "SELECT product_id FROM product WHERE product_name = ? and brand_id =? and product_id !=?",
+        [req.body.product_name, req.body.brand_id, req.params.id]
       );
 
     if (rows.length === 0) {

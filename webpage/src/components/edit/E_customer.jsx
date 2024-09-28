@@ -85,7 +85,7 @@ function E_customer() {
         Yup.string().test(
           "is-number-valid",
           "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",
-          (value) => value === "" || /^[0-9]{10}$/.test(value)
+          (value) => value === "" || /^[0-9]{9,10}$/.test(value)
         )
       )
       .notRequired(),
@@ -193,6 +193,7 @@ function E_customer() {
       await validationSchema.validate(values, { abortEarly: false });
       handleEdit();
       setErrors({});
+      navigate("/customer");
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
@@ -218,7 +219,6 @@ function E_customer() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/customer");
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/department", function (req, res) {
   let fetch = "select dep_id,dep_name from dep";
@@ -73,9 +74,13 @@ router.post("/department/insert", async (req, res) => {
 });
 
 router.put("/department/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query("SELECT dep_name FROM dep WHERE dep_name = ?", [req.body.dep_name]);
+    .query("SELECT dep_name FROM dep WHERE dep_name = ? and dep_id !=?", [
+      req.body.dep_name,
+      id,
+    ]);
 
   if (rows.length === 0) {
     const sql = `
@@ -86,7 +91,7 @@ router.put("/department/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.dep_name];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating department" });

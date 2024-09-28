@@ -7,7 +7,7 @@ import moment from "moment";
 function selectTimeline(onChangeFunc) {
   return (
     <select
-      className="select join-item select-bordered w-full max-w-2xl min-h-1 h-9"
+      className="select join-item select-bordered w-full max-w-xl min-h-1 h-9"
       onChange={(e) => onChangeFunc(e.target.value)}
       defaultValue="year"
     >
@@ -491,31 +491,8 @@ function Dashboard() {
   return (
     <>
       <h1 className="text-3xl mb-5 text-neutral-content">ภาพรวมบริษัท</h1>
-      <main className="grid grid-cols-3  gap-4">
-        {/* <div className="rounded-lg bg-base-100 p-5  shadow-xl">
-          <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
-          {selectTimeline(fetchSaleProduct)}
-          <figure className="h-full mt-3 ">
-            {CrossTab && <Line data={CrossTab} options={{ fill: true }}/>}
-          </figure>
-        </div> */}
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
-          <h2 className="card-title my-2">สรุปยอดเก็บเงิน</h2>
-          {selectTimeline(fetchIncome)}
-          <figure className="h-full mt-3 ">
-            {incomeData && StackedBarChart(incomeData)}
-          </figure>
-        </div>
-
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
-          <h2 className="card-title my-2">สรุปยอดชำระเงิน</h2>
-          {selectTimeline(fetchExpense)}
-          <figure className="h-full mt-3 ">
-            {expenseData && StackedBarChart(expenseData)}
-          </figure>
-        </div>
-
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
+      <main className="grid grid-cols-4  gap-4">
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-3">
           <h2 className="card-title my-2">รายได้และค่าใช้จ่ายตามเอกสาร</h2>
           {selectTimeline(fetchIncomeAndExpense)}
           <figure className="h-full mt-3 ">
@@ -524,8 +501,23 @@ function Dashboard() {
             )}
           </figure>
         </div>
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
+          <h2 className="card-title my-2">สรุปยอดเก็บเงิน</h2>
+          {selectTimeline(fetchIncome)}
+          <figure className="h-full mt-3 ">
+            {incomeData && StackedBarChart(incomeData)}
+          </figure>
+        </div>
 
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
+          <h2 className="card-title my-2">สรุปยอดชำระเงิน</h2>
+          {selectTimeline(fetchExpense)}
+          <figure className="h-full mt-3 ">
+            {expenseData && StackedBarChart(expenseData)}
+          </figure>
+        </div>
+
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-3">
           <h2 className="card-title my-2">รายงานสินค้าขายดี</h2>
 
           <figure className="h-full mt-3 ">
@@ -607,7 +599,7 @@ function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {TopSale &&
+                  {TopSale?.length > 0 ? (
                     TopSale.map((list, index) => (
                       <tr key={index}>
                         <td>{index + 1}</td>
@@ -624,30 +616,41 @@ function Dashboard() {
                         <td>{list.total_quantity_sold}</td>
                         <td>{list.total_sales_amount}</td>
                       </tr>
-                    ))}
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        ยังไม่มีรายงาน
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </figure>
         </div>
 
-        <div className=" rounded-lg bg-base-100 p-5  shadow-xl">
+        <div className="col-span-4 rounded-lg bg-base-100 p-5  shadow-xl md:col-span-2 xl:col-span-1">
           <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
 
           {selectTimeline(fetchExpenseByCategory)}
 
           <figure className="h-full mt-3">
-            {expenseTypeData && <Doughnut data={expenseTypeData} />}
+            {expenseTypeData ? (
+              <Doughnut data={expenseTypeData} />
+            ) : (
+              <div className="text-center mt-5">ไม่มีข้อมูล</div>
+            )}
           </figure>
         </div>
 
-        <div className="col-span-2 bg-base-100 shadow-xl p-5 rounded-lg">
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-2">
           <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
           {selectTimeline(fetchCommition)}
           <figure className="h-full mt-3 overflow-y-auto">
-            <ul>
-              {Commition.length > 0 ? (
-                Commition.map((item, index) => (
+            {Commition?.length > 0 ? (
+              <ul>
+                {Commition.map((item, index) => (
                   <li key={index}>
                     <div className="flex justify-between p-1">
                       <div className="">
@@ -657,15 +660,15 @@ function Dashboard() {
                       <div className=""> {item.total_commission} บาท</div>
                     </div>
                   </li>
-                ))
-              ) : (
-                <li>ไม่มีข้อมูล</li>
-              )}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-2 text-center">ไม่มีข้อมูล</div>
+            )}
           </figure>
         </div>
 
-        <div className="col-span-3 bg-base-100 shadow-xl p-5 rounded-lg">
+        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
           <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
           <form onSubmit={handleSubmitSaleProduct}>
             <div className="flex justify-between gap-2">
@@ -711,7 +714,15 @@ function Dashboard() {
             </div>
           </form>
           <figure className="h-full mt-3 ">
-            {CrossTab && <Line data={CrossTab} options={{ fill: false }} />}
+            {CrossTab ? (
+              <Line data={CrossTab} options={{ fill: false }} />
+            ) : (
+              <>
+                <hr />
+                <div className="text-center my-2">ยังไม่มีข้อมูลรายงาน</div>
+                <hr />
+              </>
+            )}
           </figure>
         </div>
       </main>

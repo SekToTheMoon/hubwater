@@ -79,6 +79,7 @@ module.exports = (io) => {
           "invoice",
           req.body.invoice_date
         );
+        console.log(idnext, " from idnext invoice");
         await connection.query(sqlInsertInvoice, [
           idnext,
           req.body.invoice_date,
@@ -117,7 +118,7 @@ module.exports = (io) => {
           await connection.query(sqlInertQtIv, [
             idnext,
             req.body.quotation_id,
-            1,
+            req.body.version,
           ]);
           updateStatus(io, req.body.quotation_id, "ดำเนินการแล้ว", res);
         }

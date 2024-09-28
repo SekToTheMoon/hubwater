@@ -58,11 +58,11 @@ function Edit_emp() {
       // .matches(/[0-9]/,"รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
       // .matches(/A-Z]/,"รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
       // .matches(/a-z]/,"รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
-      .nullable(),
+      .notRequired(),
 
     confirmation: Yup.string()
       .oneOf([Yup.ref("password"), null], "รหัสไม่ตรงกัน")
-      .nullable(),
+      .notRequired(),
     bdate: Yup.string().required("ต้องเลือกวันเกิดของพนักงาน"),
     sex: Yup.string().required("ต้องเลือกเพศของพนักงาน"),
     salary: Yup.string()
@@ -97,7 +97,18 @@ function Edit_emp() {
     subdistrict: Yup.string().required("ต้องเลือกตำบล"),
     district: Yup.string().required("ต้องเลือกอำเภอ"),
     zip_code: Yup.string().required("ต้องเลือกรหัสไปรษณีย์"),
-  });
+  }).test(
+    "at-least-one-contact",
+    "กรุณากรอกข้อมูลติดต่ออย่างน้อยหนึ่งช่องทาง (อีเมล, Line, เบอร์โทร)",
+    function (values) {
+      return (
+        values.email ||
+        values.facebook ||
+        values.line ||
+        (values.phone && values.phone.some((p) => p))
+      );
+    }
+  );
 
   //จัดการไฟล์รูปภาพ
   const handleFileChange = (e) => {
@@ -289,17 +300,7 @@ function Edit_emp() {
           "Content-Type": "multipart/form-data",
         },
       });
-      toast.info(response.data.msg, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
-      navigate("/employee");
+      navigate("/employee", { state: { msg: response.data.msg } });
     } catch (error) {
       if (!error?.response) {
         console.log(error);
@@ -360,6 +361,7 @@ function Edit_emp() {
                     </option>
                   ))}
                 </select>
+                {errors.dep && <span className="text-error">{errors.dep}</span>}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -385,6 +387,9 @@ function Edit_emp() {
                     </option>
                   ))}
                 </select>
+                {errors.position && (
+                  <span className="text-error">{errors.position}</span>
+                )}
               </div>
               <div className=" flex-1 mb-5">
                 <label
@@ -402,6 +407,9 @@ function Edit_emp() {
                   dateformat="yyyy-MM-dd"
                   className="input input-bordered w-full mb-1"
                 />
+                {errors.hiredate && (
+                  <span className="text-error">{errors.hiredate}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -422,6 +430,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="ชื่อจริง"
                 />
+                {errors.fname && (
+                  <span className="text-error">{errors.fname}</span>
+                )}
               </div>
               <div className=" flex-1 mb-5">
                 <label
@@ -440,6 +451,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="นามสกุลจริง"
                 />
+                {errors.lname && (
+                  <span className="text-error">{errors.lname}</span>
+                )}
               </div>
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
@@ -464,6 +478,7 @@ function Edit_emp() {
                   <option value="ชาย">ชาย</option>
                   <option value="หญิง">หญิง</option>
                 </select>
+                {errors.sex && <span className="text-error">{errors.sex}</span>}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -481,6 +496,9 @@ function Edit_emp() {
                   dateformat="yyyy-MM-dd"
                   className="input input-bordered w-full mb-1"
                 />
+                {errors.bdate && (
+                  <span className="text-error">{errors.bdate}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -499,6 +517,7 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="รหัส 12 หลัก"
                 />
+                {errors.nid && <span className="text-error">{errors.nid}</span>}
               </div>
             </div>
             <div className="mb-5">
@@ -518,6 +537,9 @@ function Edit_emp() {
                 className="input input-bordered w-full"
                 placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
               />
+              {errors.address && (
+                <span className="text-error">{errors.address}</span>
+              )}
             </div>
             <div className="mt-5 2xl:flex gap-x-5">
               <div className="flex-1 mb-5">
@@ -825,9 +847,6 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Password"
                 />
-                {errors.password && (
-                  <span className="text-error">{errors.password}</span>
-                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -845,9 +864,6 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Confirm Password"
                 />
-                {errors.confirmation && (
-                  <span className="text-error">{errors.confirmation}</span>
-                )}
               </div>
             </div>
 

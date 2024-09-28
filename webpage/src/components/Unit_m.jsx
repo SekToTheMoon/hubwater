@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import SearchInput from "./component/SearchInput";
 
 function Unit_m() {
   const axios = useAxiosPrivate();
@@ -106,101 +107,9 @@ function Unit_m() {
             <Link to="insert" className="btn btn-primary">
               เพิ่มหน่วยวัด
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสหน่วยวัด</th>
-                <th>ชื่อหน่วยวัด</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Unit_m && Unit_m.length !== 0 ? (
-                Unit_m.map((Unit_ms) => (
-                  <tr key={Unit_ms.unit_m_id}>
-                    <td>{Unit_ms.unit_m_id}</td>
-                    <td>{Unit_ms.unit_m_name}</td>
-                    <td>
-                      <Link
-                        to={`edit/${Unit_ms.unit_m_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + Unit_ms.unit_m_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${Unit_ms.unit_m_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">
-                            ลบข้อมูลหน่วยวัด
-                          </h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลหน่วยวัด {Unit_ms.unit_m_name}{" "}
-                            หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(Unit_ms.unit_m_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
+
           <Table headers={headers} data={Unit_m} onDelete={handleDelete} />
 
           <div className="flex justify-between mt-4">

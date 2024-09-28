@@ -77,7 +77,7 @@ function Stock() {
     try {
       const response = await axios.post("/stock/insert", values);
       console.log("Success:", response.data);
-      toast.success("Employee inserted successfully", {
+      toast.success("เพิ่มล๊อตสินค้าสำเร็จ", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -89,7 +89,7 @@ function Stock() {
       });
     } catch (error) {
       console.error("Error during employee insertion:", error);
-      toast.error("Error during employee insertion", {
+      toast.error("เกิดข้อผิดพลาด", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -378,10 +378,10 @@ function Stock() {
               </button>
             </div>
           </div>
-          <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสล็อต</th>
+          <table className="w-full table-auto">
+            <thead className="bg-base-200 ">
+              <tr className=" border-b">
+                <th className="pl-4 py-3">รหัสล็อต</th>
                 <th>ราคาทุน</th>
                 <th>จำวนทั้งหมด</th>
                 <th>คงเหลือ</th>
@@ -393,13 +393,15 @@ function Stock() {
             <tbody>
               {lot && lot.length !== 0 ? (
                 lot.map((lot) => (
-                  <tr key={lot.lot_number}>
-                    <td>{lot.lot_number}</td>
-                    <td>{lot.lot_price}</td>
-                    <td>{lot.lot_total}</td>
-                    <td>{lot.lot_amount}</td>
-                    <td>{moment(lot.lot_date).format("YYYY-MM-DD")}</td>
-                    <td>
+                  <tr className=" border-b" key={lot.lot_number}>
+                    <td className="pl-4 py-3">{lot.lot_number}</td>
+                    <td className="text-right">{lot.lot_price}</td>
+                    <td className="text-center">{lot.lot_total}</td>
+                    <td className="text-center">{lot.lot_amount}</td>
+                    <td className="text-center">
+                      {moment(lot.lot_date).format("YYYY-MM-DD")}
+                    </td>
+                    <td className="text-center">
                       {lot.lot_exp_date
                         ? moment(lot.lot_exp_date).format("YYYY-MM-DD")
                         : "ไม่ได้ระบุ"}
@@ -417,7 +419,7 @@ function Stock() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="6" className="pt-5 text-center">
                     ไม่มีข้อมูล
                   </td>
                 </tr>

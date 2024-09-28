@@ -4,6 +4,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Table from "./component/Table";
+import SearchInput from "./component/SearchInput";
+
 function product() {
   const axios = useAxiosPrivate();
 
@@ -17,6 +20,7 @@ function product() {
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
+
   const fetchproducts = async () => {
     let url = `/product?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
@@ -100,43 +104,18 @@ function product() {
           <h1 className="text-2xl mb-5">สินค้า</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มสินค้า
+              <i class="fa-solid fa-plus"></i>เพิ่มสินค้า
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสสินค้า</th>
+          <table className="w-full table-auto">
+            <thead className="bg-base-200 text-left">
+              <tr className=" border-b">
+                <th className="pl-4 py-3">รหัสสินค้า</th>
                 <th>ชื่อสินค้า</th>
                 <th>ราคา</th>
-                <th>จำนวนคงเหลือ</th>
-                <th>จุดสั่งซื้อสินค้า</th>
+                <th className="text-center">คงเหลือ</th>
+                <th className="text-center">จุดสั่งซื้อ</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -146,31 +125,36 @@ function product() {
                   <tr
                     className={
                       product.product_reorder >= product.product_amount
-                        ? "text-error"
-                        : ""
+                        ? "text-error border-b"
+                        : " border-b"
                     }
                     key={product.product_id}
                   >
-                    <td>{product.product_id}</td>
-                    <td>{product.product_name}</td>
-                    <td>{product.product_price}</td>
-                    <td>{product.product_amount}</td>
-                    <td>{product.product_reorder}</td>
-                    <td>
+                    <td className="pl-4 py-3 ">{product.product_id}</td>
+                    <td className="align-middle">{product.product_name}</td>
+                    <td className="align-middle">{product.product_price}</td>
+                    <td className="text-center align-middle">
+                      {product.product_amount}
+                    </td>
+                    <td className="text-center align-middle">
+                      {product.product_reorder}
+                    </td>
+
+                    <td className="py-3 flex gap-2 items-center">
                       <Link
                         to={`stock/${product.product_id}`}
-                        className="btn btn-primary mr-3"
+                        className="btn btn-secondary btn-sm"
                       >
                         สต๊อก
                       </Link>
                       <Link
                         to={`edit/${product.product_id}`}
-                        className="btn btn-primary mr-3"
+                        className="btn btn-primary btn-sm"
                       >
                         แก้ไข
                       </Link>
                       <button
-                        className="btn btn-error"
+                        className="btn btn-error btn-sm"
                         onClick={() =>
                           document
                             .getElementById("my_modal_" + product.product_id)
@@ -213,6 +197,7 @@ function product() {
               )}
             </tbody>
           </table>
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

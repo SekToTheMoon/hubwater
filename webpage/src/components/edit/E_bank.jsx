@@ -106,7 +106,7 @@ function E_bank() {
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
-        <h1 className="text-2xl ">แก้ไขยี่ห้อ</h1>
+        <h1 className="text-2xl ">แก้ไขบัญชีธนาคาร</h1>
         <hr className="my-4" />
         <div className="flex items-center w-75">
           <form onSubmit={handleSubmit}>

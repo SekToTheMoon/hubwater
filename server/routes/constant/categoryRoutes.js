@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/type", function (req, res) {
   let fetch = "select type_id,type_name,type_category from type";
@@ -102,11 +103,12 @@ router.get("/gettype/:id", (req, res) => {
 });
 
 router.put("/type/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
     .query(
-      "SELECT type_id FROM type WHERE type_name = ? and type_category =?",
-      [req.body.type_name, req.body.type_category]
+      "SELECT type_id FROM type WHERE type_name = ? and type_category =? and type_id != ?",
+      [req.body.type_name, req.body.type_category, id]
     );
 
   if (rows.length === 0) {
@@ -119,7 +121,7 @@ router.put("/type/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.type_name, req.body.type_category];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating type" });

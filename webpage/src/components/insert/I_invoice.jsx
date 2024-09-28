@@ -67,7 +67,8 @@ function I_invoice() {
         "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
         function (value) {
           const { invoice_total } = this.parent;
-          return value < invoice_total + value;
+          const IntValue = parseFloat(value);
+          return IntValue < parseFloat(invoice_total) + IntValue;
         }
       ),
     items: Yup.array()
@@ -405,6 +406,7 @@ function I_invoice() {
     e.preventDefault();
     try {
       let updatedValues = addListIndex(values, "listi_number");
+      console.log(updatedValues);
       await validationSchema.validate(updatedValues, { abortEarly: false });
       await handleStockCut(updatedValues.items);
       // ตรวจสอบว่า `quotation` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`
@@ -412,6 +414,7 @@ function I_invoice() {
         updatedValues = {
           ...updatedValues,
           quotation_id: quotation,
+          version: version,
         };
       }
       // ตรวจสอบว่า `bill` มีค่าอยู่หรือไม่ ถ้ามีก็เพิ่มเข้าไปใน `updatedValues`

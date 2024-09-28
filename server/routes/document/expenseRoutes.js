@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { getTransactionID } = require("../../utils/generateId");
 const { uploadExpense } = require("../../middleware/diskStorage");
-
+const moment = require("moment");
 router.get("/out", function (req, res) {
   let fetch =
     "SELECT o.out_id, o.out_date, e.employee_fname, o.out_total, o.out_status FROM expense o JOIN employee e ON o.employee_id = e.employee_id WHERE o.out_del = '0'";
@@ -61,6 +61,7 @@ router.get("/out", function (req, res) {
 
 router.post("/out/insert", uploadExpense.array("img"), async (req, res) => {
   const items = JSON.parse(req.body.items);
+  const whereDate = req.body.out_date;
   const sql = `INSERT INTO expense (Out_id, Out_date, Out_status, Out_total, Out_del, Out_detail, employee_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
   const sqlInsertImg = "INSERT INTO outimg (out_id, outimg) VALUES (?, ?)";
   const imageFiles = req.files;
@@ -69,7 +70,16 @@ router.post("/out/insert", uploadExpense.array("img"), async (req, res) => {
   await connection.beginTransaction();
 
   try {
-    const idNext = await getTransactionID("OT", "expense", req.body.out_date);
+    // const idNext = await getTransactionID("OT", "expense", req.body.out_date); ใช้ไม่ได้เนื่องจาก prefix ไม่ตรงกับชื่อ col ตาราง ออกแบบโง่ชิปหาย
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT LPAD(IFNULL(MAX(SUBSTR(out_id, 12, 5)), 0) + 1, 5, '0') AS next FROM expense WHERE out_date = ?;`,
+        [whereDate]
+      );
+
+    const idNext =
+      "OT" + moment(whereDate).format("YYYYMMDD") + "-" + rows[0].next;
     await connection.query(sql, [
       idNext,
       req.body.out_date,

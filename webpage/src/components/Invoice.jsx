@@ -9,6 +9,7 @@ import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
+import SearchInput from "./component/SearchInput";
 function Invoice() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -46,55 +47,55 @@ function Invoice() {
     const selectedValue = event.target.value;
     if (selectedValue === "สร้างใบเสร็จรับเงิน") {
       navigate(`/receipt/insert?invoice=${invoice.iv_id}`);
-    } else if (selectedValue === "ยกเลิก") {
-      await handleRetureStock(invoice.iv_id);
-      handleChangeStatus(selectedValue, invoice.iv_id);
-    } else if (selectedValue === "อนุมัติ") {
-      await handleStockCut(invoice.iv_id);
-      handleChangeStatus(selectedValue, invoice.iv_id);
+      // } else if (selectedValue === "ยกเลิก") {
+      //   // await handleRetureStock(invoice.iv_id);
+      //   handleChangeStatus(selectedValue, invoice.iv_id);
+      // } else if (selectedValue === "อนุมัติ") {
+      //   // await handleStockCut(invoice.iv_id);
+      //   handleChangeStatus(selectedValue, invoice.iv_id);
     } else {
       handleChangeStatus(selectedValue, invoice.iv_id);
     }
   };
 
-  const handleRetureStock = async (iv_id) => {
-    try {
-      const response = await axios.put(`/returestock`, {
-        id: iv_id,
-      });
-    } catch (error) {
-      toast.success("เกิดข้อผิดพลาดในการคืนสต๊อกสินค้า", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
-      return;
-    }
-  };
+  // const handleRetureStock = async (iv_id) => {
+  //   try {
+  //     const response = await axios.put(`/returestock`, {
+  //       id: iv_id,
+  //     });
+  //   } catch (error) {
+  //     toast.success("เกิดข้อผิดพลาดในการคืนสต๊อกสินค้า", {
+  //       position: "top-right",
+  //       autoClose: 3000,
+  //       hideProgressBar: false,
+  //       closeOnClick: true,
+  //       pauseOnHover: true,
+  //       draggable: true,
+  //       progress: undefined,
+  //       theme: "dark",
+  //     });
+  //     return;
+  //   }
+  // };
 
-  const handleStockCut = async (iv_id) => {
-    try {
-      axios.put(`/stockcut`, { id: iv_id });
-    } catch (err) {
-      console.error("ตัดสต๊อกสินค้าไม่สำเร็จ:", err);
-      toast.error("ตัดสต๊อกสินค้าไม่สำเร็จ", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
-      throw new Error("No items found for the given invoice ID");
-    }
-  };
+  // const handleStockCut = async (iv_id) => {
+  //   try {
+  //     axios.put(`/stockcut`, { id: iv_id });
+  //   } catch (err) {
+  //     console.error("ตัดสต๊อกสินค้าไม่สำเร็จ:", err);
+  //     toast.error("ตัดสต๊อกสินค้าไม่สำเร็จ", {
+  //       position: "top-right",
+  //       autoClose: 5000,
+  //       hideProgressBar: false,
+  //       closeOnClick: true,
+  //       pauseOnHover: true,
+  //       draggable: true,
+  //       progress: undefined,
+  //       theme: "dark",
+  //     });
+  //     throw new Error("No items found for the given invoice ID");
+  //   }
+  // };
 
   const handleDelete = async (id) => {
     try {
@@ -160,7 +161,7 @@ function Invoice() {
   }, [currentPage, perPage]);
 
   useEffect(() => {
-    const socket = io("");
+    const socket = io("http://localhost:3001");
     socket.on("statusUpdate", ({ status, id }) => {
       if (id.startsWith("IV")) {
         setInvoice((oldInvoice) => {
@@ -187,34 +188,9 @@ function Invoice() {
           <h1 className="text-2xl mb-5">ใบแจ้งหนี้</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มใบแจ้งหนี้
+              <i class="fa-solid fa-plus"></i>เพิ่มเอกสาร
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
           {invoiceForDel && (
             <dialog open className="modal">
@@ -246,13 +222,13 @@ function Invoice() {
             </dialog>
           )}
 
-          <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>วันที่</th>
+          <table className="w-full table-auto">
+            <thead className="bg-base-200 text-left">
+              <tr className=" border-b">
+                <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
                 <th>ลูกค้า</th>
-                <th>ยอดรวมสุทธิ</th>
+                <th className="text-center">ยอดรวมสุทธิ</th>
                 <th>พนักงาน</th>
                 <th>สถานะ</th>
               </tr>
@@ -260,8 +236,10 @@ function Invoice() {
             <tbody>
               {Invoice && Invoice.length !== 0 ? (
                 Invoice.map((invoice, index) => (
-                  <tr key={invoice.iv_id}>
-                    <td>{invoice.iv_date.substring(0, 10)}</td>
+                  <tr className="border-b" key={invoice.iv_id}>
+                    <td className="pl-4 py-3">
+                      {invoice.iv_date.substring(0, 10)}
+                    </td>
                     <td className="group relative ">
                       <span
                         className="cursor-pointer hover:underline "
@@ -294,7 +272,7 @@ function Invoice() {
                     <td>{invoice.customer_fname}</td>
                     <td>
                       {invoice.iv_vat
-                        ? invoice.iv_total * 1.07
+                        ? (invoice.iv_total * 1.07).toFixed(2)
                         : invoice.iv_total}
                     </td>
                     <td>{invoice.employee_fname}</td>
@@ -349,7 +327,7 @@ function Invoice() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="6" className="pt-5 text-center">
                     ไม่มีข้อมูล
                   </td>
                 </tr>

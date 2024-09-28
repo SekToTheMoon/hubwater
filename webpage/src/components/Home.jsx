@@ -9,10 +9,10 @@ function Home() {
     <>
       <div className="hero h-full bg-base-200 rounded-box">
         <div className="hero-content flex-col lg:flex-row">
-          <img
+          {/* <img
             src="https://daisyui.com/images/stock/photo-1635805737707-575885ab0820.jpg"
             className="max-w-sm rounded-lg shadow-2xl"
-          />
+          /> */}
           <div>
             <h1 className="text-5xl font-bold">
               ยินดีต้นรับสู่หน้าแรก
@@ -23,9 +23,9 @@ function Home() {
               เมื่อเราเห็นพระอาทิตย์ขึ้นในยามเช้า เป็นสัญญาณบอกให้รู้ว่าสิ่งใหม่
               ๆ ของวันใหม่กำลังเริ่มต้นแล้วนะ ขอให้ทำงานอย่างมีความสุข 555
             </p>
-            <button className="btn" onClick={() => refresh()}>
+            {/* <button className="btn" onClick={() => refresh()}>
               ทดสอบ ขอ accessToken ใหม่
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

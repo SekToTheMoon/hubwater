@@ -173,7 +173,7 @@ function E_product() {
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
-        <h1 className="text-2xl ">เพิ่มสินค้า</h1>
+        <h1 className="text-2xl ">แก้ไขสินค้า</h1>
         <hr className="my-4" />
         <div className="flex items-center">
           <form
@@ -212,7 +212,7 @@ function E_product() {
                   </option>
                   {selectType.map((op) => (
                     <option key={op.type_id} value={op.type_id}>
-                      {op.type_name}
+                      {op.type_category}
                     </option>
                   ))}
                 </select>

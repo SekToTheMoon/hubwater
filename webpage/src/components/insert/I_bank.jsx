@@ -112,7 +112,7 @@ function I_bank() {
   return (
     <>
       <div className="rounded-box bg-base-100 p-8">
-        <h1 className="text-2xl">เพิ่มตำแหน่ง</h1>
+        <h1 className="text-2xl">เพิ่มบัญชีธนาคาร</h1>
         <hr className="my-4" />
         <div className="flex items-center w-75">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">

@@ -5,8 +5,12 @@ const RequireAuth = ({ allowedPermission }) => {
   const { auth } = useAuth();
   const location = useLocation();
 
+  // console.log(
+  //   typeof auth?.posit_permission + " from requireAuth auth.position_permission"
+  // );
   console.log(
-    typeof auth?.posit_permission + " from requireAuth auth.position_permission"
+    auth?.posit_permission,
+    " from requireAuth auth.position_permission"
   );
 
   return auth?.posit_permission[allowedPermission] == 1 ? (

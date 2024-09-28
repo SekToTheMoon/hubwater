@@ -224,8 +224,8 @@ router.put(
       const [rows] = await db
         .promise()
         .query(
-          "SELECT employee_id FROM employee WHERE employee_fname = ? and employee_lname = ? and employee_nid = ? or employee_username=?",
-          [fname, lname, nid, username]
+          "SELECT employee_id FROM employee WHERE employee_fname = ? and employee_lname = ? and employee_nid = ? and employee_id !=? or employee_username=?",
+          [fname, lname, nid, employeeId, username]
         );
       if (rows.length > 1) {
         return res.status(409).json({

@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import SearchInput from "./component/SearchInput";
 function Unit() {
   const axios = useAxiosPrivate();
   const [Unit, setUnit] = useState([]);
@@ -105,97 +106,9 @@ function Unit() {
             <Link to="insert" className="btn btn-primary">
               เพิ่มหน่วยนับ
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสหน่วยนับ</th>
-                <th>ชื่อหน่วยนับ</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Unit && Unit.length !== 0 ? (
-                Unit.map((Uni) => (
-                  <tr key={Uni.unit_id}>
-                    <td>{Uni.unit_id}</td>
-                    <td>{Uni.unit_name}</td>
-                    <td>
-                      <Link
-                        to={`edit/${Uni.unit_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + Uni.unit_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog id={`my_modal_${Uni.unit_id}`} className="modal">
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">
-                            ลบข้อมูลหน่วยนับ
-                          </h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลหน่วยนับ {Uni.unit_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(Uni.unit_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
+
           <Table headers={headers} data={Unit} onDelete={handleDelete} />
           <div className="flex justify-between mt-4">
             <select

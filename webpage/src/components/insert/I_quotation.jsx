@@ -54,7 +54,8 @@ function I_quotation() {
         "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
         function (value) {
           const { quotation_total } = this.parent;
-          return value < quotation_total + value;
+          const IntValue = parseFloat(value);
+          return IntValue < parseFloat(quotation_total) + IntValue;
         }
       ),
     items: Yup.array()
@@ -231,6 +232,7 @@ function I_quotation() {
     e.preventDefault();
     try {
       const updatedRequestValues = addListIndex(values, "listq_number");
+      console.log(updatedRequestValues, " from update");
       await validationSchema.validate(updatedRequestValues, {
         abortEarly: false,
       });
@@ -282,7 +284,7 @@ function I_quotation() {
       <div className="rounded-box bg-base-100 p-5">
         <h1 className="ml-16 text-2xl">สร้างใบเสนอราคา</h1>
         <hr className="my-4" />
-        <div className="flex items-center ">
+        <div className="flex items-center justify-center ">
           {/* model4 สินค้าทั้งหมด */}
           <dialog id="my_modal_4" className="modal">
             <div className="modal-box w-11/12 max-w-5xl">
@@ -426,7 +428,7 @@ function I_quotation() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto">
+          <form onSubmit={handleSubmit} className="xl:w-full xl:max-w-3xl">
             <div className="mt-5 mb-2 2xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
@@ -708,11 +710,11 @@ function I_quotation() {
                   />
                   <span>%</span>
                 </div>
-                <div className="w1/2 ">
+                <div className="w-1/2">
                   <input
                     type="text"
                     value={values.disc_cash}
-                    className="text-right"
+                    className="text-right w-full"
                     onChange={(e) => {
                       let disc = e.target.value;
 

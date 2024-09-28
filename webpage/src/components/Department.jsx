@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import SearchInput from "./component/SearchInput";
 
 function Department() {
   const axios = useAxiosPrivate();
@@ -16,7 +17,6 @@ function Department() {
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
-  const navigate = useNavigate();
   let messageSuccess = state && state.msg;
   const headers = ["รหัสแผนก", "ชื่อแผนก"];
 
@@ -92,7 +92,6 @@ function Department() {
         progress: undefined,
         theme: "dark",
       });
-      navigate("/all/department");
     }
   }, [currentPage, perPage]);
 
@@ -105,95 +104,8 @@ function Department() {
             <Link to="insert" className="btn btn-primary">
               เพิ่มแผนก
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสแผนก</th>
-                <th>ชื่อแผนก</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {department && department.length !== 0 ? (
-                department.map((dep) => (
-                  <tr key={dep.dep_id}>
-                    <td>{dep.dep_id}</td>
-                    <td>{dep.dep_name}</td>
-                    <td>
-                      <Link
-                        to={`edit/${dep.dep_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + dep.dep_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog id={`my_modal_${dep.dep_id}`} className="modal">
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลแผนก</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลแผนก {dep.dep_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(dep.dep_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
           <Table headers={headers} data={department} onDelete={handleDelete} />
 
           <div className="flex justify-between mt-4">

@@ -69,7 +69,8 @@ function I_bill() {
         "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
         function (value) {
           const { bill_total } = this.parent;
-          return value < bill_total + value;
+          const IntValue = parseFloat(value);
+          return IntValue < parseFloat(bill_total) + IntValue;
         }
       ),
     items: Yup.array()
@@ -333,6 +334,7 @@ function I_bill() {
         updatedRequestValues = {
           ...updatedRequestValues,
           quotation_id: quotation,
+          version: version,
         };
       }
       await handleInsert(updatedRequestValues);

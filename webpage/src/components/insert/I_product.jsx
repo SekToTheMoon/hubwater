@@ -12,6 +12,7 @@ function I_product() {
     product_amount: "",
     product_reorder: "",
     product_detail: "",
+    size: "",
     unit_m_id: "",
     unit_id: "",
     brand_id: "",
@@ -29,7 +30,16 @@ function I_product() {
     product_name: Yup.string()
       .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
       .required("กรุณากรอกชื่อ สินค้า"),
-    type_id: Yup.string().required("กรุณาเลือกประเภทด้วย"),
+    product_price: Yup.string()
+      .matches(/^\d+$/, "กรอกเป็นตัวเลขเท่านั้น")
+      .required("กรุณากรอก"),
+    product_reorder: Yup.string()
+      .matches(/^\d+$/, "กรอกเป็นตัวเลขเท่านั้น")
+      .required("กรุณากรอก"),
+    size: Yup.string().required("กรุณากรอก"),
+    unit_m_id: Yup.string().required("กรุณาเลือก"),
+    unit_id: Yup.string().required("กรุณาเลือก"),
+    type_id: Yup.string().required("กรุณาเลือก"),
   });
 
   const handleFileChange = (e) => {
@@ -64,6 +74,7 @@ function I_product() {
     formData.append("product_amount", values.product_amount);
     formData.append("product_reorder", values.product_reorder);
     formData.append("product_detail", values.product_detail);
+    formData.append("size", values.size);
     formData.append("unit_m_id", values.unit_m_id);
     formData.append("unit_id", values.unit_id);
     formData.append("brand_id", values.brand_id);
@@ -160,7 +171,7 @@ function I_product() {
         <div className="flex items-center">
           <form
             onSubmit={handleSubmit}
-            className="max-w-sm mx-auto 2xl:max-w-7xl"
+            className="max-w-sm mx-auto lg:max-w-7xl"
           >
             <div className="flex-1 mb-5 ">
               <label className="block mb-2  font-medium ">ชื่อสินค้า</label>
@@ -177,7 +188,7 @@ function I_product() {
                 <span className="text-error">{errors.product_name}</span>
               )}
             </div>
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 lg:flex gap-x-5">
               {" "}
               <div className="flex-1 mb-5 ">
                 <label className="block mb-2  font-medium ">ประเภทสินค้า</label>
@@ -193,7 +204,7 @@ function I_product() {
                   </option>
                   {selectType.map((op) => (
                     <option key={op.type_id} value={op.type_id}>
-                      {op.type_name}
+                      {op.type_category}
                     </option>
                   ))}
                 </select>
@@ -202,25 +213,27 @@ function I_product() {
                 )}
               </div>
               <div className="flex-1 mb-5 ">
-                <label className="block mb-2  font-medium ">หน่วยวัด</label>
+                <label className="block mb-2  font-medium ">
+                  หน่วยของสินค้า
+                </label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
-                  value={values.unit_m_id}
-                  onChange={(e) =>
-                    setValues({ ...values, unit_m_id: e.target.value })
-                  }
+                  value={values.unit_id}
+                  onChange={(e) => {
+                    setValues({ ...values, unit_id: e.target.value });
+                  }}
                 >
                   <option value="" disabled>
                     เลือก
                   </option>
-                  {selectUnit_m.map((op) => (
-                    <option key={op.unit_m_id} value={op.unit_m_id}>
-                      {op.unit_m_name}
+                  {selectUnit.map((op) => (
+                    <option key={op.unit_id} value={op.unit_id}>
+                      {op.unit_name}
                     </option>
                   ))}
                 </select>
-                {errors.unit_m_id && (
-                  <span className="text-error">{errors.unit_m_id}</span>
+                {errors.unit_id && (
+                  <span className="text-error">{errors.unit_id}</span>
                 )}
               </div>
               <div className="flex-1 mb-5 ">
@@ -246,7 +259,7 @@ function I_product() {
                 )}
               </div>
             </div>
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 lg:flex gap-x-5">
               {" "}
               <div className="flex-1 mb-5 ">
                 <label className="block mb-2  font-medium ">ราคา</label>
@@ -281,31 +294,44 @@ function I_product() {
                 )}
               </div>
               <div className="flex-1 mb-5 ">
-                <label className="block mb-2  font-medium ">
-                  หน่วยของสินค้า
-                </label>
+                <label className="block mb-2  font-medium ">ขนาด</label>
+                <input
+                  type="text"
+                  placeholder="20 X 10"
+                  name="size"
+                  className="input input-bordered w-full mb-1"
+                  onChange={(e) => {
+                    setValues({ ...values, size: e.target.value });
+                  }}
+                />
+                {errors.size && (
+                  <span className="text-error">{errors.size}</span>
+                )}
+              </div>
+              <div className="flex-1 mb-5 ">
+                <label className="block mb-2  font-medium ">หน่วยวัด</label>
                 <select
                   className="select select-bordered w-full max-w-xs mb-1"
-                  value={values.unit_id}
-                  onChange={(e) => {
-                    setValues({ ...values, unit_id: e.target.value });
-                  }}
+                  value={values.unit_m_id}
+                  onChange={(e) =>
+                    setValues({ ...values, unit_m_id: e.target.value })
+                  }
                 >
                   <option value="" disabled>
                     เลือก
                   </option>
-                  {selectUnit.map((op) => (
-                    <option key={op.unit_id} value={op.unit_id}>
-                      {op.unit_name}
+                  {selectUnit_m.map((op) => (
+                    <option key={op.unit_m_id} value={op.unit_m_id}>
+                      {op.unit_m_name}
                     </option>
                   ))}
                 </select>
-                {errors.unit_id && (
-                  <span className="text-error">{errors.unit_id}</span>
+                {errors.unit_m_id && (
+                  <span className="text-error">{errors.unit_m_id}</span>
                 )}
               </div>
             </div>
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 lg:flex gap-x-5">
               <div className=" flex-1 mb-5">
                 <label
                   htmlFor="img"

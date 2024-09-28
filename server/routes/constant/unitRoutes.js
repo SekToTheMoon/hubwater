@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/unit", function (req, res) {
   let fetch = "select unit_id,unit_name from unit";
@@ -75,10 +76,12 @@ router.post("/unit/insert", async (req, res) => {
 });
 
 router.put("/unit/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query("SELECT unit_name FROM unit WHERE unit_name = ?", [
+    .query("SELECT unit_name FROM unit WHERE unit_name = ? and unit_id !=?", [
       req.body.unit_name,
+      id,
     ]);
 
   if (rows.length === 0) {
@@ -90,7 +93,7 @@ router.put("/unit/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.unit_name];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating unit" });

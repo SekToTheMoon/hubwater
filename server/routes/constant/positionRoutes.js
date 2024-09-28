@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/position", function (req, res) {
   let fetch =
@@ -93,12 +94,13 @@ router.get("/getposit/:id", (req, res) => {
 });
 
 router.put("/position/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query("SELECT posit_name FROM posit WHERE posit_name = ? and dep_id =?", [
-      req.body.posit_name,
-      req.body.dep_id,
-    ]);
+    .query(
+      "SELECT posit_name FROM posit WHERE posit_name = ? and dep_id =? and posit_id != ? ",
+      [req.body.posit_name, req.body.dep_id, id]
+    );
 
   if (rows.length === 0) {
     const sql = `
@@ -111,7 +113,7 @@ router.put("/position/edit/:id", async (req, res) => {
     `;
 
     const values = [req.body.posit_name, req.body.permission, req.body.dep_id];
-    const id = req.params.id;
+
     db.execute(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating department" });

@@ -76,11 +76,13 @@ router.post("/brand/insert", async (req, res) => {
 });
 
 router.put("/brand/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query("SELECT brand_name FROM brand WHERE brand_name = ?", [
-      req.body.brand_name,
-    ]);
+    .query(
+      "SELECT brand_name FROM brand WHERE brand_name = ? and brand_id !=?",
+      [req.body.brand_name, id]
+    );
 
   if (rows.length === 0) {
     const sql = `
@@ -91,7 +93,7 @@ router.put("/brand/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.brand_name];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating brand" });

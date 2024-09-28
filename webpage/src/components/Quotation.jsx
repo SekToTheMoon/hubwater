@@ -9,6 +9,7 @@ import { handleChangeStatus } from "../utils/changeStatus";
 import io from "socket.io-client";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
+import SearchInput from "./component/SearchInput";
 function Quotation() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -149,34 +150,9 @@ function Quotation() {
           <h1 className="text-2xl mb-5">ใบเสนอราคา</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มใบเสนอราคา
+              <i class="fa-solid fa-plus"></i>เพิ่มเอกสาร
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
           {quotationForDel && (
             <dialog open className="modal">
@@ -209,22 +185,24 @@ function Quotation() {
             </dialog>
           )}
 
-          <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>วันที่</th>
+          <table className="w-full table-auto">
+            <thead className="bg-base-200 text-left">
+              <tr className=" border-b">
+                <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
                 <th>ลูกค้า</th>
-                <th>ยอดรวมสุทธิ</th>
+                <th className="text-center">ยอดรวมสุทธิ</th>
                 <th>พนักงาน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
             <tbody>
               {Quotation && Quotation.length !== 0 ? (
-                Quotation.map((quotation, index) => (
-                  <tr key={quotation.quotation_id}>
-                    <td>{quotation.quotation_date.substring(0, 10)}</td>
+                Quotation.map((quotation) => (
+                  <tr className="border-b" key={quotation.quotation_id}>
+                    <td className="pl-4 py-3">
+                      {quotation.quotation_date.substring(0, 10)}
+                    </td>
                     <td className="group relative ">
                       <span
                         className="cursor-pointer hover:underline "
@@ -253,9 +231,9 @@ function Quotation() {
                       )}
                     </td>
                     <td>{quotation.customer_fname}</td>
-                    <td>
+                    <td className="text-center">
                       {quotation.quotation_vat
-                        ? quotation.quotation_total * 1.07
+                        ? (quotation.quotation_total * 1.07).toFixed(2)
                         : quotation.quotation_total}
                     </td>
                     <td>{quotation.employee_fname}</td>
@@ -312,7 +290,7 @@ function Quotation() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="6" className="pt-5 text-center">
                     ไม่มีข้อมูล
                   </td>
                 </tr>

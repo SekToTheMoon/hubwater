@@ -114,7 +114,7 @@ module.exports = (io) => {
           await connection.query(sqlInertQtBn, [
             idnext,
             req.body.quotation_id,
-            1,
+            req.body.version,
           ]);
           updateStatus(io, req.body.quotation_id, "ดำเนินการแล้ว", res);
         }

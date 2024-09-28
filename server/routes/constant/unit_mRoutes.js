@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/unit_m", function (req, res) {
   let fetch = "select unit_m_id,unit_m_name from unit_m";
@@ -76,11 +77,13 @@ router.post("/unit_m/insert", async (req, res) => {
 });
 
 router.put("/unit_m/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query("SELECT unit_m_name FROM unit_m WHERE unit_m_name = ?", [
-      req.body.unit_m_name,
-    ]);
+    .query(
+      "SELECT unit_m_name FROM unit_m WHERE unit_m_name = ? and unit_m_id !=?",
+      [req.body.unit_m_name, id]
+    );
 
   if (rows.length === 0) {
     const sql = `
@@ -91,7 +94,7 @@ router.put("/unit_m/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.unit_m_name];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating unit_m" });

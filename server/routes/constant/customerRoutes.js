@@ -192,8 +192,13 @@ router.put("/customer/edit/:id", async (req, res) => {
   const [rows] = await db
     .promise()
     .query(
-      "SELECT customer_id FROM customer WHERE customer_fname = ? AND customer_lname=? AND customer_nid=? and customer_id",
-      [req.body.customer_fname, req.body.customer_lname, req.body.customer_nid]
+      "SELECT customer_id FROM customer WHERE customer_fname = ? AND customer_lname=? AND customer_nid=? and customer_id !=?",
+      [
+        req.body.customer_fname,
+        req.body.customer_lname,
+        req.body.customer_nid,
+        customerId,
+      ]
     );
 
   // ถ้าไม่มีลูกค้าที่มีข้อมูลเดียวกันอยู่แล้ว

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { db } = require("../../database");
+const { getNextID } = require("../../utils/generateId");
 
 router.get("/expensetype", function (req, res) {
   let fetch = "select expensetype_id,expensetype_name from expensetype";
@@ -77,11 +78,12 @@ router.post("/expensetype/insert", async (req, res) => {
 });
 
 router.put("/expensetype/edit/:id", async (req, res) => {
+  const id = req.params.id;
   const [rows] = await db
     .promise()
     .query(
-      "SELECT expensetype_name FROM expensetype WHERE expensetype_name = ?",
-      [req.body.expensetype_name]
+      "SELECT expensetype_name FROM expensetype WHERE expensetype_name = ? and expensetype_id !=?",
+      [req.body.expensetype_name, id]
     );
 
   if (rows.length === 0) {
@@ -93,7 +95,7 @@ router.put("/expensetype/edit/:id", async (req, res) => {
   `;
 
     const values = [req.body.expensetype_name];
-    const id = req.params.id;
+
     db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating expensetype" });

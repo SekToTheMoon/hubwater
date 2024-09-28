@@ -9,6 +9,7 @@ import io from "socket.io-client";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
+import SearchInput from "./component/SearchInput";
 function Bill() {
   const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -116,7 +117,7 @@ function Bill() {
   }, [currentPage, perPage]);
 
   useEffect(() => {
-    const socket = io("");
+    const socket = io("http://localhost:3001");
     socket.on("statusUpdate", ({ status, id }) => {
       if (id.startsWith("BN")) {
         setBill((oldBill) => {
@@ -143,34 +144,9 @@ function Bill() {
           <h1 className="text-2xl mb-5">ใบวางบิล</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">
-              เพิ่มใบวางบิล
+              <i class="fa-solid fa-plus"></i>เพิ่มเอกสาร
             </Link>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button className="btn btn-primary" onClick={handleSearch}>
-                ค้นหา
-              </button>
-            </div>
+            <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
           {billForDel && (
             <dialog open className="modal">
@@ -202,22 +178,24 @@ function Bill() {
             </dialog>
           )}
 
-          <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>วันที่</th>
+          <table className="w-full table-auto">
+            <thead className="bg-base-200 text-left">
+              <tr className=" border-b">
+                <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
                 <th>ลูกค้า</th>
-                <th>ยอดรวมสุทธิ</th>
+                <th className="text-center">ยอดรวมสุทธิ</th>
                 <th>พนักงาน</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
             <tbody>
               {Bill && Bill.length !== 0 ? (
-                Bill.map((bill, index) => (
-                  <tr key={bill.bn_id}>
-                    <td>{bill.bn_date.substring(0, 10)}</td>
+                Bill.map((bill) => (
+                  <tr className="border-b" key={bill.bn_id}>
+                    <td className="pl-4 py-3">
+                      {bill.bn_date.substring(0, 10)}
+                    </td>
                     <td className="group relative ">
                       <span
                         className="cursor-pointer hover:underline "
@@ -243,7 +221,9 @@ function Bill() {
                     </td>
                     <td>{bill.customer_fname}</td>
                     <td>
-                      {bill.bn_vat ? bill.bn_total * 1.07 : bill.bn_total}
+                      {bill.bn_vat
+                        ? (bill.bn_total * 1.07).toFixed(2)
+                        : bill.bn_total}
                     </td>
                     <td>{bill.employee_fname}</td>
                     <td className="flex gap-2">
@@ -297,7 +277,7 @@ function Bill() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center">
+                  <td colSpan="6" className="pt-5 text-center">
                     ไม่มีข้อมูล
                   </td>
                 </tr>

@@ -8,11 +8,20 @@ export default function Table({ data, headers, onDelete }) {
       <table className="w-full table-auto">
         <thead className="bg-base-200 text-left">
           <tr className="border-b">
-            {headers.map((header, index) => (
-              <th key={index} className="px-4 py-3">
-                {header}
-              </th>
-            ))}
+            {headers.map((header, index) =>
+              index > 2 ? (
+                <th
+                  key={index}
+                  className="hidden xl:px-4 xl:table-cell xl:py-3"
+                >
+                  {header}
+                </th>
+              ) : (
+                <th key={index} className="px-4 py-3">
+                  {header}
+                </th>
+              )
+            )}
             <th className="px-4 py-3">สถานะ</th>
           </tr>
         </thead>
@@ -22,11 +31,20 @@ export default function Table({ data, headers, onDelete }) {
               const rowData = Object.values(item);
               return (
                 <tr key={index} className="border-b">
-                  {rowData.map((td, tdIndex) => (
-                    <td key={index + tdIndex} className="px-4 py-3">
-                      {td}
-                    </td>
-                  ))}
+                  {rowData.map((td, tdIndex) =>
+                    tdIndex > 2 ? (
+                      <td
+                        key={index + tdIndex}
+                        className="hidden xl:px-4 xl:table-cell xl:py-3"
+                      >
+                        {td}
+                      </td>
+                    ) : (
+                      <td key={index + tdIndex} className="px-4 py-3">
+                        {td}
+                      </td>
+                    )
+                  )}
                   <td className="px-4 py-3">
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Link

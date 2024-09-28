@@ -9,7 +9,7 @@ import addListIndex from "../../utils/addListIndex";
 
 function E_receiptcash() {
   const axios = useAxiosPrivate();
-
+  const { id } = useParams();
   const [search, setSearch] = useState("");
   const [lotNumbers, setLotNumbers] = useState([]);
   const [productDetail, setProductdetail] = useState(null);
@@ -138,8 +138,8 @@ function E_receiptcash() {
           ? receiptCashDetail.customer_id
           : "",
         items: receiptCashList || [],
-        disc_cash: ivDetail.disc_cash,
-        disc_percent: ivDetail.disc_percent,
+        disc_cash: receiptCashDetail.disc_cash,
+        disc_percent: receiptCashDetail.disc_percent,
       });
       setOriginalValues({
         rf_date: moment(receiptCashDetail.rf_date).format("YYYY-MM-DD"),
@@ -152,8 +152,8 @@ function E_receiptcash() {
           ? receiptCashDetail.customer_id
           : "",
         items: receiptCashList || [],
-        disc_cash: ivDetail.disc_cash,
-        disc_percent: ivDetail.disc_percent,
+        disc_cash: receiptCashDetail.disc_cash,
+        disc_percent: receiptCashDetail.disc_percent,
       });
       if (receiptCashDetail.customer_id) {
         fetchCustomerDetail(receiptCashDetail.customer_id);
