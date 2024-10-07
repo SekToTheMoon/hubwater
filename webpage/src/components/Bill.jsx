@@ -10,6 +10,8 @@ import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
+import MobileDocTable from "./component/MobileDocTable";
+
 function Bill() {
   const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
@@ -153,14 +155,14 @@ function Bill() {
               <div className="modal-box">
                 <h3 className="font-bold text-lg">ลบข้อมูลใบวางบิล</h3>
                 <p className="py-4">
-                  ต้องการลบข้อมูลใบวางบิล {billForDel.bn_id} หรือไม่
+                  ต้องการลบข้อมูลใบวางบิล {billForDel} หรือไม่
                 </p>
                 <div className="modal-action">
                   <form method="dialog">
                     <button
                       className="btn btn-primary"
                       onClick={() => {
-                        handleDelete(billForDel.bn_id);
+                        handleDelete(billForDel);
                         setBillfordel(null);
                       }}
                     >
@@ -178,7 +180,7 @@ function Bill() {
             </dialog>
           )}
 
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -284,6 +286,14 @@ function Bill() {
               )}
             </tbody>
           </table>
+          <MobileDocTable
+            data={Bill}
+            onDelete={setBillfordel}
+            statusList={statusBill}
+            handleSelectChange={handleSelectChange}
+            roll={roll}
+          />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

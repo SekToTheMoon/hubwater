@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-import { Chart as ChartJS } from "chart.js/auto";
+import { Chart as ChartJS, plugins } from "chart.js/auto";
 import { Pie, Bar, Line, Doughnut } from "react-chartjs-2";
 import moment from "moment";
 function selectTimeline(onChangeFunc) {
@@ -36,31 +36,45 @@ function Dashboard() {
   const [incomeAndExpense, setIncomeAndExpense] = useState(null);
   const [CrossTab, setCrossTab] = useState();
   const [expenseTypeData, setExpenseTypeData] = useState(null);
+  const [buyProductData, setBuyProductData] = useState(null);
   const [Commition, setCommition] = useState([]);
-  const [Pay, setPay] = useState();
+  const [waitToPay, setWaitToPay] = useState();
   const [TopSale, setTopSale] = useState();
+  const [TotalIncomeAndExpense, setTotalIncomeAndExpense] = useState(null);
 
   const [categoryProduct, setCategoryProduct] = useState(null);
-  const [TotalIncome, setTotalIncome] = useState(null);
-  const [totalReceived, setTotalReceived] = useState(0);
 
+  //รายงานสินค้าขายดี
   const [DateRanges, setDateRanges] = useState({
     startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
     endDate: moment(new Date()).format("YYYY-MM-DD"),
+    selectCategory: "ทั้งหมด",
   });
 
   const [saleProductDateRanges, setSaleProductDateRanges] = useState({
     startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
     endDate: moment(new Date()).format("YYYY-MM-DD"),
+    selectCategory: "ทั้งหมด",
   });
 
-  const [selectCategory, setSelectCategory] = useState("ทั้งหมด");
+  const [buyProductDateRanges, setBuyProductDataDateRanges] = useState({
+    startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
+    endDate: moment(new Date()).format("YYYY-MM-DD"),
+  });
+  const [commitionDateRanges, setCommitionDateRanges] = useState({
+    startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
+    endDate: moment(new Date()).format("YYYY-MM-DD"),
+  });
 
   const handleSubmitTopSale = (e) => {
     e.preventDefault();
 
     if (DateRanges.endDate > DateRanges.startDate) {
-      fetchTopSale(DateRanges.startDate, DateRanges.endDate, selectCategory);
+      fetchTopSale(
+        DateRanges.startDate,
+        DateRanges.endDate,
+        DateRanges.selectCategory
+      );
     } else {
       alert("Please select a valid date range");
     }
@@ -71,7 +85,31 @@ function Dashboard() {
     if (saleProductDateRanges.endDate > saleProductDateRanges.startDate) {
       fetchSaleProduct(
         saleProductDateRanges.startDate,
-        saleProductDateRanges.endDate
+        saleProductDateRanges.endDate,
+        saleProductDateRanges.selectCategory
+      );
+    } else {
+      alert("Please select a valid date range");
+    }
+  };
+  const handleSubmitCommition = (e) => {
+    e.preventDefault();
+    if (commitionDateRanges.endDate > commitionDateRanges.startDate) {
+      fetchCommition(
+        commitionDateRanges.startDate,
+        commitionDateRanges.endDate
+      );
+    } else {
+      alert("Please select a valid date range");
+    }
+  };
+
+  const handleSubmitBuyProduct = (e) => {
+    e.preventDefault();
+    if (buyProductDateRanges.endDate > buyProductDateRanges.startDate) {
+      fetchBuyProduct(
+        buyProductDateRanges.startDate,
+        buyProductDateRanges.endDate
       );
     } else {
       alert("Please select a valid date range");
@@ -111,8 +149,8 @@ function Dashboard() {
           },
         ],
       });
-      setTotalIncome(data.totalIncomeSum);
-      setTotalReceived(data.totalReceivedSum);
+      // setTotalIncome(data.totalIncomeSum);
+      // setTotalReceived(data.totalReceivedSum);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -159,6 +197,19 @@ function Dashboard() {
       const dataIncome = responseIncome.data;
       const dataExpense = responseExpense.data;
 
+      const sumIncome = dataIncome.totalIncomeData.reduce(
+        (sum, row) => sum + parseFloat(row),
+        0
+      );
+      const sumExpense = dataExpense.totalExpenseData.reduce(
+        (sum, row) => sum + parseFloat(row),
+        0
+      );
+
+      setTotalIncomeAndExpense({
+        sumIncome: sumIncome,
+        sumExpense: sumExpense,
+      });
       setIncomeAndExpense({
         labels: dataIncome.labels,
         datasets: [
@@ -174,7 +225,6 @@ function Dashboard() {
             data: dataExpense.totalExpenseData,
             backgroundColor: "rgba(255, 99, 132, 0.2)",
             borderColor: "rgba(255, 99, 132, 1)",
-
             borderWidth: 1,
           },
         ],
@@ -183,8 +233,8 @@ function Dashboard() {
       console.error("Error fetching data:", error);
     }
   };
-  const fetchSaleProduct = async (startDate, endDate) => {
-    let url = `/getSaleProduct?startDate=${startDate}&&endDate=${endDate}`;
+  const fetchSaleProduct = async (startDate, endDate, category) => {
+    let url = `/getSaleProduct?startDate=${startDate}&&endDate=${endDate}&&category=${category}`;
     try {
       const response = await axiosPrivate.get(url);
       // const labels = response.data.map((item) => item.product_name);
@@ -232,14 +282,34 @@ function Dashboard() {
       console.error("Error fetching sales data:", error);
     }
   };
-  const fetchCommition = async (timeline) => {
-    let url = `/getCommition?timeline=${timeline}`;
+  const fetchCommition = async (startDate, endDate) => {
     try {
-      const response = await axiosPrivate.get(url);
-
+      const response = await axiosPrivate.get(
+        `/getCommition?startDate=${startDate}&&endDate=${endDate}`
+      );
       setCommition(response.data);
     } catch (error) {
       console.error("Error fetching sales data:", error);
+    }
+  };
+  const fetchBuyProduct = async (startDate, endDate) => {
+    try {
+      const response = await axiosPrivate.get(
+        `/getBuyProduct?startDate=${startDate}&&endDate=${endDate}`
+      );
+      setBuyProductData(response.data);
+    } catch (error) {
+      console.error("Error fetching sales data:", error);
+    }
+  };
+  const fetchWaitToPlay = async (timeline) => {
+    try {
+      const response = await axiosPrivate.get(
+        `/getWaitToPlay?timeline=${timeline}`
+      );
+      setWaitToPay(response.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
   };
   const fetchTopSale = async (startDate, endDate, category) => {
@@ -259,12 +329,22 @@ function Dashboard() {
     fetchExpense("year");
     fetchSaleProduct(
       saleProductDateRanges.startDate,
-      saleProductDateRanges.endDate
+      saleProductDateRanges.endDate,
+      saleProductDateRanges.selectCategory
     );
     fetchIncomeAndExpense("year");
     fetchExpenseByCategory("year");
-    fetchCommition("year");
-    fetchTopSale(DateRanges.startDate, DateRanges.endDate, selectCategory);
+    fetchWaitToPlay("year");
+    fetchCommition(commitionDateRanges.startDate, commitionDateRanges.endDate);
+    fetchBuyProduct(
+      buyProductDateRanges.startDate,
+      buyProductDateRanges.endDate
+    );
+    fetchTopSale(
+      DateRanges.startDate,
+      DateRanges.endDate,
+      DateRanges.selectCategory
+    );
     fetchCategoryProduct();
   }, []);
 
@@ -491,38 +571,259 @@ function Dashboard() {
   return (
     <>
       <h1 className="text-3xl mb-5 text-neutral-content">ภาพรวมบริษัท</h1>
-      <main className="grid grid-cols-4  gap-4">
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-3">
+      <main className="grid grid-cols-8  gap-4">
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-8">
           <h2 className="card-title my-2">รายได้และค่าใช้จ่ายตามเอกสาร</h2>
           {selectTimeline(fetchIncomeAndExpense)}
-          <figure className="h-full mt-3 ">
+          <figure className="flex flex-col mt-3 max-h-[30rem] 2xl:flex-row-reverse ">
             {incomeAndExpense && (
-              <Line data={incomeAndExpense} options={{ fill: true }} />
+              <>
+                <div className="flex gap-5 w-full 2xl:flex-col 2xl:pt-7">
+                  <p>
+                    <span className="text-blue-500">รายได้รวม : </span>
+                    {`${TotalIncomeAndExpense?.sumIncome}`}
+                  </p>
+                  <p>
+                    <span className="text-pink-500">ค่าใช้จ่ายรวม : </span>
+                    {`${TotalIncomeAndExpense?.sumExpense}`}
+                  </p>
+                </div>
+                <Line
+                  data={incomeAndExpense}
+                  options={{
+                    fill: true,
+                  }}
+                />
+              </>
             )}
           </figure>
         </div>
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5 flex flex-col">
           <h2 className="card-title my-2">สรุปยอดเก็บเงิน</h2>
           {selectTimeline(fetchIncome)}
-          <figure className="h-full mt-3 ">
+          <figure className="h-full mt-3">
             {incomeData && StackedBarChart(incomeData)}
           </figure>
         </div>
 
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 overflow-y-auto rounded-lg lg:col-span-3 flex flex-col">
+          <h2 className="card-title my-2">ยอดค้างรับ</h2>
+          {selectTimeline(fetchWaitToPlay)}
+          <div className="overflow-y-scroll no-scrollbar h-72 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
+            {waitToPay?.data?.length > 0 ? (
+              <>
+                {waitToPay.data.map((item, index) => (
+                  <div key={index} className="border-b py-2">
+                    <div className="flex justify-between items-center p-1">
+                      <div className="flex flex-col">
+                        <div className="text-sm">
+                          <span>
+                            {item.customer ? item.customer : "ลูกค้า-หน้าร้าน"}
+                          </span>
+                          <span className="ml-1 rounded-3xl p-1 text-secondary">
+                            {item.status}
+                          </span>
+                        </div>
+                        <div>{item.doc_type}</div>
+                      </div>
+                      <div className="text-right">
+                        <div
+                          className={`text-sm ${
+                            moment(item.doc_month, "DD-MM-YYYY").format(
+                              "DD-MM-yyyy"
+                            ) > moment().format("DD-MM-yyyy")
+                              ? "text-error"
+                              : ""
+                          }`}
+                        >
+                          {item.doc_month}
+                        </div>
+                        <div>{item.total}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="text-center">ไม่มีข้อมูล</div>
+            )}
+          </div>
+        </div>
+
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5">
           <h2 className="card-title my-2">สรุปยอดชำระเงิน</h2>
           {selectTimeline(fetchExpense)}
           <figure className="h-full mt-3 ">
             {expenseData && StackedBarChart(expenseData)}
           </figure>
         </div>
+        <div className="col-span-8 rounded-lg bg-base-100 p-5 shadow-xl lg:col-span-3">
+          <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
 
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-3">
+          {selectTimeline(fetchExpenseByCategory)}
+
+          <figure className="h-full px-10 mt-3 max-w-96 mx-auto ">
+            {expenseTypeData ? (
+              <Doughnut data={expenseTypeData} />
+            ) : (
+              <div className="text-center mt-5">ไม่มีข้อมูล</div>
+            )}
+          </figure>
+        </div>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
+          <h2 className="card-title my-2">ค่าใช้จ่ายสั่งซื้อสินค้า</h2>
+          <form onSubmit={handleSubmitBuyProduct}>
+            <div className="flex justify-between gap-2  md:flex-col xl:flex-row">
+              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
+                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control max-w-32"
+                    value={buyProductDateRanges.startDate}
+                    onChange={(e) =>
+                      setBuyProductDataDateRanges({
+                        ...buyProductDateRanges,
+                        startDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
+                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control max-w-32"
+                    value={buyProductDateRanges.endDate}
+                    onChange={(e) =>
+                      setBuyProductDataDateRanges({
+                        ...buyProductDateRanges,
+                        endDate: e.target.value,
+                      })
+                    }
+                  />
+                  <span className="text-danger"> </span>
+                </div>
+              </div>
+              <div className="mb-4 ">
+                <label className="col-sm-2 col-form-label"></label>
+                <div className="col-sm-5">
+                  <button className="btn btn-primary"> ค้นหา </button>
+                </div>
+              </div>
+            </div>
+          </form>
+          <figure className="overflow-y-auto no-scrollbar max-h-96">
+            {buyProductData?.length > 0 ? (
+              <ul>
+                <hr />
+                {buyProductData.map((item, index) => (
+                  <li key={index} className="border-b py-2">
+                    <div className="flex justify-between items-center p-1">
+                      <div className="flex flex-col">
+                        <div className="text-sm">
+                          {item.lot_number}
+                          <span className="bg-primary text-primary-content ml-2 rounded-md p-1">
+                            {item.product_id}
+                          </span>
+                        </div>
+                        <div className="mt-2">
+                          {"ราคาทุน : " +
+                            item.lot_price +
+                            "  จำนวน : " +
+                            item.lot_total}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="hidden sm:block">
+                          {item.product_name}
+                        </div>
+                        <div>{item.sumLot} บาท</div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className=" text-center">ไม่มีข้อมูล</div>
+            )}
+          </figure>
+        </div>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
+          <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
+          <form onSubmit={handleSubmitCommition}>
+            <div className="flex justify-between gap-2  md:flex-col xl:flex-row">
+              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
+                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control max-w-32"
+                    value={commitionDateRanges.startDate}
+                    onChange={(e) =>
+                      setCommitionDateRanges({
+                        ...commitionDateRanges,
+                        startDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
+                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+                <div className="col-sm-5">
+                  <input
+                    type="date"
+                    className="form-control max-w-32"
+                    value={commitionDateRanges.endDate}
+                    onChange={(e) =>
+                      setCommitionDateRanges({
+                        ...commitionDateRanges,
+                        endDate: e.target.value,
+                      })
+                    }
+                  />
+                  <span className="text-danger"> </span>
+                </div>
+              </div>
+              <div className="mb-4 ">
+                <label className="col-sm-2 col-form-label"></label>
+                <div className="col-sm-5">
+                  <button className="btn btn-primary"> ค้นหา </button>
+                </div>
+              </div>
+            </div>
+          </form>
+          <figure className="overflow-y-auto no-scrollbar max-h-96">
+            {Commition?.length > 0 ? (
+              <ul>
+                {Commition.map((item, index) => (
+                  <li key={index} className="border-b py-2">
+                    <div className="flex justify-between items-center p-1">
+                      <div className="flex flex-col">
+                        <div className="text-sm">{item.employee_id}</div>
+                        <div>
+                          {item.employee_fname + " " + item.employee_lname}
+                        </div>
+                      </div>
+                      <div className=""> {item.total_commission} บาท</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className=" text-center">ไม่มีข้อมูล</div>
+            )}
+          </figure>
+        </div>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-8">
           <h2 className="card-title my-2">รายงานสินค้าขายดี</h2>
 
           <figure className="h-full mt-3 ">
             <form onSubmit={handleSubmitTopSale}>
-              <div className="flex justify-between gap-2">
+              <div className="flex flex-wrap justify-between gap-2">
                 <div className=" mb-4 ">
                   <label className="col-sm-2 col-form-label">เริ่มต้น</label>
                   <div className="col-sm-5">
@@ -564,13 +865,18 @@ function Dashboard() {
                   <div className="col-sm-5">
                     <select
                       className=" w-full"
-                      value={selectCategory}
-                      onChange={(e) => setSelectCategory(e.target.value)}
+                      value={DateRanges.selectCategory}
+                      onChange={(e) =>
+                        setDateRanges({
+                          ...DateRanges,
+                          selectCategory: e.target.value,
+                        })
+                      }
                     >
                       <option value="ทั้งหมด">ทั้งหมด</option>
                       {categoryProduct &&
                         categoryProduct.map((op) => (
-                          <option key={op.type_id} value={op.type_category}>
+                          <option key={op.type_id} value={op.type_id}>
                             {op.type_category}
                           </option>
                         ))}
@@ -580,7 +886,7 @@ function Dashboard() {
                 <div className="mb-4 ">
                   <label className="col-sm-2 col-form-label"></label>
                   <div className="col-sm-5">
-                    <button className="btn btn-primary"> ค้นหา </button>
+                    <button className="btn btn-primary "> ค้นหา </button>
                   </div>
                 </div>
               </div>
@@ -591,7 +897,6 @@ function Dashboard() {
                   <tr>
                     <th>ลำดับ</th>
                     <th>รหัส</th>
-                    <th></th>
                     <th>ชื่อสินค้า</th>
                     <th>ยอดขายหน่วย</th>
                     <th>จำนวนที่ขายได้</th>
@@ -603,14 +908,14 @@ function Dashboard() {
                     TopSale.map((list, index) => (
                       <tr key={index}>
                         <td>{index + 1}</td>
-                        <td>{list.product_id}</td>
-
-                        <img
-                          src={`http://localhost:3001/img/product/${list.product_img}`}
-                          alt={list.product_name}
-                          className="w-10 h-10"
-                        />
-
+                        <td>
+                          {list.product_id}{" "}
+                          <img
+                            src={`http://localhost:3001/img/product/${list.product_img}`}
+                            alt={list.product_name}
+                            className="w-10 h-10 mx-auto"
+                          />
+                        </td>
                         <td>{list.product_name}</td>
                         <td>{list.product_price}</td>
                         <td>{list.total_quantity_sold}</td>
@@ -630,48 +935,10 @@ function Dashboard() {
           </figure>
         </div>
 
-        <div className="col-span-4 rounded-lg bg-base-100 p-5  shadow-xl md:col-span-2 xl:col-span-1">
-          <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
-
-          {selectTimeline(fetchExpenseByCategory)}
-
-          <figure className="h-full mt-3">
-            {expenseTypeData ? (
-              <Doughnut data={expenseTypeData} />
-            ) : (
-              <div className="text-center mt-5">ไม่มีข้อมูล</div>
-            )}
-          </figure>
-        </div>
-
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-2">
-          <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
-          {selectTimeline(fetchCommition)}
-          <figure className="h-full mt-3 overflow-y-auto">
-            {Commition?.length > 0 ? (
-              <ul>
-                {Commition.map((item, index) => (
-                  <li key={index}>
-                    <div className="flex justify-between p-1">
-                      <div className="">
-                        {item.employee_id}{" "}
-                        {item.employee_fname + " " + item.employee_lname}
-                      </div>
-                      <div className=""> {item.total_commission} บาท</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="mt-2 text-center">ไม่มีข้อมูล</div>
-            )}
-          </figure>
-        </div>
-
-        <div className="col-span-4 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-2">
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-8">
           <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
           <form onSubmit={handleSubmitSaleProduct}>
-            <div className="flex justify-between gap-2">
+            <div className="flex flex-wrap justify-between gap-2">
               <div className=" mb-4 ">
                 <label className="col-sm-2 col-form-label">เริ่มต้น</label>
                 <div className="col-sm-5">
@@ -705,6 +972,29 @@ function Dashboard() {
                   <span className="text-danger"> </span>
                 </div>
               </div>
+              <div className=" mb-4 ">
+                <label className="col-sm-2 col-form-label">ประเภทสินค้า</label>
+                <div className="col-sm-5">
+                  <select
+                    className=" w-full"
+                    value={saleProductDateRanges.selectCategory}
+                    onChange={(e) =>
+                      setSaleProductDateRanges({
+                        ...saleProductDateRanges,
+                        selectCategory: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="ทั้งหมด">ทั้งหมด</option>
+                    {categoryProduct &&
+                      categoryProduct.map((op) => (
+                        <option key={op.type_id} value={op.type_id}>
+                          {op.type_category}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
               <div className="mb-4 ">
                 <label className="col-sm-2 col-form-label"></label>
                 <div className="col-sm-5">
@@ -713,7 +1003,7 @@ function Dashboard() {
               </div>
             </div>
           </form>
-          <figure className="h-full mt-3 ">
+          <figure className="flex justify-center max-h-[30rem] mt-3 sm:min-h-[17rem] lg:min-h-[20rem] xl:min-h-[25rem] 2xl:min-h-[30rem]">
             {CrossTab ? (
               <Line data={CrossTab} options={{ fill: false }} />
             ) : (

@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MobileTable from "./component/MobileTable";
 import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
 
@@ -14,6 +15,7 @@ function Department() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [depForDel, setDepForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -37,6 +39,7 @@ function Department() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/department/delete/" + id);
+      setDepForDel(null);
       fetchdepartments();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -95,19 +98,32 @@ function Department() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div>แผนก : {rowData[1]}</div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
           <h1 className="text-2xl mb-5">แผนก</h1>
-          <div className="flex justify-between items-center mb-5">
+          <div className="flex justify-between items-center mb-5 gap-4">
             <Link to="insert" className="btn btn-primary">
               เพิ่มแผนก
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
           <Table headers={headers} data={department} onDelete={handleDelete} />
-
+          <MobileTable
+            data={department}
+            onDelete={setDepForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -146,6 +162,33 @@ function Department() {
             )}
           </div>
         </div>
+        {depForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลแผนก</h3>
+              <p className="py-4">ต้องการลบข้อมูลแผนก {depForDel} หรือไม่</p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(depForDel);
+                      setDepForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setDepForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

@@ -214,11 +214,9 @@ module.exports = (io) => {
     db.query(sql, [status, rc_id]);
   });
 
-  router.put("/receipt/money", function (req, res) {
+  router.put("/receipt/money", async function (req, res) {
     const { rc_id, rc_payday, rc_detail, rc_pay, bank_id } = req.body;
-    let sql =
-      // ลบอัพเดท สเตตัสออกมาลองดูว่า error ไหม
-      "update receipt set  rc_payday =? ,rc_detail =? ,rc_pay =? ";
+    let sql = "update receipt set  rc_payday =? ,rc_detail =? ,rc_pay =? ";
     let values = [rc_payday, rc_detail, rc_pay];
     if (bank_id) {
       sql += ", bank_id =? ";
@@ -229,31 +227,33 @@ module.exports = (io) => {
     db.query(sql, values, (err) => {
       if (err) {
         console.error(err);
-        res.json(err);
-      } else {
-        res.json("บันทึกการรับเงินเรียบร้อย");
+        return res.json(err);
       }
     });
-  });
-
-  router.put("/receiptCash/money", function (req, res) {
-    const { rf_id, rf_date, rf_detail, rf_pay, bank_id } = req.body;
-    let sql = "update receiptcash set  rf_date =? ,rf_detail =? ,rf_pay =? ";
-    let values = [rf_date, rf_detail, rf_pay];
-    if (bank_id) {
-      sql += ", bank_id =? ";
-      values.push(bank_id);
-    }
-    sql += "where rf_id = ?";
-    values.push(rf_id);
-    db.query(sql, values, (err) => {
-      if (err) {
-        console.error(err);
-        res.json(err);
-      } else {
-        res.json("บันทึกการรับเงินเรียบร้อย");
+    const [rcDetail] = await db
+      .promise()
+      .query(
+        "select e.employee_id , e.employee_commit ,rc_total from receipt join employee e on receipt.employee_id = e.employee_id where rc_id = ?",
+        rc_id
+      );
+    db.query(
+      `insert into commission (employee_id, cm_date, cm_per, cm_total, document) values (?,?,?,?,?)`,
+      [
+        req.user.employee_id,
+        rc_payday,
+        rcDetail[0].employee_commit,
+        rcDetail[0].rc_total * (rcDetail[0].employee_commit / 100),
+        rc_id,
+      ],
+      (err) => {
+        if (err) {
+          console.error(err);
+          res.json(err);
+        } else {
+          res.json("บันทึกการรับเงินเรียบร้อย");
+        }
       }
-    });
+    );
   });
 
   router.delete("/receipt/delete/:id", (req, res) => {

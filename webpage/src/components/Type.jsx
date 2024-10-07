@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MobileTable from "./component/MobileTable";
 import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
 
@@ -14,6 +15,7 @@ function Type() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [typeForDel, setTypeForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -39,6 +41,7 @@ function Type() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Type/delete/" + id);
+      setTypeForDel(null);
       fetchTypes();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -98,6 +101,15 @@ function Type() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div>ประเภทสินค้า : {rowData[1]}</div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
@@ -110,7 +122,11 @@ function Type() {
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
           <Table headers={headers} data={Type} onDelete={handleDelete} />
-
+          <MobileTable
+            data={Type}
+            onDelete={setTypeForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -149,6 +165,35 @@ function Type() {
             )}
           </div>
         </div>
+        {typeForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลประเภทสินค้า</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลประเภทสินค้า {typeForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(typeForDel);
+                      setTypeForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setTypeForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

@@ -1,31 +1,28 @@
 import React from "react";
 import useAuth from "../hooks/useAuth";
-import axios from "../api/axios";
-import useRefreshToken from "../hooks/useRefreshToken";
+
 function Home() {
   const { auth } = useAuth();
-  const refresh = useRefreshToken();
   return (
     <>
-      <div className="hero h-full bg-base-200 rounded-box">
-        <div className="hero-content flex-col lg:flex-row">
-          {/* <img
-            src="https://daisyui.com/images/stock/photo-1635805737707-575885ab0820.jpg"
-            className="max-w-sm rounded-lg shadow-2xl"
-          /> */}
-          <div>
-            <h1 className="text-5xl font-bold">
-              ยินดีต้นรับสู่หน้าแรก
-              <br />
-              {auth.employee_fname + " " + auth.employee_lname}
-            </h1>
+      <div className="bg-base-200 h-full p-7">
+        <div className="h-full flex flex-col items-center space-y-10 max-w-3xl mx-auto  md:flex-row-reverse">
+          <div className="max-w-96">
+            <img
+              src={`http://localhost:3001/img/avatar/${auth.employee_img}`}
+              className="w-full rounded-lg shadow-2xl"
+            />
+          </div>
+          <div className="p-3">
+            <h1 className="text-5xl font-bold">ยินดีต้อนรับ</h1>
             <p className="py-6">
-              เมื่อเราเห็นพระอาทิตย์ขึ้นในยามเช้า เป็นสัญญาณบอกให้รู้ว่าสิ่งใหม่
-              ๆ ของวันใหม่กำลังเริ่มต้นแล้วนะ ขอให้ทำงานอย่างมีความสุข 555
+              <span className="text-xl">
+                {auth.employee_fname + " " + auth.employee_lname}
+              </span>
+              <br />
+              กังวลให้น้อยลง ยิ้มให้มากขึ้น ยิ่งแคร์น้อยลงเท่าไหร่
+              เราก็จะยิ่งมีความสุขมากขึ้นเท่านั้น
             </p>
-            {/* <button className="btn" onClick={() => refresh()}>
-              ทดสอบ ขอ accessToken ใหม่
-            </button> */}
           </div>
         </div>
       </div>

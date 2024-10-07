@@ -5,7 +5,7 @@ const moment = require("moment");
 
 router.get("/stock", function (req, res) {
   let fetch =
-    "SELECT lot.lot_number, lot.lot_price, lot.lot_amount, lot.lot_total, lot.lot_date, lot_exp.lot_exp_date FROM lot LEFT JOIN lot_exp ON lot.lot_number = lot_exp.lot_number where lot.product_id=?";
+    "SELECT lot.lot_number, lot.lot_price, lot.lot_amount, lot.lot_total, lot.lot_date, lot_exp.lot_exp_date FROM lot LEFT JOIN lot_exp ON lot.lot_number = lot_exp.lot_number and lot.product_id = lot_exp.product_id where lot.product_id=?";
   const id = req.query.id;
   let fetchValue = [id];
 

@@ -297,6 +297,48 @@ router.put("/receiptcash/edit/:id", async (req, res) => {
   );
 });
 
+router.put("/receiptCash/money", async function (req, res) {
+  const { rf_id, rf_date, rf_detail, rf_pay, bank_id } = req.body;
+  let sql = "update receiptcash set  rf_date =? ,rf_detail =? ,rf_pay =? ";
+  let values = [rf_date, rf_detail, rf_pay];
+  if (bank_id) {
+    sql += ", bank_id =? ";
+    values.push(bank_id);
+  }
+  sql += "where rf_id = ?";
+  values.push(rf_id);
+  db.query(sql, values, (err) => {
+    if (err) {
+      console.error(err);
+      return res.json(err);
+    }
+  });
+  const [rcDetail] = await db
+    .promise()
+    .query(
+      "select e.employee_id , e.employee_commit ,rf_total from receiptcash join employee e on receiptcash.employee_id = e.employee_id where rf_id = ?",
+      rf_id
+    );
+  db.query(
+    `insert into commission (employee_id, cm_date, cm_per, cm_total, document) values (?,?,?,?,?)`,
+    [
+      req.user.employee_id,
+      rf_date,
+      rcDetail[0].employee_commit,
+      rcDetail[0].rf_total * (rcDetail[0].employee_commit / 100),
+      rf_id,
+    ],
+    (err) => {
+      if (err) {
+        console.error(err);
+        res.json(err);
+      } else {
+        res.json("บันทึกการรับเงินเรียบร้อย");
+      }
+    }
+  );
+});
+
 // เหลือการ auth ก่อนการ delete
 router.delete("/receiptcash/delete/:id", (req, res) => {
   const sql = `

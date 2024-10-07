@@ -11,11 +11,9 @@ import {
 import "./index.css";
 import Login from "./Login.jsx";
 import Home from "./components/Home.jsx";
-import Register from "./components/Register.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Error from "./Error.jsx";
 import Unauthorized from "./Unauthorized.jsx";
-import Sidebar from "./components/Sidebar.jsx";
 import All from "./All.jsx";
 import E_dep from "./components/edit/E_dep.jsx";
 import I_dep from "./components/insert/I_dep.jsx";
@@ -87,7 +85,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/test" element={<Testimg />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route element={<PersistLogin />}>
             <Route path="home" element={<All />}>

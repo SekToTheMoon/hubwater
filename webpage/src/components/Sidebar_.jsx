@@ -142,7 +142,7 @@ function Sidebar_() {
   return (
     <div className="flex">
       <aside
-        className={`h-screen flex flex-col bg-base-100 shadow-sm max-w-60  ${
+        className={`h-screen flex flex-col bg-base-100 shadow-2xl  no-scrollbar max-w-60 md:overflow-y-scroll  ${
           isMobile ? (sidebarOpen ? "fixed block" : "hidden") : "block"
         } `}
       >
@@ -251,10 +251,10 @@ function Submenu({ open, openSub, setOpenSub, menu }) {
           <NavLink
             key={subIndex}
             to={submenu.page}
-            className={`absolute left-full pl-6 h-full text-sm invisible -translate-x-3 -translate-y-full transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0`}
-            style={{ top: topPosition, whiteSpace: "nowrap" }}
+            className={`absolute whitespace-nowrap left-full pl-6 h-full text-sm invisible -translate-x-3 -translate-y-full transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0`}
+            style={{ top: topPosition }}
           >
-            <div className="px-2 bg-indigo-100 w-full h-full rounded-md flex items-center">
+            <div className="px-2 bg-neutral text-neutral-content w-full h-full rounded-md flex items-center">
               {submenu.title}
             </div>
           </NavLink>

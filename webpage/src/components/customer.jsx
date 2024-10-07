@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
+import MobileTable from "./component/MobileTable";
 
 function Customer() {
   const axios = useAxiosPrivate();
@@ -14,6 +15,7 @@ function Customer() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [customerForDel, setCustomerForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -37,6 +39,7 @@ function Customer() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Customer/delete/" + id);
+      setCustomerForDel(null);
       fetchCustomers();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -95,6 +98,21 @@ function Customer() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div className="w-9/12">
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div className="text-sm mt-2">
+        <div>ชื่อ : {rowData[1]}</div>
+        <div className="flex flex-col ">
+          <p className="overflow-hidden  ">{rowData[2]}</p>
+          <p className="overflow-hidden  ">{rowData[3]}</p>
+        </div>
+      </div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
@@ -106,80 +124,13 @@ function Customer() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสลูกค้า</th>
-                <th>ชื่อลูกค้า</th>
-                <th>เบอร์โทร</th>
-                <th>อีเมล</th>
-                <th>ประเภท</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Customer && Customer.length !== 0 ? (
-                Customer.map((ctm) => (
-                  <tr key={ctm.customer_id}>
-                    <td>{ctm.customer_id}</td>
-                    <td>{ctm.customer_name}</td>
-                    <td>{ctm.tel}</td>
-                    <td>{ctm.customer_email}</td>
-                    <td>{ctm.customer_type}</td>
-                    <td>
-                      <Link
-                        to={`edit/${ctm.customer_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + ctm.customer_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${ctm.customer_id}`}
-                        className="modal"
-                        key={`modal_${ctm.customer_id}`}
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลลูกค้า</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลลูกค้า {ctm.Customer_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(ctm.customer_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
-          <Table headers={headers} data={Customer} onDelete={handleDelete} />
 
+          <Table headers={headers} data={Customer} onDelete={handleDelete} />
+          <MobileTable
+            data={Customer}
+            onDelete={setCustomerForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -218,6 +169,35 @@ function Customer() {
             )}
           </div>
         </div>
+        {customerForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลพนักงาน</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลพนักงาน {customerForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(customerForDel);
+                      setCustomerForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setCustomerForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

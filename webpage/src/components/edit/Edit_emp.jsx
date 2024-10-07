@@ -16,7 +16,7 @@ function Edit_emp() {
     sex: "",
     salary: "",
     username: "",
-    password: "",
+    password: null,
     confirmation: "",
     nid: "",
     address: "",
@@ -54,10 +54,13 @@ function Edit_emp() {
 
     password: Yup.string()
       .min(6, "กรอกรหัสผ่านไม่น้อยกว่า 6 หลัก")
-      // .matches(/[!@#$%^&*(),.?":{}|<>]/,"รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว")
-      // .matches(/[0-9]/,"รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
-      // .matches(/A-Z]/,"รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
-      // .matches(/a-z]/,"รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
+      .matches(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว"
+      )
+      .matches(/[0-9]/, "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
+      .matches(/A-Z]/, "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
+      .matches(/a-z]/, "รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
       .notRequired(),
 
     confirmation: Yup.string()
@@ -288,7 +291,7 @@ function Edit_emp() {
     formData.append("email", values.email);
     formData.append("line", values.line);
     formData.append("username", values.username);
-    formData.append("password", values.password);
+    formData.append("password", values.password ? values.password : "");
     formData.append("img", images[0]);
     formData.append("subdistrict", values.subdistrict);
     values.phone.forEach((phone) => {
@@ -547,7 +550,7 @@ function Edit_emp() {
                   จังหวัด
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full mb-1"
                   value={values.province}
                   onChange={(e) => {
                     const selectedProvince = e.target.value;
@@ -580,7 +583,7 @@ function Edit_emp() {
                   อำเภอ
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;
@@ -615,7 +618,7 @@ function Edit_emp() {
                   ตำบล
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full mb-1"
                   value={values.subdistrict}
                   onChange={(e) => {
                     console.log(e.target.value.split(",")[1]);
@@ -641,7 +644,7 @@ function Edit_emp() {
                 )}
               </div>
               <div className="flex-1 mb-5">
-                <label htmlFor="username" className="block mb-2  font-medium">
+                <label htmlFor="username" className="block mb-2 font-medium">
                   รหัสไปรษณีย์
                 </label>
                 <input
@@ -847,6 +850,9 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Password"
                 />
+                {errors.password && (
+                  <span className="text-error">{errors.password}</span>
+                )}
               </div>
               <div className="flex-1 mb-5">
                 <label
@@ -864,9 +870,14 @@ function Edit_emp() {
                   className="input input-bordered w-full"
                   placeholder="Confirm Password"
                 />
+                {errors.confirmation && (
+                  <span className="text-error">{errors.confirmation}</span>
+                )}
               </div>
             </div>
-
+            {errors.contact && (
+              <span className="text-error">{errors.contact}</span>
+            )}
             <button type="submit" className="btn btn-primary w-full mb-5">
               ตกลง
             </button>

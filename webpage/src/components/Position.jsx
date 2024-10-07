@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import MobileTable from "./component/MobileTable";
 import SearchInput from "./component/SearchInput";
 
 function Position() {
@@ -14,6 +15,7 @@ function Position() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [positionForDel, setPositionForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -38,6 +40,7 @@ function Position() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/position/delete/" + id);
+      setPositionForDel(null);
       fetchpositions();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -97,86 +100,35 @@ function Position() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div className="text-sm mt-3">
+        <div>แผนก : {rowData[2]}</div>
+        <div>ตำแหน่ง : {rowData[1]}</div>
+      </div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
           <h1 className="text-2xl mb-5">ตำแหน่ง</h1>
-          <div className="flex justify-between items-center mb-5">
+          <div className="flex justify-between items-center mb-5 gap-4">
             <Link to="insert" className="btn btn-primary">
               เพิ่มตำแหน่ง
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className=" text-base">
-                <th>รหัสตำแหน่ง</th>
-                <th>ชื่อตำแหน่ง</th>
-                <th>แผนก</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {position && position.length !== 0 ? (
-                position.map((posit) => (
-                  <tr key={posit.posit_id}>
-                    <td>{posit.posit_id}</td>
-                    <td>{posit.posit_name}</td>
-                    <td>{posit.dep_name}</td>
-                    <td>
-                      <Link
-                        to={`edit/${posit.posit_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + posit.posit_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${posit.posit_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลตำแหน่ง</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลตำแหน่ง {posit.posit_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(posit.posit_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
           <Table headers={headers} data={position} onDelete={handleDelete} />
-
+          <MobileTable
+            data={position}
+            onDelete={setPositionForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -215,6 +167,35 @@ function Position() {
             )}
           </div>
         </div>
+        {positionForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลตำแแหน่ง</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลตำแแหน่ง {positionForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(positionForDel);
+                      setPositionForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setPositionForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

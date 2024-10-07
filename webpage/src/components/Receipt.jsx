@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,6 +11,8 @@ import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
+import MobileDocTable from "./component/MobileDocTable";
+
 function Receipt() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -218,7 +219,7 @@ function Receipt() {
             </div>
           </div>
 
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className="border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -267,7 +268,7 @@ function Receipt() {
                     <td className="flex gap-2">
                       <select
                         value={receipt.rc_status}
-                        className="select select-bordered w-1/2 max-w-xs"
+                        className="select select-bordered pl-2 w-[7.1rem]"
                         onChange={(e) => {
                           if (e.target.value === "เก็บเงิน") {
                             setReceiptMoney({
@@ -317,6 +318,13 @@ function Receipt() {
               )}
             </tbody>
           </table>
+          <MobileDocTable
+            data={Receipt}
+            onDelete={setReceiptfordel}
+            statusList={statusReceipt}
+            handleSelectChange={handleSelectChange}
+            roll={roll}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -360,14 +368,14 @@ function Receipt() {
             <div className="modal-box">
               <h3 className="font-bold text-lg">ลบข้อมูลใบเสร็จรับเงิน</h3>
               <p className="py-4">
-                ต้องการลบข้อมูลใบเสร็จรับเงิน {receiptForDel.rc_id} หรือไม่
+                ต้องการลบข้อมูลใบเสร็จรับเงิน {receiptForDel} หรือไม่
               </p>
               <div className="modal-action">
                 <form method="dialog">
                   <button
                     className="btn btn-primary"
                     onClick={() => {
-                      handleDelete(receiptForDel.rc_id);
+                      handleDelete(receiptForDel);
                       setReceiptfordel(null);
                     }}
                   >

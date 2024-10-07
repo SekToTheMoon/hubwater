@@ -10,6 +10,7 @@ import io from "socket.io-client";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
+import MobileDocTable from "./component/MobileDocTable";
 function Quotation() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -142,7 +143,7 @@ function Quotation() {
       socket.disconnect();
     };
   }, []);
-  const [hovered, setHovered] = useState(false);
+
   return (
     <>
       <div className="overflow-x-auto">
@@ -159,15 +160,14 @@ function Quotation() {
               <div className="modal-box">
                 <h3 className="font-bold text-lg">ลบข้อมูลใบเสนอราคา</h3>
                 <p className="py-4">
-                  ต้องการลบข้อมูลใบเสนอราคา {quotationForDel.quotation_id}{" "}
-                  หรือไม่
+                  ต้องการลบข้อมูลใบเสนอราคา {quotationForDel} หรือไม่
                 </p>
                 <div className="modal-action">
                   <form method="dialog">
                     <button
                       className="btn btn-primary"
                       onClick={() => {
-                        handleDelete(quotationForDel.quotation_id);
+                        handleDelete(quotationForDel);
                         setQuotationfordel(null);
                       }}
                     >
@@ -185,7 +185,7 @@ function Quotation() {
             </dialog>
           )}
 
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -198,8 +198,8 @@ function Quotation() {
             </thead>
             <tbody>
               {Quotation && Quotation.length !== 0 ? (
-                Quotation.map((quotation) => (
-                  <tr className="border-b" key={quotation.quotation_id}>
+                Quotation.map((quotation, index) => (
+                  <tr className="border-b" key={quotation.quotation_id + index}>
                     <td className="pl-4 py-3">
                       {quotation.quotation_date.substring(0, 10)}
                     </td>
@@ -297,6 +297,14 @@ function Quotation() {
               )}
             </tbody>
           </table>
+
+          <MobileDocTable
+            data={Quotation}
+            onDelete={setQuotationfordel}
+            statusList={statusQuotation}
+            handleSelectChange={handleSelectChange}
+            roll={roll}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

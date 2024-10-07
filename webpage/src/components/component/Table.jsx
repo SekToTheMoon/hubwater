@@ -1,13 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { object } from "yup";
 
 export default function Table({ data, headers, onDelete }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto hidden md:block">
       <table className="w-full table-auto">
-        <thead className="bg-base-200 text-left">
-          <tr className="border-b">
+        <thead className="bg-base-300 text-left">
+          <tr>
             {headers.map((header, index) =>
               index > 2 ? (
                 <th
@@ -49,40 +48,17 @@ export default function Table({ data, headers, onDelete }) {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Link
                         to={`edit/${rowData[0]}`}
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-warning text-warning-content btn-sm  opacity-80"
                       >
                         แก้ไข
                       </Link>
                       <button
-                        className="btn btn-error btn-sm"
-                        onClick={() =>
-                          document
-                            .getElementById(`my_modal_${rowData[0]}`)
-                            .showModal()
-                        }
+                        className="btn btn-error btn-sm text-error-content opacity-80"
+                        onClick={() => onDelete(rowData[0])}
                       >
                         ลบ
                       </button>
                     </div>
-                    <dialog id={`my_modal_${rowData[0]}`} className="modal">
-                      <div className="modal-box">
-                        <h3 className="font-bold text-lg">ลบข้อมูล</h3>
-                        <p className="py-4">
-                          ต้องการลบข้อมูล {rowData[0]} หรือไม่
-                        </p>
-                        <div className="modal-action">
-                          <form method="dialog">
-                            <button
-                              className="btn btn-primary mr-2"
-                              onClick={() => onDelete(rowData[0])}
-                            >
-                              ยืนยัน
-                            </button>
-                            <button className="btn btn-error">ยกเลิก</button>
-                          </form>
-                        </div>
-                      </div>
-                    </dialog>
                   </td>
                 </tr>
               );

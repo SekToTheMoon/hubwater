@@ -10,6 +10,7 @@ import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
+import MobileDocTable from "./component/MobileDocTable";
 
 function Out() {
   const axios = useAxiosPrivate();
@@ -205,7 +206,7 @@ function Out() {
             </div>
           </div>
 
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -282,6 +283,80 @@ function Out() {
               )}
             </tbody>
           </table>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+            {Out && Out.length !== 0
+              ? Out.map((out, index) => (
+                  <div
+                    key={index}
+                    className="space-y-3 p-4 items-start rounded-lg shadow"
+                  >
+                    <div className="flex justify-between ">
+                      {/* เรียกใช้ htmlTemplate โดยส่ง rowData เป็นพารามิเตอร์ */}
+                      <div>
+                        <div className="w-full">
+                          <Link
+                            to={`view/${out.out_id}`}
+                            className="text-secondary font-bold hover:underline"
+                          >
+                            {out.out_id}
+                          </Link>
+
+                          <div className="text-sm p-1">
+                            <div>พนักงาน: {out.employee_fname}</div>
+
+                            <div className="break-words">{out.out_total}</div>
+                          </div>
+                        </div>
+                        <select
+                          value={out.out_status}
+                          className="select select-sm select-bordered   max-w-xs"
+                          onChange={(e) => handleSelectChange(e, item)}
+                        >
+                          {statusOut[out.out_status][roll].map(
+                            (element, idx) => (
+                              <option key={idx} value={element}>
+                                {element}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="dropdown dropdown-hover dropdown-end ml-auto">
+                        <div tabIndex={0} role="button">
+                          <i class="fa-solid fa-ellipsis"></i>
+                        </div>
+                        <ul
+                          tabIndex={0}
+                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                        >
+                          <li
+                            className={
+                              out.out_status === "จ่ายแล้ว" ? "hidden" : ""
+                            }
+                          >
+                            <Link
+                              to={`edit/${out.out_id}`}
+                              className="btn btn-warning text-warning-content btn-sm opacity-80"
+                            >
+                              แก้ไข
+                            </Link>
+                          </li>
+                          <li>
+                            <button
+                              className="btn btn-error btn-sm text-error-content opacity-80"
+                              onClick={() => onDelete(out.out_id)}
+                            >
+                              ลบ
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              : ""}
+          </div>
           <div className="flex justify-between mt-4">
             <select
               value={perPage}

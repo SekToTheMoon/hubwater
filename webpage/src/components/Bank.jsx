@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import MobileTable from "./component/MobileTable";
 import SearchInput from "./component/SearchInput";
 function Bank() {
   const axios = useAxiosPrivate();
@@ -14,6 +15,7 @@ function Bank() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [bankForDel, setBankfordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -39,6 +41,7 @@ function Bank() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Bank/delete/" + id);
+      setBankfordel(null);
       fetchBanks();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -98,6 +101,27 @@ function Bank() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <div className="flex items-center space-x-2 text-sm">
+        <div>
+          <span className="text-secondary font-bold hover:underline">
+            {rowData[0]}
+          </span>
+        </div>
+        <div>
+          <span className="p-1.5 text-xs font-medium tracking-wider text-primary-content bg-primary rounded-lg ">
+            {rowData[1]}
+          </span>
+        </div>
+      </div>
+      <div className="text-sm mt-3">
+        <div>เลขบัญชี : {rowData[2]}</div>
+        <div>{rowData[3]}</div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div className="overflow-x-auto">
@@ -109,7 +133,13 @@ function Bank() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <Table headers={headers} data={Bank} onDelete={handleDelete} />
+          <Table headers={headers} data={Bank} onDelete={setBankfordel} />
+          <MobileTable
+            data={Bank}
+            onDelete={setBankfordel}
+            htmlTemplate={htmlTemplate}
+          />
+
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -148,6 +178,35 @@ function Bank() {
             )}
           </div>
         </div>
+        {bankForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลบัญชีธนาคาร</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลบัญชีธนาคาร {bankForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(bankForDel);
+                      setBankfordel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setBankfordel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

@@ -165,8 +165,11 @@ function I_receipt() {
         <h1 className="ml-16 text-2xl">สร้างใบเสร็จรับเงิน</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
-            <div className="mt-5 mb-2 2xl:flex justify-between">
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+          >
+            <div className="mt-5 mb-2 xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
@@ -299,7 +302,7 @@ function I_receipt() {
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
                     <td className="hidden lg:table-cell">
-                      <div className="avatar">
+                      <div className="avatar p-2">
                         <div className="w-20 rounded">
                           <img
                             src={`http://localhost:3001/img/product/${item.product_img}`}
@@ -328,7 +331,7 @@ function I_receipt() {
             <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
               <label className="label ">
                 <span className="my-auto">รวมเป็นเงิน</span>
-                <div className="w1/2">{values.receipt_total}</div>
+                <div>{values.receipt_total}</div>
               </label>
               <label className="label ">
                 <div>
@@ -337,13 +340,13 @@ function I_receipt() {
                     {values.disc_percent} %
                   </span>
                 </div>
-                <div className="w1/2 ">
-                  <span className="text-right">{values.disc_cash}</span>
+                <div>
+                  <span>{values.disc_cash}</span>
                 </div>
               </label>
               <label className="label">
                 <span className="">ราคาหลังหักส่วนลด</span>
-                <div className="w1/2">{values.receipt_total}</div>
+                <div>{values.receipt_total}</div>
               </label>
               <label className="label">
                 <label className="label cursor-pointer">
@@ -356,7 +359,7 @@ function I_receipt() {
                   />
                   <span>ภาษีมูลค่าเพิ่ม 7%</span>
                 </label>
-                <div className="w1/2 ">
+                <div>
                   {values.receipt_vat
                     ? (values.receipt_total * 0.07).toFixed(2)
                     : ""}
@@ -365,7 +368,7 @@ function I_receipt() {
 
               <label className="label">
                 <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                <div className="w1/2">
+                <div>
                   {values.receipt_vat
                     ? (values.receipt_total * 1.07).toFixed(2)
                     : values.receipt_total}
@@ -383,7 +386,7 @@ function I_receipt() {
                     <option value="3">3%</option>
                   </select>
                 </label>
-                <div className="w1/2">
+                <div>
                   {values.receipt_tax
                     ? (
                         (values.receipt_tax / 100) *
@@ -396,7 +399,7 @@ function I_receipt() {
               {values.receipt_tax ? (
                 <label className="label">
                   <span className="">ยอดชำระ</span>
-                  <div className="w1/2">
+                  <div>
                     {(
                       values.receipt_total *
                       (1.07 - values.receipt_tax / 100)

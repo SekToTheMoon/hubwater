@@ -33,7 +33,7 @@ module.exports = (io) => {
       fetch += " ORDER BY " + sort_by + " " + sort_type;
     }
 
-    fetch += " LIMIT ?, ?";
+    fetch += "ORDER BY b.bn_date DESC  LIMIT ?, ?";
     fetchValue.push(idx_start);
     fetchValue.push(per_page);
 

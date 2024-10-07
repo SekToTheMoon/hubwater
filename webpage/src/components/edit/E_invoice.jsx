@@ -6,15 +6,13 @@ import * as Yup from "yup";
 import moment from "moment";
 import { useNavigate, useParams } from "react-router-dom";
 import addListIndex from "../../utils/addListIndex";
+import ProductModel from "../component/ProductModel";
 
 function E_invoice() {
   const axios = useAxiosPrivate();
 
   const { id } = useParams();
-  const [search, setSearch] = useState("");
-  const [lotNumbers, setLotNumbers] = useState([]);
-  const [productDetail, setProductdetail] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState([]);
+
   const [originalValues, setOriginalValues] = useState(null);
   const [values, setValues] = useState({
     iv_date: moment(new Date()).format("YYYY-MM-DD"),
@@ -180,30 +178,7 @@ function E_invoice() {
       console.error("Error fetching product:", error);
     }
   };
-  // fetch lot ของสินค้า
-  const fetchLotNumbers = async (productID) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/selectstock/${productID}`
-      );
-      setLotNumbers(response.data);
-    } catch (error) {
-      console.error("Error fetching lot numbers:", error);
-    }
-  };
-  /// fetch product ตอนกดปุ่มเพิ่มสินค้า
-  const fetchProduct = async () => {
-    let url = `http://localhost:3001/getproduct/all`;
-    if (search !== "") {
-      url += `?search=${search}`;
-    }
-    try {
-      const res = await axios.get(url);
-      setSelectedProduct(res.data);
-    } catch (error) {
-      console.log(err);
-    }
-  };
+
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
@@ -241,38 +216,6 @@ function E_invoice() {
         iv_total: newTotal.toFixed(2),
       };
     });
-  };
-  //เมื่อเลือกสินค้าจะทำการ fetch lot ของสินค้า
-  const handleSelectProduct = async (product) => {
-    try {
-      const newItem = {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        product_price: product.product_price,
-        product_img: product.product_img,
-        unit_name: product.unit_name,
-        listi_total: product.product_price,
-        listi_amount: 1,
-        lot_number: "", // ค่า lot_number ยังไม่ได้กำหนด
-      };
-      setProductdetail(newItem);
-      fetchLotNumbers(product.product_id);
-    } catch (error) {
-      console.error("Error selecting product:", error);
-    }
-  };
-
-  //เมื่อกดเลือก lot สินค้า
-  const handleSelectLotProduct = async (Productlot) => {
-    try {
-      const updatedProductDetail = { ...productDetail, lot_number: Productlot };
-      setValues((prevValues) => ({
-        ...prevValues,
-        items: [...prevValues.items, updatedProductDetail],
-      }));
-    } catch (error) {
-      console.error("Error selecting product:", error);
-    }
   };
 
   ///////////////////////
@@ -394,155 +337,19 @@ function E_invoice() {
 
   return (
     <>
-      {/* model4 สินค้าทั้งหมด */}
-      <dialog id="my_modal_4" className="modal">
-        <div className="modal-box w-11/12 max-w-5xl">
-          <div className="flex justify-between">
-            <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
-            <div className="flex">
-              {" "}
-              <label className="input input-bordered flex items-center gap-2">
-                <input
-                  type="text"
-                  className="grow bg-base-100"
-                  placeholder="ค้นหา"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  className="w-4 h-4 opacity-70"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </label>
-              <button
-                className="btn btn-primary"
-                onClick={() => handleSearch()}
-              >
-                ค้นหา
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>รูปสินค้า</th>
-                  <th>ชื่อสินค้า</th>
-                  <th>ราคาขาย</th>
-                  <th>คงเหลือ</th>
-                  <th>หน่วยสินค้า</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedProduct.map((product) => (
-                  <tr key={product.product_id}>
-                    <td>
-                      <img
-                        src={`http://localhost:3001/img/product/${product.product_img}`}
-                        alt={product.product_name}
-                        className="w-20 h-20"
-                      />
-                    </td>
-                    <td>{product.product_name}</td>
-                    <td>{product.product_price}</td>
-                    <td>{product.product_amount}</td>
-                    <td>{product.unit_name}</td>
-                    <td>
-                      {/* <button onClick={() => handleSelectProduct(product)}>
-                            เลือก
-                          </button> */}
-                      <button
-                        onClick={() => {
-                          document.getElementById("my_modal_3").showModal();
-                          handleSelectProduct(product);
-                        }}
-                      >
-                        เลือกล็อต
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="modal-action">
-            <form method="dialog">
-              {/* if there is a button, it will close the modal */}
-              <button
-                className="btn"
-                onClick={() => {
-                  setSelectedProduct([]);
-                  setSearch("");
-                }}
-              >
-                Close
-              </button>
-            </form>
-          </div>
-        </div>
-      </dialog>
-      {/* model3 ล็อตสินค้า */}
-      <dialog id="my_modal_3" className="modal">
-        <div className="modal-box w-11/12 max-w-5xl">
-          <h3 className="font-bold text-lg">รายชื่อสินค้า</h3>
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>เลขล็อตสินค้า</th>
-                  <th>วันที่นำเข้า</th>
-                  <th>วันหมดอายุ</th>
-                  <th>ราคาทุน</th>
-                  <th>จำนวนคงเหลือ</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {lotNumbers.map((lot_product) => (
-                  <tr key={lot_product.lot_number}>
-                    <td>{lot_product.lot_number}</td>
-                    <td>{lot_product.lot_date}</td>
-                    <td>{lot_product.lot_lot_has_exp}</td>
-                    <td>{lot_product.lot_price}</td>
-                    <td>{lot_product.lot_amount}</td>
-                    <td>
-                      <button
-                        onClick={() =>
-                          handleSelectLotProduct(lot_product.lot_number)
-                        }
-                      >
-                        เลือก
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="modal-action">
-            <form method="dialog">
-              {/* if there is a button, it will close the modal */}
-              <button className="btn">Close</button>
-            </form>
-          </div>
-        </div>
-      </dialog>
+      <ProductModel
+        setValues={setValues}
+        list={["listi_total", "listi_amount"]}
+      />
       <div className="rounded-box bg-base-100 p-5">
         <h1 className="ml-16 text-2xl">แก้ไขใบแจ้งหนี้</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
-          <form onSubmit={handleSubmit} className="mx-auto">
-            <div className="mt-5 mb-2 2xl:flex justify-between">
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+          >
+            <div className="mt-5 mb-2 xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
@@ -716,7 +523,7 @@ function E_invoice() {
                     <td>{index + 1}</td>
                     <td>{item.product_name}</td>
                     <td className="hidden lg:table-cell">
-                      <div className="avatar">
+                      <div className="avatar p-2">
                         <div className="w-20 rounded">
                           <img
                             src={`http://localhost:3001/img/product/${item.product_img}`}
@@ -793,7 +600,7 @@ function E_invoice() {
             <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
               <label className="label ">
                 <span className="my-auto">รวมเป็นเงิน</span>
-                <div className="w1/2">{totalBeforeDisc}</div>
+                <div>{totalBeforeDisc}</div>
               </label>
               <label className="label ">
                 <div>
@@ -821,11 +628,11 @@ function E_invoice() {
                   />
                   <span>%</span>
                 </div>
-                <div className="w1/2 ">
+                <div className="w-1/2 ">
                   <input
                     type="text"
                     value={values.disc_cash}
-                    className="text-right"
+                    className="text-right w-full"
                     onChange={(e) => {
                       let disc = e.target.value;
 
@@ -858,7 +665,7 @@ function E_invoice() {
               </label>
               <label className="label">
                 <span className="">ราคาหลังหักส่วนลด</span>
-                <div className="w1/2">{values.iv_total}</div>
+                <div>{values.iv_total}</div>
               </label>
               {errors.disc_cash && (
                 <span className="text-error flex justify-end">
@@ -880,14 +687,14 @@ function E_invoice() {
                   />
                   <span>ภาษีมูลค่าเพิ่ม 7%</span>
                 </label>
-                <div className="w1/2 ">
+                <div>
                   {values.iv_vat ? (values.iv_total * 0.07).toFixed(2) : ""}
                 </div>
               </label>
 
               <label className="label">
                 <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                <div className="w1/2">
+                <div>
                   {values.iv_vat
                     ? (values.iv_total * 1.07).toFixed(2)
                     : values.iv_total}
@@ -911,7 +718,7 @@ function E_invoice() {
                     <option value="3">3%</option>
                   </select>
                 </label>
-                <div className="w1/2">
+                <div>
                   {values.iv_tax
                     ? ((values.iv_tax / 100) * values.iv_total).toFixed(2)
                     : ""}
@@ -921,7 +728,7 @@ function E_invoice() {
               {values.iv_tax ? (
                 <label className="label">
                   <span className="">ยอดชำระ</span>
-                  <div className="w1/2">
+                  <div>
                     {(values.iv_total * (1.07 - values.iv_tax / 100)).toFixed(
                       2
                     )}

@@ -4,7 +4,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
 
 function product() {
@@ -15,6 +14,7 @@ function product() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [productForDel, setProductForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -38,6 +38,7 @@ function product() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/product/delete/" + id);
+      setProductForDel(null);
       fetchproducts();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -99,7 +100,7 @@ function product() {
 
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto ">
         <div className="rounded-box bg-base-100 p-5 ">
           <h1 className="text-2xl mb-5">สินค้า</h1>
           <div className="flex justify-between items-center mb-5">
@@ -108,15 +109,17 @@ function product() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">รหัสสินค้า</th>
                 <th>ชื่อสินค้า</th>
                 <th>ราคา</th>
                 <th className="text-center">คงเหลือ</th>
-                <th className="text-center">จุดสั่งซื้อ</th>
-                <th>สถานะ</th>
+                <th className="text-center hidden lg:table-cell">
+                  จุดสั่งซื้อ
+                </th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -136,7 +139,7 @@ function product() {
                     <td className="text-center align-middle">
                       {product.product_amount}
                     </td>
-                    <td className="text-center align-middle">
+                    <td className="text-center align-middle hidden lg:table-cell">
                       {product.product_reorder}
                     </td>
 
@@ -155,36 +158,10 @@ function product() {
                       </Link>
                       <button
                         className="btn btn-error btn-sm"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + product.product_id)
-                            .showModal()
-                        }
+                        onClick={() => setProductForDel(product.product_id)}
                       >
                         ลบ
                       </button>
-                      <dialog
-                        id={`my_modal_${product.product_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลสินค้า</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลสินค้า {product.product_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(product.product_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
                     </td>
                   </tr>
                 ))
@@ -198,6 +175,48 @@ function product() {
             </tbody>
           </table>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+            {product.map((item, index) => (
+              <div key={index} className="space-y-3 p-4 rounded-lg shadow">
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-secondary font-bold hover:underline">
+                      {item.product_id}
+                    </span>
+
+                    <div className="text-sm mt-3">
+                      <div>สินค้า : {item.product_name}</div>
+                      <div className="flex gap-x-3 flex-wrap">
+                        <div>ราคา : {item.product_price}</div>
+                        <div>คงเหลือ : {item.product_amount}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="join join-vertical">
+                    <Link
+                      to={`stock/${product.product_id}`}
+                      className="btn btn-secondary btn-sm join-item"
+                    >
+                      สต๊อก
+                    </Link>
+                    <Link
+                      to={`edit/${item.product_id}`}
+                      className="btn btn-warning text-warning-content btn-sm opacity-80 join-item"
+                    >
+                      แก้ไข
+                    </Link>
+                    <button
+                      className="btn btn-error btn-sm text-error-content opacity-80 join-item"
+                      onClick={() => setProductForDel(item.product_id)}
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -236,6 +255,35 @@ function product() {
             )}
           </div>
         </div>
+        {productForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลสินค้า</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลสินค้า {productForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(productForDel);
+                      setProductForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setProductForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer product="top-right" />
     </>

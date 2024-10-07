@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
+import MobileTable from "./component/MobileTable";
 
 function Employee() {
   const axios = useAxiosPrivate();
@@ -14,6 +15,7 @@ function Employee() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [employeeForDel, setEmployeeForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -37,6 +39,7 @@ function Employee() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/employee/delete/" + id);
+      setEmployeeForDel(null);
       fetchEmployees();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -94,6 +97,22 @@ function Employee() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div className="w-full">
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div className="text-sm mt-3 ">
+        <div>ชื่อ : {rowData[1]}</div>
+
+        <div className="flex flex-col">
+          <div className="break-words">{rowData[2]}</div>
+          <div className="break-words">{rowData[3]}</div>
+        </div>
+      </div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
@@ -105,78 +124,12 @@ function Employee() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="table text-base">
-            <thead>
-              <tr className="text-base">
-                <th>รหัสพนักงาน</th>
-                <th>ชื่อ-นามสกุล</th>
-                <th>เบอร์โทร</th>
-                <th>อีเมล</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.length !== 0 ? (
-                employees.map((emp) => (
-                  <tr key={emp.employee_id}>
-                    <td>{emp.employee_id}</td>
-                    <td>{emp.name}</td>
-                    <td>{emp.tel}</td>
-                    <td>{emp.employee_email}</td>
-                    <td>
-                      <Link
-                        to={`edit/${emp.employee_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + emp.employee_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${emp.employee_id}`}
-                        className="modal"
-                        key={`modal_${emp.employee_id}`}
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">ลบข้อมูลพนักงาน</h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลพนักงาน {emp.name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(emp.employee_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
           <Table headers={headers} data={employees} onDelete={handleDelete} />
-
+          <MobileTable
+            data={employees}
+            onDelete={setEmployeeForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -215,6 +168,35 @@ function Employee() {
             )}
           </div>
         </div>
+        {employeeForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลพนักงาน</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลพนักงาน {employeeForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(employeeForDel);
+                      setEmployeeForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setEmployeeForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

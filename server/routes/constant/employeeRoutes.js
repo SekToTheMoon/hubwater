@@ -200,25 +200,25 @@ router.put(
       subdistrict,
     } = req.body;
     const imageName = req.file ? req.file.filename : "";
-    // console.log(`
-    //     commit: ${commit}
-    //     salary: ${salary}
-    //     Email: ${email}
-    //     Password: ${password}
-    //     First Name: ${fname}
-    //     Last Name: ${lname}
-    //     Birth Date: ${bdate}
-    //     Hire Date: ${hiredate}
-    //     Line: ${line}
-    //     Sex: ${sex}
-    //     Username: ${username}
-    //     NID: ${nid}
-    //     Address: ${address}
-    //     phone: ${phone}
-    //     Image: ${imageName}
-    //     password: ${password}
+    console.log(`
+        commit: ${commit}
+        salary: ${salary}
+        Email: ${email}
+        Password: ${password}
+        First Name: ${fname}
+        Last Name: ${lname}
+        Birth Date: ${bdate}
+        Hire Date: ${hiredate}
+        Line: ${line}
+        Sex: ${sex}
+        Username: ${username}
+        NID: ${nid}
+        Address: ${address}
+        phone: ${phone}
+        Image: ${imageName}
+        password: ${password}
 
-    //   `);
+      `);
     try {
       // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
       const [rows] = await db
@@ -268,10 +268,10 @@ router.put(
         subdistrict,
       ];
 
-      if (password.length > 0) {
+      if (password && password.length > 0) {
         sql += ", employee_password = ?";
         const hash = await bcrypt.hash(password, saltRounds);
-        console.log(hash);
+        console.log("log from hash ", hash);
         values.push(hash);
       }
       if (imageName.length > 0) {
@@ -281,59 +281,54 @@ router.put(
       sql += " WHERE employee_id = ?;";
       values.push(employeeId);
 
-      db.execute(sql, values, (err, result) => {
+      db.execute(sql, values, (err) => {
         if (err) {
           return res.status(500).json({ msg: "อัพเดท ผิด" });
         }
-
-        db.query(
-          "SELECT tel FROM employee_tel WHERE employee_id=?",
-          [employeeId],
-          (err, rows) => {
-            if (err) {
-              return res
-                .status(500)
-                .json({ msg: "เกิดข้อผิดพลาดในการดึงข้อมูลโทรศัพท์พนักงาน" });
-            }
-            if (phone && Array.isArray(phone)) {
-              phone.forEach((tel, index) => {
-                if (rows[index] && rows[index].tel !== tel) {
-                  db.query(
-                    "UPDATE employee_tel SET tel = ? where employee_id = ? and tel = ? ;",
-                    [tel, employeeId, rows[index].tel],
-                    (err) => {
-                      if (err) {
-                        console.log(err);
-                        return res.status(500).json({
-                          msg: "เกิดข้อผิดพลาดในการแก้ไขเบอร์โทรศัพท์พนักงาน",
-                        });
-                      }
-                    }
-                  );
-                } else if (rows[index] && rows[index].tel === tel) {
-                  return; // ข้ามการดำเนินการถ้าหมายเลขโทรศัพท์ในฐานข้อมูลเท่ากับหมายเลขโทรศัพท์ที่ส่งมา
-                } else {
-                  db.query(
-                    "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
-                    [employeeId, tel],
-                    (err) => {
-                      if (err) {
-                        console.log(err);
-                        return res.status(500).json({
-                          msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
-                        });
-                      }
-                    }
-                  );
-                }
-              });
-            }
-            return res
-              .status(201)
-              .json({ msg: "แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว" });
-          }
-        );
       });
+
+      // ลบเบอร์โทรศัพท์เก่าและเพิ่มเบอร์โทรศัพท์ใหม่
+      const deletePhoneQuery = `DELETE FROM employee_tel WHERE employee_id = ?`;
+      db.query(deletePhoneQuery, [employeeId], (err, result) => {
+        if (err) {
+          res.status(500).json({
+            msg: "เกิดข้อผิดพลาดในการลบเบอร์โทรศัพท์ลูกค้าเก่า",
+          });
+          return;
+        }
+
+        if (Array.isArray(phone)) {
+          phone.forEach((tel) => {
+            db.query(
+              "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+              [employeeId, tel],
+              (err, data) => {
+                if (err) {
+                  res.status(500).json({
+                    msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                  });
+                  return;
+                }
+              }
+            );
+          });
+        } else if (phone.length > 0) {
+          db.query(
+            "INSERT INTO employee_tel (employee_id, tel) VALUES (?, ?)",
+            [employeeId, phone],
+            (err, data) => {
+              if (err) {
+                res.status(500).json({
+                  msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์พนักงาน",
+                });
+                return;
+              }
+            }
+          );
+        }
+      });
+
+      res.status(200).json({ msg: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
     } catch (err) {
       console.log(err);
       return res.status(500).send(err);

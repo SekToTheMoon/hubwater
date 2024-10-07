@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import MobileTable from "./component/MobileTable";
 import SearchInput from "./component/SearchInput";
 function Unit() {
   const axios = useAxiosPrivate();
@@ -13,6 +14,7 @@ function Unit() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [unitForDel, setUnitForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -38,6 +40,7 @@ function Unit() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Unit/delete/" + id);
+      setUnitForDel(null);
       fetchUnits();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -97,19 +100,34 @@ function Unit() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div>หน่วย : {rowData[1]}</div>
+    </div>
+  );
+
   return (
     <>
       <div className="overflow-x-auto">
         <div className="rounded-box bg-base-100 p-5 ">
           <h1 className="text-2xl mb-5">หน่วยนับ</h1>
-          <div className="flex justify-between items-center mb-5">
-            <Link to="insert" className="btn btn-primary">
+          <div className="flex justify-between items-center mb-5 gap-4">
+            <Link to="insert" className="btn btn-primary ">
               เพิ่มหน่วยนับ
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
 
           <Table headers={headers} data={Unit} onDelete={handleDelete} />
+          <MobileTable
+            data={Unit}
+            onDelete={setUnitForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -148,6 +166,35 @@ function Unit() {
             )}
           </div>
         </div>
+        {unitForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลหน่วยนับ</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลหน่วยนับ {unitForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(unitForDel);
+                      setUnitForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setUnitForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

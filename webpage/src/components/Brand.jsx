@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Table from "./component/Table";
+import MobileTable from "./component/MobileTable";
 import SearchInput from "./component/SearchInput";
 
 function Brand() {
@@ -14,12 +15,13 @@ function Brand() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [brandForDel, setBrandForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
-  const headers = ["รหัสแบรนด", "ชื่อแบรนด"];
+  const headers = ["รหัสแบรนด์", "ชื่อแบรนด์"];
 
   const fetchBrands = async () => {
     let url = `/Brand?page=${currentPage}&per_page=${perPage}`;
@@ -38,6 +40,7 @@ function Brand() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Brand/delete/" + id);
+      setBrandForDel(null);
       fetchBrands();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -97,6 +100,15 @@ function Brand() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div>แบรนด์ : {rowData[1]}</div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
@@ -109,8 +121,12 @@ function Brand() {
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
 
-          <Table headers={headers} data={Brand} onDelete={handleDelete} />
-
+          <Table headers={headers} data={Brand} onDelete={setBrandForDel} />
+          <MobileTable
+            data={Brand}
+            onDelete={setBrandForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -149,6 +165,35 @@ function Brand() {
             )}
           </div>
         </div>
+        {brandForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลแบรนด์</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลชื่อแบรนด์ {brandForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(brandForDel);
+                      setBrandForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setBrandForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

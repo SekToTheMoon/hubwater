@@ -514,7 +514,7 @@ function I_emp() {
                   อำเภอ
                 </label>
                 <select
-                  className="select select-bordered w-full  mb-1"
+                  className="select select-bordered w-full mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;

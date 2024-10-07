@@ -658,43 +658,165 @@ ORDER BY
   }
 });
 
-// router.get("/getSaleProduct", async (req, res) => {
-//   const { startDate, endDate } = req.query;
+router.get("/getExpenseByCategory", async (req, res) => {
+  const { timeline } = req.query;
+  let condition;
+  let BuyStockCondition;
+  if (timeline == "year") {
+    condition =
+      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()";
+    BuyStockCondition =
+      " lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()";
+  } else if (timeline == "6month") {
+    condition =
+      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()";
+    BuyStockCondition =
+      " lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()";
+  } else if (timeline == "3month") {
+    condition =
+      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()";
+    BuyStockCondition =
+      " lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()";
+  } else {
+    condition =
+      " AND DATE_FORMAT(out_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+    BuyStockCondition =
+      " DATE_FORMAT(lot_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+  }
+  const sql = `SELECT 
+      t.expensetype_name, 
+      SUM(listo_total) AS total_expense_amount
+FROM 
+      listout o
+JOIN 
+      expensetype t ON t.expensetype_id = o.expensetype_id
+WHERE 
+      o.out_id IN (SELECT out_id FROM expense WHERE out_del = '0'
+      and out_status = 'จ่ายแล้ว'
+      ${condition})
+GROUP BY 
+      t.expensetype_id;
+`;
 
-//   const sql = `SELECT
-//       P.product_name,
-//       SUM(I.listi_amount) AS total_quantity_sold,
-//       SUM(I.listi_amount * I.listi_price) AS total_sales_amount
-// FROM
-//       listi I
-// JOIN
-//       Product P ON I.product_id = P.product_id
-// WHERE
-//       I.iv_id IN (SELECT iv_id FROM invoice WHERE iv_del = '0'
-//       AND iv_date BETWEEN ? AND ?)
-// GROUP BY
-//       P.product_name;
-// `;
+  //   const BuyStockSQL = `SELECT
+  //       'สั่งซื้อสินค้า' as expensetype_name,
+  //       SUM(lot_price*lot_total) AS total_expense_amount
+  // FROM
+  //       (select lot_price, lot_total ,product_id from lot where ${BuyStockCondition}) lot
+  // WHERE
+  //       product_id IN (SELECT product_id FROM product WHERE product_del = '0')
+  // `;
+  try {
+    const [SaleProduct] = await db.promise().query(sql);
+    // const [BuyProduct] = await db.promise().query(BuyStockSQL);
+    // const buyProductData = BuyProduct[0];
+    // SaleProduct.push(buyProductData);
+    res.status(200).json(SaleProduct);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+  }
+});
 
-// // สร้างอาร์เรย์สำหรับเก็บค่า parameters
-// const params = [startDate, endDate];
+router.get("/getBuyProduct", async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const sql = `SELECT 
+      lot.product_id,product_name,lot_number, lot_price,lot_total,(lot_price*lot_total) as sumLot
+FROM 
+     (select product_id,lot_number, lot_price,lot_total from lot where lot_date BETWEEN ? AND ? ) as lot
+Join product on lot.product_id = product.product_id
+;
+`;
 
-//   try {
-//     const [SaleProduct] = await db.promise().query(sql,params);
+  try {
+    const [ProductData] = await db.promise().query(sql, [startDate, endDate]);
+    res.status(200).json(ProductData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+  }
+});
 
-//     res.status(200).json(SaleProduct);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
-//   }
-// });
+router.get("/getCommition", async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const sql = `SELECT 
+      e.employee_fname,e.employee_lname, e.employee_id,
+      ROUND(SUM(cm_total), 2) AS total_commission
+FROM 
+     (select employee_id, cm_total from commission where cm_date BETWEEN ? AND ? ) c
+JOIN 
+      employee e ON c.employee_id = e.employee_id
+GROUP BY 
+      e.employee_id;
+`;
+
+  try {
+    const [commitionData] = await db.promise().query(sql, [startDate, endDate]);
+
+    res.status(200).json(commitionData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+  }
+});
+
+router.get("/getTopSale", async (req, res) => {
+  const { startDate, endDate, category } = req.query;
+  console.log(startDate, endDate, category);
+  let sql = `
+  SELECT 
+      P.product_id,
+      P.product_img,
+      P.product_name,
+      P.product_price,
+      SUM(I.listi_amount) AS total_quantity_sold,
+      SUM(I.listi_amount * I.listi_price) AS total_sales_amount
+  FROM 
+      listi I
+  JOIN 
+      Product P ON I.product_id = P.product_id
+  JOIN 
+      type T ON P.type_id = T.type_id
+  WHERE 
+      I.iv_id IN (
+        SELECT iv_id 
+        FROM invoice 
+        WHERE iv_del = '0'
+        AND iv_date BETWEEN ? AND ?
+      )
+`;
+
+  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่มเงื่อนไข T.type_name
+  if (category !== "ทั้งหมด") {
+    sql += " AND T.type_id = ?";
+  }
+
+  // เพิ่มส่วน GROUP BY
+  sql += " GROUP BY P.product_id";
+
+  // สร้างอาร์เรย์สำหรับเก็บค่า parameters
+  const params = [startDate, endDate];
+
+  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่ม category ในอาร์เรย์ params
+  if (category !== "ทั้งหมด") {
+    params.push(category);
+  }
+
+  try {
+    const [topSaleDate] = await db.promise().query(sql, params);
+    res.status(200).json(topSaleDate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+  }
+});
 
 router.get("/getSaleProduct", async (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, category } = req.query;
 
-  const sql = `SELECT 
+  console.log("log getsaleproduct ", startDate, endDate, category);
+  let sql = `SELECT 
       P.product_name, 
-      SUM(I.listi_amount) AS total_quantity_sold,
       SUM(I.listi_amount * I.listi_price) AS total_sales_amount,
       DATE_FORMAT(iv.iv_date, '%Y-%m-%d') AS sale_date
 FROM 
@@ -702,16 +824,30 @@ FROM
 JOIN 
       Product P ON I.product_id = P.product_id
 JOIN
-      invoice iv ON I.iv_id = iv.iv_id
-WHERE 
+      invoice iv ON I.iv_id = iv.iv_id `;
+  if (category !== "ทั้งหมด") {
+    sql += `JOIN 
+      type T ON P.type_id = T.type_id `;
+  }
+  sql += `WHERE 
       iv.iv_del = '0'
-      AND iv.iv_date BETWEEN ? AND ?
-GROUP BY 
-      P.product_name, sale_date
+      AND iv.iv_date BETWEEN ? AND ? `;
+  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่มเงื่อนไข T.type_name
+  if (category !== "ทั้งหมด") {
+    sql += " AND T.type_id = ? ";
+  }
+  sql += `GROUP BY 
+      P.product_id, sale_date
 ORDER BY
       sale_date;`;
 
+  // สร้างอาร์เรย์สำหรับเก็บค่า parameters
   const params = [startDate, endDate];
+
+  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่ม category ในอาร์เรย์ params
+  if (category !== "ทั้งหมด") {
+    params.push(category);
+  }
 
   try {
     const [SaleProductRows] = await db.promise().query(sql, params);
@@ -753,7 +889,6 @@ ORDER BY
       ([product_name, data]) => ({
         label: product_name,
         data: data,
-
         borderWidth: 1,
       })
     );
@@ -768,139 +903,87 @@ ORDER BY
   }
 });
 
-router.get("/getExpenseByCategory", async (req, res) => {
+router.get("/getWaitToPlay", async (req, res) => {
   const { timeline } = req.query;
-  let condition;
+  let period;
+
   if (timeline == "year") {
-    condition =
-      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()";
+    period = 11;
   } else if (timeline == "6month") {
-    condition =
-      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()";
+    period = 5;
   } else if (timeline == "3month") {
-    condition =
-      " AND out_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()";
-  } else {
-    condition =
-      " AND DATE_FORMAT(out_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+    period = 2;
+  } else if (timeline == "1month") {
+    period = 0;
   }
-  const sql = `SELECT 
-      t.expensetype_name, 
-      SUM(listo_total) AS total_expense_amount
-FROM 
-      listout o
-JOIN 
-      expensetype t ON t.expensetype_id = o.expensetype_id
-WHERE 
-      o.out_id IN (SELECT out_id FROM expense WHERE out_del = '0'
-      and out_status = 'จ่ายแล้ว'
-      ${condition})
-GROUP BY 
-      t.expensetype_id;
-`;
+
+  let sqlTotalIncome;
+
+  sqlTotalIncome = ` SELECT 
+            DATE_FORMAT(iv.iv_dateend, '%d-%m-%Y') AS doc_month, 
+            iv.iv_total AS total, 
+            iv.iv_status AS status, 
+            c.customer_fname AS customer, 
+            iv.iv_id AS doc_type
+        FROM 
+            invoice iv
+        JOIN 
+            customer c ON iv.customer_id = c.customer_id
+        WHERE 
+            iv.iv_status = 'อนุมัติ' 
+            AND iv.iv_del = '0'
+            AND iv.iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL ${period} MONTH) AND CURDATE()
+
+        UNION ALL
+
+        SELECT 
+            DATE_FORMAT(rc.rc_date, '%d-%m-%Y') AS doc_month, 
+            rc.rc_total AS total, 
+            rc.rc_status AS status, 
+            c.customer_fname AS customer, 
+            rc.rc_id AS doc_type
+        FROM 
+            receipt rc
+        JOIN 
+            customer c ON rc.customer_id = c.customer_id
+        WHERE 
+            rc.rc_status = 'รอเก็บเงิน' 
+            AND rc.rc_del = '0'
+            AND rc.rc_date BETWEEN DATE_SUB(CURDATE(), INTERVAL ${period} MONTH) AND CURDATE()
+
+        UNION ALL
+
+        SELECT 
+            DATE_FORMAT(rf.rf_date, '%d-%m-%Y') AS doc_month, 
+            rf.rf_total AS total, 
+            rf.rf_status AS status, 
+            c.customer_fname AS customer, 
+            rf.rf_id AS doc_type
+        FROM 
+            receiptcash rf
+        left JOIN 
+            customer c ON rf.customer_id = c.customer_id
+        WHERE 
+            rf.rf_status = 'รอเก็บเงิน' 
+            AND rf.rf_del = '0'
+            AND rf.rf_date BETWEEN DATE_SUB(CURDATE(), INTERVAL ${period} MONTH) AND CURDATE()
+        
+        ORDER BY 
+            doc_month;`;
+
+  const [rows] = await db.promise().query(sqlTotalIncome);
+  const totalSum = rows.reduce((sum, row) => sum + parseFloat(row.total), 0);
 
   try {
-    const [SaleProduct] = await db.promise().query(sql);
-
-    res.status(200).json(SaleProduct);
+    res.status(200).json({
+      data: rows,
+      totalSum: totalSum,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
   }
 });
-
-router.get("/getCommition", async (req, res) => {
-  const { timeline } = req.query;
-  let condition;
-  if (timeline == "year") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()";
-  } else if (timeline == "6month") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()";
-  } else if (timeline == "3month") {
-    condition =
-      " AND iv_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()";
-  } else {
-    condition =
-      " AND DATE_FORMAT(iv_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
-  }
-  const sql = `SELECT 
-      e.employee_fname,e.employee_lname, e.employee_id,
-      ROUND(SUM(iv_total * (e.employee_commit / 100)), 2) AS total_commission
-FROM 
-      invoice
-JOIN 
-      employee e ON invoice.employee_id = e.employee_id
-WHERE 
-      iv_id IN (SELECT iv_id FROM invoice WHERE iv_del = '0'
-      and iv_status = 'ดำเนินการแล้ว'
-      ${condition})
-GROUP BY 
-      e.employee_id;
-`;
-
-  try {
-    const [commitionData] = await db.promise().query(sql);
-
-    res.status(200).json(commitionData);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
-  }
-});
-
-router.get("/getTopSale", async (req, res) => {
-  const { startDate, endDate, category } = req.query;
-  console.log(startDate, endDate, category);
-  let sql = `
-  SELECT 
-      P.product_id,
-      P.product_img,
-      P.product_name,
-      P.product_price,
-      SUM(I.listi_amount) AS total_quantity_sold,
-      SUM(I.listi_amount * I.listi_price) AS total_sales_amount
-  FROM 
-      listi I
-  JOIN 
-      Product P ON I.product_id = P.product_id
-  JOIN 
-      type T ON P.type_id = T.type_id
-  WHERE 
-      I.iv_id IN (
-        SELECT iv_id 
-        FROM invoice 
-        WHERE iv_del = '0'
-        AND iv_date BETWEEN ? AND ?
-      )
-`;
-
-  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่มเงื่อนไข T.type_name
-  if (category !== "ทั้งหมด") {
-    sql += " AND T.type_category = ?";
-  }
-
-  // เพิ่มส่วน GROUP BY
-  sql += " GROUP BY P.product_id";
-
-  // สร้างอาร์เรย์สำหรับเก็บค่า parameters
-  const params = [startDate, endDate];
-
-  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่ม category ในอาร์เรย์ params
-  if (category !== "ทั้งหมด") {
-    params.push(category);
-  }
-
-  try {
-    const [topSaleDate] = await db.promise().query(sql, params);
-    res.status(200).json(topSaleDate);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
-  }
-});
-
 router.get("/getCategoryProduct", async (req, res) => {
   const sql = `SELECT 
       type_id ,type_category from type where type_del ='0'

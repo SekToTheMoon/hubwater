@@ -413,11 +413,13 @@ function E_receiptcash() {
                     {selectedProduct.map((product) => (
                       <tr key={product.product_id}>
                         <td>
-                          <img
-                            src={`http://localhost:3001/img/product/${product.product_img}`}
-                            alt={product.product_name}
-                            className="w-20 h-20"
-                          />
+                          <div className="avatar p-2">
+                            <img
+                              src={`http://localhost:3001/img/product/${product.product_img}`}
+                              alt={product.product_name}
+                              className="w-20 h-20"
+                            />
+                          </div>
                         </td>
                         <td>{product.product_name}</td>
                         <td>{product.product_price}</td>
@@ -503,8 +505,11 @@ function E_receiptcash() {
               </div>
             </div>
           </dialog>
-          <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-7xl">
-            <div className="mt-5 mb-2 2xl:flex justify-between">
+          <form
+            onSubmit={handleSubmit}
+            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+          >
+            <div className="mt-5 mb-2 xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
@@ -720,7 +725,7 @@ function E_receiptcash() {
             <div className="ml-auto w-full  md:w-10/12 md:max-w-72 lg:w-6/12 xl:w-5/12">
               <label className="label ">
                 <span className="my-auto">รวมเป็นเงิน</span>
-                <div className="w1/2">{totalBeforeDisc}</div>
+                <div>{totalBeforeDisc}</div>
               </label>
               <label className="label ">
                 <div>
@@ -748,11 +753,11 @@ function E_receiptcash() {
                   />
                   <span>%</span>
                 </div>
-                <div className="w1/2 ">
+                <div className="w-1/2 ">
                   <input
                     type="text"
                     value={values.disc_cash}
-                    className="text-right"
+                    className="text-right w-full"
                     onChange={(e) => {
                       let disc = e.target.value;
 
@@ -785,7 +790,7 @@ function E_receiptcash() {
               </label>
               <label className="label">
                 <span className="">ราคาหลังหักส่วนลด</span>
-                <div className="w1/2">{values.rf_total}</div>
+                <div>{values.rf_total}</div>
               </label>
               {errors.disc_cash && (
                 <span className="text-error flex justify-end">
@@ -809,14 +814,14 @@ function E_receiptcash() {
                   />
                   <span>ภาษีมูลค่าเพิ่ม 7%</span>
                 </label>
-                <div className="w1/2 ">
+                <div>
                   {values.rf_vat ? (values.rf_total * 0.07).toFixed(2) : ""}
                 </div>
               </label>
 
               <label className="label">
                 <span className="">จำนวนเงินรวมทั้งสิ้น</span>
-                <div className="w1/2">
+                <div>
                   {values.rf_vat
                     ? (values.rf_total * 1.07).toFixed(2)
                     : values.rf_total}
@@ -840,7 +845,7 @@ function E_receiptcash() {
                     <option value="3">3%</option>
                   </select>
                 </label>
-                <div className="w1/2">
+                <div>
                   {values.rf_tax
                     ? ((values.rf_tax / 100) * values.rf_total).toFixed(2)
                     : ""}
@@ -850,7 +855,7 @@ function E_receiptcash() {
               {values.rf_tax ? (
                 <label className="label">
                   <span className="">ยอดชำระ</span>
-                  <div className="w1/2">
+                  <div>
                     {(values.rf_total * (1.07 - values.rf_tax / 100)).toFixed(
                       2
                     )}

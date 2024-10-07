@@ -214,11 +214,14 @@ function I_out() {
       <div className="rounded-box bg-base-100 p-5 min-h-full">
         <h1 className="ml-16 text-2xl">สร้างเอกสารค่าใช้จ่าย</h1>
         <hr className="my-4" />
-        <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-5xl">
-          <div className="mt-5 mb-2 2xl:flex justify-between">
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+        >
+          <div className="mt-5 mb-2 xl:flex justify-between">
             <div className="form-control w-25">
               <label className="label">
-                <span className="">พนักงาน</span>
+                <span>พนักงาน</span>
               </label>
               <div className="input input-bordered flex items-center">
                 {employee_fullname}
@@ -235,21 +238,21 @@ function I_out() {
                 className="file-input file-input-bordered w-full"
               />
             </div>
-            <div className="w-1/3">
+            <div className="w-50">
               <div className="form-control ">
                 <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                  <span>จำนวนเงินรวมทั้งสิ้น</span>
                 </label>
                 <input
                   readOnly
                   type="text"
-                  className="input text-3xl"
+                  className="input text-2xl"
                   value={values.out_total}
                 />
               </div>
               <div className="flex justify-between">
                 <label className="label">
-                  <span className="">วันที่:</span>
+                  <span>วันที่:</span>
                 </label>
                 <input
                   type="date"
@@ -281,7 +284,7 @@ function I_out() {
           <hr />
           <div className="flex mt-2">
             <label className="label">
-              <span className="">รายละเอียด:</span>
+              <span>รายละเอียด:</span>
             </label>
             <input
               type="text"
@@ -369,7 +372,7 @@ function I_out() {
           <h3 className="font-bold text-lg">ข้อมูลรายการ</h3>
           <div className="grid grid-cols-3 gap-1 p-3">
             <label className="label">
-              <span className="">ชื่อรายการ:</span>
+              <span>ชื่อรายการ:</span>
             </label>
             <input
               type="text"
@@ -380,7 +383,7 @@ function I_out() {
               }}
             />
             <label className="label">
-              <span className="">ราคา:</span>
+              <span>ราคา:</span>
             </label>
             <input
               type="text"
@@ -396,7 +399,7 @@ function I_out() {
               }}
             />
             <label className="label">
-              <span className="">จำนวน:</span>
+              <span>จำนวน:</span>
             </label>
             <input
               type="text"
@@ -412,7 +415,7 @@ function I_out() {
               }}
             />
             <label className="label">
-              <span className="">ราคารวม:</span>
+              <span>ราคารวม:</span>
             </label>
             <input
               type="text"
@@ -421,7 +424,7 @@ function I_out() {
               readOnly
             />
             <label className="label">
-              <span className="">ประเภทค่าใช้จ่าย</span>
+              <span>ประเภทค่าใช้จ่าย</span>
             </label>
             <select
               className="select select-bordered col-span-2"

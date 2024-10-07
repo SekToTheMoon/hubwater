@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowBigLeft, ArrowBigRight, SearchIcon } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MobileTable from "./component/MobileTable";
 import Table from "./component/Table";
 import SearchInput from "./component/SearchInput";
 
@@ -14,6 +15,7 @@ function Expensetype() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [typeForDel, setTypeForDel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const location = useLocation();
   const { state } = location;
@@ -39,6 +41,7 @@ function Expensetype() {
   const handleDelete = async (id) => {
     try {
       const response = await axios.delete("/Expensetype/delete/" + id);
+      setTypeForDel(null);
       fetchExpensetypes();
       if (response.data && response.data.msg) {
         toast.info(response.data.msg, {
@@ -98,6 +101,15 @@ function Expensetype() {
     }
   }, [currentPage, perPage]);
 
+  const htmlTemplate = (rowData) => (
+    <div>
+      <span className="text-secondary font-bold hover:underline">
+        {rowData[0]}
+      </span>
+
+      <div>ประเภทค่าใช้จ่าย : {rowData[1]}</div>
+    </div>
+  );
   return (
     <>
       <div className="overflow-x-auto">
@@ -109,76 +121,12 @@ function Expensetype() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          {/* <table className="w-full">
-            <thead className="bg-base-200 text-left">
-              <tr className="border-b">
-                <th className="pl-5 py-3 ">รหัสประเภทค่าใช้จ่าย</th>
-                <th>ชื่อประเภทค่าใช้จ่าย</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Expensetype && Expensetype.length !== 0 ? (
-                Expensetype.map((Typ) => (
-                  <tr key={Typ.expensetype_id} className="border-b">
-                    <td className="pl-5 ">{Typ.expensetype_id}</td>
-                    <td>{Typ.expensetype_name}</td>
-                    <td>
-                      <Link
-                        to={`edit/${Typ.expensetype_id}`}
-                        className="btn btn-primary mr-3"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error"
-                        onClick={() =>
-                          document
-                            .getElementById("my_modal_" + Typ.expensetype_id)
-                            .showModal()
-                        }
-                      >
-                        ลบ
-                      </button>
-                      <dialog
-                        id={`my_modal_${Typ.expensetype_id}`}
-                        className="modal"
-                      >
-                        <div className="modal-box">
-                          <h3 className="font-bold text-lg">
-                            ลบข้อมูลประเภทค่าใช้จ่าย
-                          </h3>
-                          <p className="py-4">
-                            ต้องการลบข้อมูลประเภทค่าใช้จ่าย{" "}
-                            {Typ.expensetype_name} หรือไม่
-                          </p>
-                          <div className="modal-action">
-                            <form method="dialog">
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => handleDelete(Typ.expensetype_id)}
-                              >
-                                ยืนยัน
-                              </button>
-                              <button className="btn btn-error">ยกเลิก</button>
-                            </form>
-                          </div>
-                        </div>
-                      </dialog>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table> */}
           <Table headers={headers} data={Expensetype} onDelete={handleDelete} />
-
+          <MobileTable
+            data={Expensetype}
+            onDelete={setTypeForDel}
+            htmlTemplate={htmlTemplate}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -217,6 +165,35 @@ function Expensetype() {
             )}
           </div>
         </div>
+        {typeForDel && (
+          <dialog open className="modal">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg">ลบข้อมูลประเภทค่าใช้จ่าย</h3>
+              <p className="py-4">
+                ต้องการลบข้อมูลประเภทค่าใช้จ่าย {typeForDel} หรือไม่
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleDelete(typeForDel);
+                      setTypeForDel(null);
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => setTypeForDel(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
       <ToastContainer position="top-right" />
     </>

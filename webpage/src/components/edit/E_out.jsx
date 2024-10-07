@@ -241,8 +241,11 @@ function E_out() {
       <div className="rounded-box bg-base-100 p-5 min-h-full">
         <h1 className="ml-16 text-2xl">แก้ไขเอกสารค่าใช้จ่าย</h1>
         <hr className="my-4" />
-        <form onSubmit={handleSubmit} className="mx-auto w-2/3 2xl:max-w-5xl">
-          <div className="mt-5 mb-2 2xl:flex justify-between">
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+        >
+          <div className="mt-5 mb-2 xl:flex justify-between">
             <div className="form-control w-25">
               <label className="label">
                 <span className="">พนักงาน</span>

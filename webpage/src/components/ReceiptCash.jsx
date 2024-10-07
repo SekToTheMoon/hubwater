@@ -10,7 +10,7 @@ import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
-
+import MobileDocTable from "./component/MobileDocTable";
 function ReceiptCash() {
   const axios = useAxiosPrivate();
 
@@ -206,7 +206,7 @@ function ReceiptCash() {
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
 
-          <table className="w-full table-auto">
+          <table className="w-full table-auto hidden md:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -297,6 +297,13 @@ function ReceiptCash() {
               )}
             </tbody>
           </table>
+          <MobileDocTable
+            data={ReceiptCash}
+            onDelete={setReceiptCashfordel}
+            statusList={statusReceiptCash}
+            handleSelectChange={handleSelectChange}
+            roll={roll}
+          />
           <div className="flex justify-between mt-4">
             <select
               value={perPage}
@@ -340,7 +347,7 @@ function ReceiptCash() {
             <div className="modal-box">
               <h3 className="font-bold text-lg">ลบข้อมูลใบเสร็จรับเงิน(สด)</h3>
               <p className="py-4">
-                ต้องการลบข้อมูลใบเสร็จรับเงิน(สด) {receiptCashForDel.rf_id}{" "}
+                ต้องการลบข้อมูลใบเสร็จรับเงิน(สด) {receiptCashForDel}
                 หรือไม่
               </p>
               <div className="modal-action">
@@ -348,7 +355,7 @@ function ReceiptCash() {
                   <button
                     className="btn btn-primary"
                     onClick={() => {
-                      handleDelete(receiptCashForDel.rf_id);
+                      handleDelete(receiptCashForDel);
                       setReceiptCashfordel(null);
                     }}
                   >
