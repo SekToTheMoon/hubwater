@@ -12,7 +12,7 @@ const initSocket = require("./services/socket");
 const updateStatus = require("./utils/updateStatus");
 
 const corsOptions = {
-  origin: "http://localhost:5173", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
+  origin: ["http://localhost:5173", "https://hubwater.netlify.app"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
   methods: ["GET", "POST", "PUT", "DELETE"],
 };
 // ตั้งค่ามิดเดิลแวร์
