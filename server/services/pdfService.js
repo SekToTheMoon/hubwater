@@ -140,7 +140,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
       doc.on("data", dataCallback);
       doc.on("end", endCallback);
       // pipe  คือ ส่งออก doc.pipe(res)
-      doc.pipe(fs.createWriteStream(header + id + `.pdf`));
+      // doc.pipe(fs.createWriteStream(header + id + `.pdf`));
       // สร้าง pdf ฝั่ง server เอาไว้ดู
       // Embed the Thai font
 
@@ -871,7 +871,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
         });
         doc.on("data", dataCallback);
         doc.on("end", endCallback);
-        doc.pipe(fs.createWriteStream(header + id + `.pdf`));
+        // doc.pipe(fs.createWriteStream(header + id + `.pdf`));
 
         doc.registerFont("THSarabunNew", "fonts/THSarabunNew.ttf");
         doc.font("THSarabunNew");
