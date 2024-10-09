@@ -24,7 +24,7 @@ router.get("/unit_m", function (req, res) {
   fetch += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "select count(unit_m_id) as total from unit_m where unit_m_del='0'",
@@ -141,7 +141,7 @@ router.delete("/unit_m/delete/:id", (req, res) => {
     `;
   const id = req.params.id;
   const values = ["1", id];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       console.error("Error delete employee:", err);
       res.status(500).json({

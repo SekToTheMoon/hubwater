@@ -42,7 +42,7 @@ function Employee() {
       setEmployeeForDel(null);
       fetchEmployees();
       if (response.data && response.data.msg) {
-        toast.info(response.data.msg, {
+        toast.success(response.data.msg, {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: false,

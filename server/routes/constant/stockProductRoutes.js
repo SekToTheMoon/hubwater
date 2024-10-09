@@ -26,7 +26,7 @@ router.get("/stock", function (req, res) {
   fetch += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetch, fetchValue, (err, result) => {
+  db.query(fetch, fetchValue, (err, result) => {
     if (!err) {
       db.query(
         "select count(product_id) as total from lot where product_id = ?",
@@ -57,7 +57,7 @@ router.get("/selectstock/:id", function (req, res) {
   let fetch =
     "SELECT lot_number, lot_amount ,lot_price ,lot_date FROM lot WHERE product_id= ? and lot_amount > 0";
   let fetchValue = [id];
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       res.json(result);
     } else {
@@ -95,10 +95,10 @@ router.post("/stock/insert", async (req, res) => {
       }
     }
   );
-  if (req.body.lot_exp) {
+  if (req.body.lot_exp_date) {
     db.query(
       `insert into lot_exp (product_id,lot_number,lot_exp_date) values (?,?,?)`,
-      [req.body.product_id, idnext, req.body.lot_exp],
+      [req.body.product_id, idnext, req.body.lot_exp_date],
       (err) => {
         if (err) {
           res.status(500).json({ msg: "insert ผิด" + err });

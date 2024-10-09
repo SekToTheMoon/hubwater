@@ -3,10 +3,10 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
-
+import { useNavigate } from "react-router-dom";
 function I_emp() {
   const axios = useAxiosPrivate();
-
+  const navigate = useNavigate();
   const [values, setValues] = useState({
     fname: "",
     lname: "",
@@ -50,10 +50,13 @@ function I_emp() {
 
     password: Yup.string()
       .min(6, "กรอกรหัสผ่านไม่น้อยกว่า 6 หลัก")
-      // .matches(/[!@#$%^&*(),.?":{}|<>]/,"รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว")
-      // .matches(/[0-9]/,"รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
-      // .matches(/A-Z]/,"รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
-      // .matches(/a-z]/,"รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
+      .matches(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "รหัสผ่านต้องมีอักษรพิเศษอย่างน้อย 1 ตัว"
+      )
+      .matches(/[0-9]/, "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว")
+      .matches(/[A-Z]/, "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว")
+      .matches(/[a-z]/, "รหัสผ่านต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว")
       .required("ต้องกรอกรหัสผ่าน"),
 
     confirmation: Yup.string()
@@ -200,10 +203,8 @@ function I_emp() {
       await handleInsert();
       setErrors({});
     } catch (error) {
-      console.log("error จากการ validate ข้อมูลไม่ถูกต้อง");
-      console.log(error);
       const newErrors = {};
-      error.inner.forEach((err) => {
+      error?.inner?.forEach((err) => {
         newErrors[err.path] = err.message;
       });
       setErrors(newErrors);
@@ -237,17 +238,7 @@ function I_emp() {
           "Content-Type": "multipart/form-data",
         },
       });
-      console.log("Success:", response.data);
-      toast.success("เพิ่มข้อมูลพนัก สำเร็จ", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
+      navigate("/employee", { state: { msg: response.data.msg } });
     } catch (error) {
       toast.error(error.response.data.msg, {
         position: "top-right",

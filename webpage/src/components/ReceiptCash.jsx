@@ -206,8 +206,8 @@ function ReceiptCash() {
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
 
-          <table className="w-full table-auto hidden md:inline-table">
-            <thead className="bg-base-200 text-left">
+          <table className="w-full text-center table-auto hidden lg:inline-table">
+            <thead className="bg-base-200 ">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
@@ -235,16 +235,18 @@ function ReceiptCash() {
                         ? receiptCash.customer_fname
                         : "cash sale / ขายเงินสด"}
                     </td>
-                    <td>
+                    <td className="text-right">
                       {receiptCash.rf_vat
-                        ? (receiptCash.rf_total * 1.07).toFixed(2)
-                        : receiptCash.rf_total}
+                        ? Intl.NumberFormat().format(
+                            (receiptCash.rf_total * 1.07).toFixed(2)
+                          )
+                        : Intl.NumberFormat().format(receiptCash.rf_total)}
                     </td>
                     <td>{receiptCash.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
                         value={receiptCash.rf_status}
-                        className="select select-bordered w-1/2 max-w-xs"
+                        className="select select-bordered w-36 max-w-36"
                         onChange={(e) => {
                           if (e.target.value === "เก็บเงิน") {
                             setReceiptCashMoney({

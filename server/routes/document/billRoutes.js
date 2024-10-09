@@ -37,7 +37,7 @@ module.exports = (io) => {
     fetchValue.push(idx_start);
     fetchValue.push(per_page);
 
-    db.execute(fetch, fetchValue, (err, result, field) => {
+    db.query(fetch, fetchValue, (err, result, field) => {
       if (!err) {
         db.query(
           "SELECT COUNT(bn_id) AS total FROM bill WHERE bn_del='0'",
@@ -345,7 +345,7 @@ module.exports = (io) => {
     `;
     const id = req.params.id;
     const values = ["1", id];
-    db.execute(sql, values, (err, result) => {
+    db.query(sql, values, (err, result) => {
       if (err) {
         res.status(500).json({
           msg: "Error delete department",

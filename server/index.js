@@ -3,7 +3,6 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
 const http = require("http");
 const verifyJWT = require("./middleware/verifyJWT");
 const credentials = require("./middleware/credentials");

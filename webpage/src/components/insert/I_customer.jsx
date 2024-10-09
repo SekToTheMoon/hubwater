@@ -3,7 +3,7 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
-
+import { useNavigate } from "react-router-dom";
 function I_customer({ isLoggedIn = false }) {
   const axios = useAxiosPrivate();
   //จัดการวันที่
@@ -34,6 +34,7 @@ function I_customer({ isLoggedIn = false }) {
   const [selectprovince, setSelectProvince] = useState([]);
   const [selectdistrict, setSelectDistrict] = useState([]);
   const [selectsubdistrict, setSelectSubdistrict] = useState([]);
+  const navigate = useNavigate();
 
   const validationSchema = Yup.object({
     fname: Yup.string()
@@ -138,6 +139,7 @@ function I_customer({ isLoggedIn = false }) {
       await validationSchema.validate(values, { abortEarly: false });
       handleInsert();
       setErrors({});
+      navigate("/customer");
     } catch (error) {
       console.log(error);
       console.log(error.inner);

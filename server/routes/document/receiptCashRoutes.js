@@ -27,11 +27,11 @@ router.get("/receiptcash", function (req, res) {
     fetch += " ORDER BY " + sort_by + " " + sort_type;
   }
 
-  fetch += " LIMIT ?, ?";
+  fetch += " order by rf_id DESC  LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
 
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "SELECT COUNT(rf_id) AS total FROM receiptcash WHERE rf_del='0'",
@@ -349,7 +349,7 @@ router.delete("/receiptcash/delete/:id", (req, res) => {
     `;
   const id = req.params.id;
   const values = ["1", id];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       res.status(500).json({
         msg: "Error delete department",

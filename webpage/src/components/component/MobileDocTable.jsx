@@ -9,7 +9,7 @@ function MobileDocTable({
   roll,
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
       {data.map((item, index) => {
         const rowData = Object.values(item);
         return (
@@ -22,7 +22,13 @@ function MobileDocTable({
               <div>
                 <div className="w-full">
                   <Link
-                    to={`view/${rowData[0]}?version=${rowData[7]}`}
+                    to={
+                      rowData[0].startsWith("QT")
+                        ? `view/${rowData[0]}?version=${rowData[7]}`
+                        : rowData[0].startsWith("RC")
+                        ? `view?receipt=${rowData[0]}`
+                        : `view/${rowData[0]}`
+                    }
                     className="text-secondary font-bold hover:underline"
                   >
                     {rowData[0]}
@@ -31,7 +37,9 @@ function MobileDocTable({
                   <div className="text-sm p-1">
                     <div>ลูกค้า : {rowData[3]}</div>
 
-                    <div className="break-words">{rowData[5]}</div>
+                    <div className="break-words">
+                      {Intl.NumberFormat().format(rowData[5])}
+                    </div>
                   </div>
                 </div>
                 <select

@@ -343,6 +343,7 @@ router.get("/getExpense", async (req, res) => {
 
   let sqlTotalIncome;
   let sqlIncome;
+  let sqlBuyProduct;
   const LabelData = [];
   const currentDate = new Date();
   let startDate;
@@ -373,8 +374,19 @@ router.get("/getExpense", async (req, res) => {
       ORDER BY 
       DATE_FORMAT(out_date, '%Y-%m');`;
 
+    sqlBuyProduct = `SELECT 
+      DATE_FORMAT(lot_date, '%Y-%m') AS month, SUM(lot_price*lot_total) AS total_income
+      FROM lot
+      where lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 11 MONTH) AND CURDATE()
+      and product_id in (select product_id from product where product_del = '0')
+      GROUP BY 
+      DATE_FORMAT(lot_date, '%Y-%m')
+      ORDER BY 
+      DATE_FORMAT(lot_date, '%Y-%m');`;
+
     const [TotalIncomeRows] = await db.promise().query(sqlTotalIncome);
     const [IncomeRows] = await db.promise().query(sqlIncome);
+    const [BuyProductRows] = await db.promise().query(sqlBuyProduct);
 
     startDate = new Date(
       currentDate.getFullYear(),
@@ -392,6 +404,12 @@ router.get("/getExpense", async (req, res) => {
       incomeMap.set(row.month, parseInt(row.total_income, 10)); // Changed from row.total_received to row.total_income
     });
 
+    const BuyProductMap = new Map();
+    BuyProductRows.forEach((row) => {
+      BuyProductMap.set(row.month, parseInt(row.total_income, 10)); // Changed from row.total_received to row.total_income
+    });
+
+    // สร้าง labelDate สำหรับ กราฟ
     while (startDate <= currentDate) {
       LabelData.push(
         `${getMonthInThai(startDate.getMonth())}-${startDate.getFullYear()}`
@@ -408,6 +426,11 @@ router.get("/getExpense", async (req, res) => {
       }
       if (incomeMap.has(dateKey)) {
         monthIncome += incomeMap.get(dateKey);
+      }
+      // เพิ่มทั้ง รายจ่ายทั้งหมด และ รายจ่ายที่จ่ายแล้ว
+      if (BuyProductMap.has(dateKey)) {
+        monthTotalIncome += BuyProductMap.get(dateKey);
+        monthIncome += BuyProductMap.get(dateKey);
       }
       totalExpenseAmounts.push(monthTotalIncome);
       expenseAmounts.push(monthIncome);
@@ -438,8 +461,19 @@ router.get("/getExpense", async (req, res) => {
       ORDER BY 
       DATE_FORMAT(out_date, '%Y-%m');`;
 
+    sqlBuyProduct = `SELECT 
+      DATE_FORMAT(lot_date, '%Y-%m') AS month, SUM(lot_price*lot_total) AS total_income
+      FROM lot
+      where lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 MONTH) AND CURDATE()
+      and product_id in (select product_id from product where product_del = '0')
+      GROUP BY 
+      DATE_FORMAT(lot_date, '%Y-%m')
+      ORDER BY 
+      DATE_FORMAT(lot_date, '%Y-%m');`;
+
     const [TotalIncomeRows] = await db.promise().query(sqlTotalIncome);
     const [IncomeRows] = await db.promise().query(sqlIncome);
+    const [BuyProductRows] = await db.promise().query(sqlBuyProduct);
 
     startDate = new Date(
       currentDate.getFullYear(),
@@ -457,6 +491,12 @@ router.get("/getExpense", async (req, res) => {
     IncomeRows.forEach((row) => {
       incomeMap.set(row.month, parseInt(row.total_income));
     });
+
+    const BuyProductMap = new Map();
+    BuyProductRows.forEach((row) => {
+      BuyProductMap.set(row.month, parseInt(row.total_income, 10)); // Changed from row.total_received to row.total_income
+    });
+
     // สร้าง labelDate สำหรับ กราฟ
     while (startDate <= currentDate) {
       LabelData.push(
@@ -473,6 +513,11 @@ router.get("/getExpense", async (req, res) => {
       }
       if (incomeMap.has(dateKey)) {
         monthIncome += incomeMap.get(dateKey);
+      }
+      // เพิ่มทั้ง รายจ่ายทั้งหมด และ รายจ่ายที่จ่ายแล้ว
+      if (BuyProductMap.has(dateKey)) {
+        monthTotalIncome += BuyProductMap.get(dateKey);
+        monthIncome += BuyProductMap.get(dateKey);
       }
       totalExpenseAmounts.push(monthTotalIncome);
       expenseAmounts.push(monthIncome);
@@ -506,6 +551,16 @@ router.get("/getExpense", async (req, res) => {
       DATE_FORMAT(out_date, '%Y-%m-%d')
       ;`;
 
+    sqlBuyProduct = `SELECT 
+      DATE_FORMAT(lot_date, '%Y-%m-%d') AS day_month, SUM(lot_price*lot_total) AS total_income
+      FROM lot
+      where lot_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 MONTH) AND CURDATE()
+      and product_id in (select product_id from product where product_del = '0')
+      GROUP BY 
+      DATE_FORMAT(lot_date, '%Y-%m-%d')
+      ORDER BY 
+      DATE_FORMAT(lot_date, '%Y-%m-%d');`;
+
     startDate = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth() - 2,
@@ -519,6 +574,7 @@ router.get("/getExpense", async (req, res) => {
 
     const [TotalIncomeRows] = await db.promise().query(sqlTotalIncome);
     const [IncomeRows] = await db.promise().query(sqlIncome);
+    const [BuyProductRows] = await db.promise().query(sqlBuyProduct);
 
     // Create maps for quick lookup
     const totalIncomeMap = new Map();
@@ -529,6 +585,11 @@ router.get("/getExpense", async (req, res) => {
     const incomeMap = new Map();
     IncomeRows.forEach((row) => {
       incomeMap.set(row.day_month, parseInt(row.total_received));
+    });
+
+    const BuyProductMap = new Map();
+    BuyProductRows.forEach((row) => {
+      BuyProductMap.set(row.day_month, parseInt(row.total_income, 10)); // Changed from row.total_received to row.total_income
     });
 
     while (startDate <= endDate) {
@@ -558,6 +619,11 @@ router.get("/getExpense", async (req, res) => {
           }
           if (incomeMap.has(dateKey)) {
             weekIncome += incomeMap.get(dateKey);
+          }
+          // เพิ่มทั้ง รายจ่ายทั้งหมด และ รายจ่ายที่จ่ายแล้ว
+          if (BuyProductMap.has(dateKey)) {
+            weekTotalIncome += BuyProductMap.get(dateKey);
+            weekIncome += BuyProductMap.get(dateKey);
           }
         }
         totalExpenseAmounts.push(weekTotalIncome);
@@ -599,6 +665,16 @@ ORDER BY
     DATE_FORMAT(out_date, '%m-%d')
     ;`;
 
+    sqlBuyProduct = `SELECT 
+    DATE_FORMAT(lot_date, '%m-%d') AS day_month, SUM(lot_price*lot_total) AS total_income
+    FROM lot
+    where DATE_FORMAT(lot_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+    and product_id in (select product_id from product where product_del = '0')
+    GROUP BY 
+    DATE_FORMAT(lot_date, '%m-%d')
+    ORDER BY 
+    DATE_FORMAT(lot_date, '%m-%d');`;
+
     startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const endDate = new Date(
       currentDate.getFullYear(),
@@ -609,6 +685,7 @@ ORDER BY
     // ดึงข้อมูลจากฐานข้อมูล
     const [TotalIncomeRows] = await db.promise().query(sqlTotalIncome);
     const [IncomeRows] = await db.promise().query(sqlIncome);
+    const [BuyProductRows] = await db.promise().query(sqlBuyProduct);
 
     // สร้าง map สำหรับค้นหาข้อมูลได้ง่าย
     const totalIncomeMap = new Map();
@@ -619,6 +696,11 @@ ORDER BY
     const incomeMap = new Map();
     IncomeRows.forEach((row) => {
       incomeMap.set(row.day_month, parseInt(row.total_received));
+    });
+
+    const BuyProductMap = new Map();
+    BuyProductRows.forEach((row) => {
+      BuyProductMap.set(row.day_month, parseInt(row.total_income, 10)); // Changed from row.total_received to row.total_income
     });
 
     // เริ่มลูปจากวันแรกจนถึงวันสุดท้ายของเดือนปัจจุบัน
@@ -638,7 +720,11 @@ ORDER BY
       if (incomeMap.has(dateKey)) {
         dayIncome += incomeMap.get(dateKey);
       }
-
+      // เพิ่มทั้ง รายจ่ายทั้งหมด และ รายจ่ายที่จ่ายแล้ว
+      if (BuyProductMap.has(dateKey)) {
+        dayTotalIncome += BuyProductMap.get(dateKey);
+        dayIncome += BuyProductMap.get(dateKey);
+      }
       totalExpenseAmounts.push(dayTotalIncome);
       expenseAmounts.push(dayIncome);
 
@@ -774,7 +860,7 @@ router.get("/getTopSale", async (req, res) => {
   FROM 
       listi I
   JOIN 
-      Product P ON I.product_id = P.product_id
+      product P ON I.product_id = P.product_id
   JOIN 
       type T ON P.type_id = T.type_id
   WHERE 
@@ -822,7 +908,7 @@ router.get("/getSaleProduct", async (req, res) => {
 FROM 
       listi I
 JOIN 
-      Product P ON I.product_id = P.product_id
+      product P ON I.product_id = P.product_id
 JOIN
       invoice iv ON I.iv_id = iv.iv_id `;
   if (category !== "ทั้งหมด") {

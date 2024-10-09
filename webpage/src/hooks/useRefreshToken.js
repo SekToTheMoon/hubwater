@@ -1,5 +1,6 @@
 import axios from "../api/axios";
 import useAuth from "./useAuth";
+import { useNavigate } from "react-router-dom";
 // const useRefreshToken = () => {
 //   const { auth, setAuth } = useAuth();
 //   const refresh = async () => {
@@ -17,27 +18,31 @@ import useAuth from "./useAuth";
 // original
 const useRefreshToken = () => {
   const { setAuth } = useAuth();
-
+  const navigate = useNavigate();
   // ใช้ axios ธรรมดา ยิงไป
   const refresh = async () => {
-    const response = await axios.get("/refresh", {
-      withCredentials: true,
-    });
-    const permissionArray = response.data.posit_permission.split("");
-    permissionArray.splice(0, 0, "1");
-    setAuth({
-      employee_id: response.data.employee_id,
-      employee_img: response.data.employee_img,
-      employee_fname: response.data.employee_fname,
-      employee_lname: response.data.employee_lname,
-      posit_permission: permissionArray,
-      posit_name: response.data.posit_name,
-      accessToken: response.data.accessToken,
-    });
+    try {
+      const response = await axios.get("/refresh", {
+        withCredentials: true,
+      });
+      const permissionArray = response.data.posit_permission.split("");
+      permissionArray.splice(0, 0, "1");
+      setAuth({
+        employee_id: response.data.employee_id,
+        employee_img: response.data.employee_img,
+        employee_fname: response.data.employee_fname,
+        employee_lname: response.data.employee_lname,
+        posit_permission: permissionArray,
+        posit_name: response.data.posit_name,
+        accessToken: response.data.accessToken,
+      });
 
-    console.log(response, " from useRefreshToken auth");
-    // ส่ง accessToken กับไป
-    return response.data.accessToken;
+      console.log(response, " from useRefreshToken auth");
+      // ส่ง accessToken กับไป
+      return response.data.accessToken;
+    } catch {
+      navigate("/");
+    }
   };
   return refresh;
 };

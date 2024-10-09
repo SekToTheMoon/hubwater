@@ -180,9 +180,9 @@ function Bill() {
             </dialog>
           )}
 
-          <table className="w-full table-auto hidden md:inline-table">
-            <thead className="bg-base-200 text-left">
-              <tr className=" border-b">
+          <table className="w-full table-auto hidden text-center lg:inline-table">
+            <thead className="bg-base-200 ">
+              <tr className=" border-b ">
                 <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
                 <th>ลูกค้า</th>
@@ -194,7 +194,7 @@ function Bill() {
             <tbody>
               {Bill && Bill.length !== 0 ? (
                 Bill.map((bill) => (
-                  <tr className="border-b" key={bill.bn_id}>
+                  <tr className="border-b text-center" key={bill.bn_id}>
                     <td className="pl-4 py-3">
                       {bill.bn_date.substring(0, 10)}
                     </td>
@@ -222,16 +222,18 @@ function Bill() {
                       )}
                     </td>
                     <td>{bill.customer_fname}</td>
-                    <td>
+                    <td className="text-right pr-2">
                       {bill.bn_vat
-                        ? (bill.bn_total * 1.07).toFixed(2)
-                        : bill.bn_total}
+                        ? Intl.NumberFormat().format(
+                            (bill.bn_total * 1.07).toFixed(2)
+                          )
+                        : Intl.NumberFormat().format(bill.bn_total)}
                     </td>
                     <td>{bill.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
                         value={bill.bn_status}
-                        className="select select-bordered w-1/2 max-w-xs"
+                        className="select select-bordered w-36 max-w-36"
                         onChange={(e) => handleSelectChange(e, bill)}
                       >
                         {statusBill[bill.bn_status][roll].map(
