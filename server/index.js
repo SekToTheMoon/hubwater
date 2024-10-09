@@ -14,6 +14,7 @@ const updateStatus = require("./utils/updateStatus");
 const corsOptions = {
   origin: ["http://localhost:5173", "https://hubwater.netlify.app"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
   methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 };
 // ตั้งค่ามิดเดิลแวร์;
 app.use(express.json());
