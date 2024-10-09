@@ -11,14 +11,15 @@ const credentials = require("./middleware/credentials");
 const initSocket = require("./services/socket");
 const updateStatus = require("./utils/updateStatus");
 
-const corsOptions = {
-  origin: ["http://localhost:5173", "https://hubwater.netlify.app"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
-  methods: ["GET", "POST", "PUT", "DELETE"],
-};
+// const corsOptions = {
+//   origin: ["http://localhost:5173", "https://hubwater.netlify.app"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+// };
 // ตั้งค่ามิดเดิลแวร์
 app.use(express.json());
 app.use(credentials);
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors());
 app.use(cookieParser());
 
 // สร้างเซิร์ฟเวอร์ HTTP
