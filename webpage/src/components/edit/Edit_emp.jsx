@@ -218,7 +218,7 @@ function Edit_emp() {
           dep: employeeData.dep_id,
         });
         setImageURL(
-          `http://localhost:3001/img/avatar/${employeeData.employee_img}`
+          `http://hubwater-production-7ee5.up.railway.app/img/avatar/${employeeData.employee_img}`
         );
         console.log(values);
       })

@@ -935,7 +935,7 @@ function Dashboard() {
                         <td>
                           {list.product_id}{" "}
                           <img
-                            src={`http://localhost:3001/img/product/${list.product_img}`}
+                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${list.product_img}`}
                             alt={list.product_name}
                             className="w-10 h-10 mx-auto"
                           />

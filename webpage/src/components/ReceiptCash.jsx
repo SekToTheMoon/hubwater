@@ -171,7 +171,7 @@ function ReceiptCash() {
   }, [currentPage, perPage]);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
+    const socket = io("http://hubwater-production-7ee5.up.railway.app");
     socket.on("statusUpdate", ({ status, id }) => {
       if (id.startsWith("RF")) {
         setReceiptCash((oldReceiptCashs) => {

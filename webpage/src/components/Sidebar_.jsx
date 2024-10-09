@@ -148,7 +148,7 @@ function Sidebar_() {
       >
         <div className="p-4 pb-2 justify-between items-center h-12 hidden md:flex">
           <img
-            src="http://localhost:3001/img/logo/logo.png"
+            src="http://hubwater-production-7ee5.up.railway.app/img/logo/logo.png"
             className={`overflow-hidden transition-all ${
               open ? "w-12" : "hidden"
             }`}
@@ -270,7 +270,7 @@ function UserSection({ open, signOut }) {
       <div className={`${open ? "avatar" : "hidden"}`}>
         <div className="w-10 rounded-full">
           <img
-            src={`http://localhost:3001/img/avatar/${localStorage.getItem(
+            src={`http://hubwater-production-7ee5.up.railway.app/img/avatar/${localStorage.getItem(
               "employee_img"
             )}`}
             alt="User Avatar"

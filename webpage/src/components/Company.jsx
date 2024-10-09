@@ -102,8 +102,8 @@ function Company() {
           zip_code: companyData.zip_code,
         }));
         setImageURL([
-          `http://localhost:3001/img/logo/logo.png`,
-          `http://localhost:3001/img/signature/signature.png`,
+          `http://hubwater-production-7ee5.up.railway.app/img/logo/logo.png`,
+          `http://hubwater-production-7ee5.up.railway.app/img/signature/signature.png`,
         ]);
       })
       .catch((err) => console.log(err));

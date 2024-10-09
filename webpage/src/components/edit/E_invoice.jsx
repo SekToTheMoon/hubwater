@@ -125,7 +125,7 @@ function E_invoice() {
   const fetchInvoice = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/getinvoice/${id}`
+        `http://hubwater-production-7ee5.up.railway.app/getinvoice/${id}`
       );
       const ivDetail = response.data.ivDetail[0];
       const invoiceList = response.data.listiDetail;
@@ -182,7 +182,9 @@ function E_invoice() {
   /////////////////// การ fetch ลูกค้า กับ รายละเอียดลูกค้า
   const fetchCustomer = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/getcustomers");
+      const res = await axios.get(
+        "http://hubwater-production-7ee5.up.railway.app/getcustomers"
+      );
       setSelectCustomer(res.data);
     } catch (err) {
       console.log(err);
@@ -191,7 +193,8 @@ function E_invoice() {
   const fetchCustomerDetail = async (customer_id) => {
     try {
       const res = await axios.get(
-        "http://localhost:3001/getcustomer/" + customer_id
+        "http://hubwater-production-7ee5.up.railway.app/getcustomer/" +
+          customer_id
       );
       setSelectCustomerDetail({
         data: res.data.data[0],
@@ -280,7 +283,7 @@ function E_invoice() {
   const handleEdit = async (updatedValues) => {
     try {
       await axios.put(
-        "http://localhost:3001/invoice/edit/" + id,
+        "http://hubwater-production-7ee5.up.railway.app/invoice/edit/" + id,
         updatedValues
       );
       toast.success("invoice inserted successfully", {
@@ -526,7 +529,7 @@ function E_invoice() {
                       <div className="avatar p-2">
                         <div className="w-20 rounded">
                           <img
-                            src={`http://localhost:3001/img/product/${item.product_img}`}
+                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${item.product_img}`}
                             alt="Product"
                           />
                         </div>

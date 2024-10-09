@@ -60,7 +60,9 @@ function E_out() {
       });
       let showImage = [];
       imgs.map((j) => {
-        showImage.push(`http://localhost:3001/img/expense/${j.outimg}`);
+        showImage.push(
+          `http://hubwater-production-7ee5.up.railway.app/img/expense/${j.outimg}`
+        );
       });
       setImageURL(showImage);
     } catch (error) {

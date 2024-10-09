@@ -9,7 +9,7 @@ function Home() {
         <div className="h-full flex flex-col items-center space-y-10 max-w-3xl mx-auto  md:flex-row-reverse">
           <div className="max-w-96">
             <img
-              src={`http://localhost:3001/img/avatar/${auth.employee_img}`}
+              src={`http://hubwater-production-7ee5.up.railway.app/img/avatar/${auth.employee_img}`}
               className="w-full rounded-lg shadow-2xl"
             />
           </div>

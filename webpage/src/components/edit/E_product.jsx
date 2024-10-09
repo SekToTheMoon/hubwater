@@ -144,7 +144,7 @@ function E_product() {
       });
       // ดึง URL รูปภาพ
       setImageURL(
-        `http://localhost:3001/img/product/${productData.product_img}`
+        `http://hubwater-production-7ee5.up.railway.app/img/product/${productData.product_img}`
       );
     } catch (error) {
       console.error("Error fetching product:", error);

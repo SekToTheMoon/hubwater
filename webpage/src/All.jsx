@@ -8,7 +8,7 @@ function All() {
       <div className="navbar sticky top-0  bg-base-100 md:hidden">
         <div className="mx-auto w-32 ">
           <img
-            src="http://localhost:3001/img/logo/logo.png"
+            src="http://hubwater-production-7ee5.up.railway.app/img/logo/logo.png"
             className={`overflow-hidden transition-all `}
             alt="Logo"
           />
