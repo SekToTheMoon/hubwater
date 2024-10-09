@@ -25,7 +25,7 @@ router.get("/position", function (req, res) {
   fetch += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "select count(posit_id) as total from posit where posit_del='0'",
@@ -114,7 +114,7 @@ router.put("/position/edit/:id", async (req, res) => {
 
     const values = [req.body.posit_name, req.body.permission, req.body.dep_id];
 
-    db.execute(sql, [...values, id], (err, result) => {
+    db.query(sql, [...values, id], (err, result) => {
       if (err) {
         res.status(500).json({ msg: "Error updating department" });
         return;
@@ -141,7 +141,7 @@ router.delete("/position/delete/:id", (req, res) => {
     `;
   const id = req.params.id;
   const values = ["1", id];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       res.status(500).json({
         msg: "Error delete position" + err,

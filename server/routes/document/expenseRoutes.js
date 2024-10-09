@@ -27,14 +27,14 @@ router.get("/out", function (req, res) {
   }
 
   if (sort_by && sort_type) {
-    fetch += " ORDER BY " + sort_by + " " + sort_type;
+    fetch += "order by out_id DESC ORDER BY " + sort_by + " " + sort_type;
   }
 
   fetch += " LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
 
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "SELECT COUNT(out_id) AS total FROM expense WHERE out_del='0'",
@@ -271,7 +271,7 @@ router.delete("/out/delete/:id", (req, res) => {
   const id = req.params.id;
   const values = ["1", id];
   console.log(id);
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       res.status(500).json({
         msg: "Error delete department",

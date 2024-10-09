@@ -16,7 +16,7 @@ function Stock() {
     lot_price: 0,
     lot_amount: 0,
     lot_date: new Date(),
-    lot_exp: new Date(),
+    lot_exp_date: new Date(),
     product_id: id,
   });
   const [errors, setErrors] = useState({});
@@ -28,7 +28,19 @@ function Stock() {
   const totalPages = Math.ceil(totalRows / perPage);
 
   const validationSchema = Yup.object({
-    // เพิ่ม validationSchema ต่อไปตามต้องการ
+    lot_price: Yup.number()
+      .min(0, "กรุณากรอกตัวเลขจำนวนเต็มบวก")
+      .typeError("กรุณากรอกเป็นตัวเลข")
+      .required("กรุณากรอกราคาทุน"),
+    lot_amount: Yup.number()
+      .min(1, "กรุณากรอกจำนวนมากกว่า 0")
+      .typeError("กรุณากรอกเป็นตัวเลข")
+      .required("กรุณากรอกราคาทุน"),
+    lot_date: Yup.date().required("กรุณาเลือกวันที่"),
+    lot_exp_date: Yup.date()
+      .min(Yup.ref("lot_date"), "วันที่หมดอายุต้องไม่น้อยกว่าวันที่สร้าง")
+      .typeError("กรุณาเลือกวันที่")
+      .required("กรุณาเลือกวันที่"),
   });
   const fetchlots = async () => {
     let url = `/stock?id=${id}&page=${currentPage}&per_page=${perPage}`;
@@ -58,11 +70,15 @@ function Stock() {
   };
 
   const handleSubmit = async (e) => {
+    e.preventDefault(); // ป้องกันการรีเฟรชหน้าเว็บ
     try {
       await validationSchema.validate(values, { abortEarly: false });
-      await handleInsert();
-      await fetchlots();
+      await handleInsert(); // เรียกการเพิ่มล๊อต
+      await fetchlots(); // โหลดข้อมูลใหม่
       setErrors({});
+
+      // ปิด modal เมื่อเพิ่มล๊อตสำเร็จ
+      document.getElementById("addLotModal").close();
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
@@ -76,7 +92,6 @@ function Stock() {
   const handleInsert = async () => {
     try {
       const response = await axios.post("/stock/insert", values);
-      console.log("Success:", response.data);
       toast.success("เพิ่มล๊อตสินค้าสำเร็จ", {
         position: "top-right",
         autoClose: 5000,
@@ -88,7 +103,6 @@ function Stock() {
         theme: "dark",
       });
     } catch (error) {
-      console.error("Error during employee insertion:", error);
       toast.error("เกิดข้อผิดพลาด", {
         position: "top-right",
         autoClose: 5000,
@@ -101,11 +115,17 @@ function Stock() {
       });
     }
   };
-  const handleEditLot = async () => {
+  const handleEditLot = async (e) => {
+    e.preventDefault(); // ป้องกันการรีเฟรชหน้าเว็บ
     try {
-      const response = await axios.put(`/stock/edit/` + id, editLot);
+      await validationSchema.validate(editLot, { abortEarly: false });
+
+      // เรียก API เพื่อแก้ไขข้อมูล
+      await axios.put(`/stock/edit/` + id, editLot);
+
       fetchlots();
-      toast.success("Employee inserted successfully", {
+      setErrors({});
+      toast.success("แก้ไขล็อตสินค้าสำเร็จ", {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -115,18 +135,18 @@ function Stock() {
         progress: undefined,
         theme: "dark",
       });
+
+      // ปิด Modal เมื่อแก้ไขเสร็จสิ้น
+      document.getElementById("editLotModal").close();
+      setEditLot(null); // ล้างค่า editLot
     } catch (error) {
-      console.error("Error during employee insertion:", error);
-      toast.error("Error during employee insertion", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
+      console.log(error.inner);
+      const newErrors = {};
+      error.inner.forEach((err) => {
+        console.log(err.path);
+        newErrors[err.path] = err.message;
       });
+      setErrors(newErrors);
     }
   };
 
@@ -135,8 +155,9 @@ function Stock() {
   }, [currentPage, perPage]);
   //ใช้ดูตัวแปลเมื่อมีการเปลี่ยนแปลง
   useEffect(() => {
+    console.log(values);
     console.log(editLot);
-  }, [editLot]);
+  }, [editLot, values]);
   return (
     <>
       <div className="overflow-x-auto">
@@ -153,7 +174,17 @@ function Stock() {
               <div className="modal-box">
                 <button
                   className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                  onClick={() => document.getElementById("addLotModal").close()}
+                  onClick={() => {
+                    setValues({
+                      lot_price: 0,
+                      lot_amount: 0,
+                      lot_date: new Date(),
+                      lot_exp_date: new Date(),
+                      product_id: id,
+                    });
+                    setErrors({});
+                    document.getElementById("addLotModal").close();
+                  }}
                 >
                   ✕
                 </button>
@@ -199,11 +230,14 @@ function Stock() {
                     type="date"
                     name="lot_date"
                     className="input input-bordered w-full mb-1"
-                    value={values.lot_date}
+                    value={moment(values.lot_date).format("yyyy-MM-DD")}
                     onChange={(e) =>
                       setValues({ ...values, lot_date: e.target.value })
                     }
                   />
+                  {errors.lot_date && (
+                    <span className="text-error">{errors.lot_date}</span>
+                  )}
                 </div>
                 <div className="mt-4">
                   <label className="block mb-2 text-sm font-medium">
@@ -213,18 +247,20 @@ function Stock() {
                     type="date"
                     name="lot_exp"
                     className="input input-bordered w-full mb-1"
-                    value={values.lot_exp}
+                    value={moment(values.lot_exp_date).format("yyyy-MM-DD")}
                     onChange={(e) =>
-                      setValues({ ...values, lot_exp: e.target.value })
+                      setValues({ ...values, lot_exp_date: e.target.value })
                     }
                   />
+                  {errors.lot_exp_date && (
+                    <span className="text-error">{errors.lot_exp_date}</span>
+                  )}
                 </div>
                 <button
                   type="submit"
                   className="btn btn-primary mt-4"
-                  onClick={() => {
-                    handleSubmit();
-                    document.getElementById("addLotModal").close();
+                  onClick={(e) => {
+                    handleSubmit(e); // ส่ง e เพื่อป้องกันการรีเฟรช
                   }}
                 >
                   เพิ่มล็อต
@@ -239,6 +275,7 @@ function Stock() {
                     onClick={() => {
                       document.getElementById("editLotModal").close();
                       setEditLot(null);
+                      setErrors({});
                     }}
                   >
                     ✕
@@ -310,11 +347,14 @@ function Stock() {
                         type="date"
                         name="lot_date"
                         className="input input-bordered w-full mb-1"
-                        value={moment(editLot.lot_date).format("YYYY-MM-DD")}
+                        value={moment(editLot.lot_date).format("yyyy-MM-DD")}
                         onChange={(e) =>
                           setEditLot({ ...editLot, lot_date: e.target.value })
                         }
                       />
+                      {errors.lot_date && (
+                        <span className="text-error">{errors.lot_date}</span>
+                      )}
                     </div>
                     <div className="mt-4">
                       <label className="block mb-2 text-sm font-medium">
@@ -325,7 +365,7 @@ function Stock() {
                         name="lot_exp_date"
                         className="input input-bordered w-full mb-1"
                         value={moment(editLot.lot_exp_date).format(
-                          "YYYY-MM-DD"
+                          "yyyy-MM-DD"
                         )}
                         onChange={(e) =>
                           setEditLot({
@@ -334,15 +374,16 @@ function Stock() {
                           })
                         }
                       />
+                      {errors.lot_exp_date && (
+                        <span className="text-error">
+                          {errors.lot_exp_date}
+                        </span>
+                      )}
                     </div>
                     <button
                       type="submit"
                       className="btn btn-primary mt-4"
-                      onClick={() => {
-                        handleEditLot();
-                        document.getElementById("editLotModal").close();
-                        setEditLot(null);
-                      }}
+                      onClick={handleEditLot}
                     >
                       แก้ไข
                     </button>
@@ -399,11 +440,11 @@ function Stock() {
                     <td className="text-center">{lot.lot_total}</td>
                     <td className="text-center">{lot.lot_amount}</td>
                     <td className="text-center">
-                      {moment(lot.lot_date).format("YYYY-MM-DD")}
+                      {moment(lot.lot_date).format("yyyy-MM-DD")}
                     </td>
                     <td className="text-center">
                       {lot.lot_exp_date
-                        ? moment(lot.lot_exp_date).format("YYYY-MM-DD")
+                        ? moment(lot.lot_exp_date).format("yyyy-MM-DD")
                         : "ไม่ได้ระบุ"}
                     </td>
                     <td>

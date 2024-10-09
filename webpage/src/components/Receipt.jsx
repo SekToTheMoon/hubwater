@@ -219,8 +219,8 @@ function Receipt() {
             </div>
           </div>
 
-          <table className="w-full table-auto hidden md:inline-table">
-            <thead className="bg-base-200 text-left">
+          <table className="w-full text-center table-auto hidden lg:inline-table">
+            <thead className="bg-base-200">
               <tr className="border-b">
                 <th className="pl-4 py-3">วันที่</th>
                 <th>เลขเอกสาร</th>
@@ -259,10 +259,12 @@ function Receipt() {
                       )}
                     </td>
                     <td>{receipt.customer_fname}</td>
-                    <td>
+                    <td className="text-right pr-2">
                       {receipt.rc_vat
-                        ? (receipt.rc_total * 1.07).toFixed(2)
-                        : receipt.rc_total}
+                        ? Intl.NumberFormat().format(
+                            (receipt.rc_total * 1.07).toFixed(2)
+                          )
+                        : Intl.NumberFormat().format(receipt.rc_total)}
                     </td>
                     <td>{receipt.employee_fname}</td>
                     <td className="flex gap-2">

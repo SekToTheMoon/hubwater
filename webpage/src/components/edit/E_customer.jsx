@@ -197,9 +197,11 @@ function E_customer() {
     } catch (error) {
       console.log(error.inner);
       const newErrors = {};
-      error.inner.forEach((err) => {
+      error?.inner.forEach((err) => {
         console.log(err.path);
-        newErrors[err.path] = err.message;
+        err.path
+          ? (newErrors[err.path] = err.message)
+          : (newErrors["contact"] = err.message);
       });
       setErrors(newErrors);
     }

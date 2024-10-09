@@ -30,7 +30,7 @@ router.get("/employee", function (req, res) {
   fetchUser += " limit ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetchUser, fetchValue, (err, result, field) => {
+  db.query(fetchUser, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "select count(employee_id) as total from employee",
@@ -281,7 +281,7 @@ router.put(
       sql += " WHERE employee_id = ?;";
       values.push(employeeId);
 
-      db.execute(sql, values, (err) => {
+      db.query(sql, values, (err) => {
         if (err) {
           return res.status(500).json({ msg: "อัพเดท ผิด" });
         }
@@ -385,7 +385,7 @@ router.delete("/employeephone/delete/:id/:tel", (req, res) => {
     DELETE FROM employee_tel WHERE employee_id= ? and tel =? ;
     `;
   const values = [req.params.id, req.params.tel];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       console.error("Error delete phone employee:", err);
       res.status(500).json({
@@ -410,7 +410,7 @@ router.delete("/employee/delete/:id", (req, res) => {
     `;
   const id = req.params.id;
   const values = ["1", id];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       res.status(500).json({
         msg: "Error delete employee",
@@ -427,88 +427,3 @@ router.delete("/employee/delete/:id", (req, res) => {
 });
 
 module.exports = router;
-
-//   router.post("/register", uploadAvatar.single("img"), async (req, res) => {
-//     console.log("inregister");
-//     try {
-//       console.log("Received POST request at /register");
-//       const {
-//         email,
-//         password,
-//         fname,
-//         lname,
-//         bdate,
-//         hiredate,
-//         line,
-//         sex,
-//         username,
-//         nid,
-//         address,
-//         img,
-//         phone,
-//       } = req.body;
-//       const imageName = req.file.filename;
-//       console.log(`
-//         Email: ${email}
-//         Password: ${password}
-//         First Name: ${fname}
-//         Last Name: ${lname}
-//         Birth Date: ${bdate}
-//         Hire Date: ${hiredate}
-//         Line: ${line}
-//         Sex: ${sex}
-//         Username: ${username}
-//         NID: ${nid}
-//         Address: ${address}
-//         phone: ${phone}
-//         Image: ${imageName}
-//       `);
-
-//       const [rows] = await db
-//         .promise()
-//         .query(
-//           "SELECT employee_username FROM employee WHERE employee_username = ?",
-//           [username]
-//         );
-
-//       if (rows.length === 0) {
-//         const hash = await bcrypt.hash(password, saltRounds);
-//         const employee_id = getNextID("EMP", "employee");
-//         const next = db.execute(
-//           `SELECT 'EMP || LPAD(NVL(MAX(SUBSTR(employee_id, 3, 7)), 0) + 1, 7, '0') FROM employee;`
-//         );
-//         console.log(next[0][0], " ไอดีของ พนักงานต่อไป");
-//         await db
-//           .promise()
-//           .query(
-//             "INSERT INTO employee (employee_id, employee_email, employee_password, employee_fname, employee_lname, employee_bdate, employee_hiredate, employee_line, employee_sex, employee_username, employee_nid, employee_address, employee_img) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-//             [
-//               employee_id,
-//               email,
-//               hash,
-//               fname,
-//               lname,
-//               bdate,
-//               hiredate,
-//               line,
-//               sex,
-//               username,
-//               nid,
-//               address,
-//               img,
-//             ]
-//           );
-
-//         res.status(201).json({
-//           msg: "เพิ่มพนักงานเรียบร้อยแล้ว",
-//         });
-//       } else {
-//         res.status(409).json({
-//           msg: "มี Username นี้อยู่ในระบบแล้ว",
-//         });
-//       }
-//     } catch (error) {
-//       console.error("Error during registration:", error);
-//       res.status(500).json({ msg: "Internal Server Error" });
-//     }
-//   });

@@ -215,7 +215,7 @@ function Company() {
         <div className="flex items-center ">
           <form
             onSubmit={handleSubmit}
-            className="max-w-sm mx-auto 2xl:max-w-7xl"
+            className="max-w-sm mx-auto xl:max-w-7xl"
           >
             <div className="flex-1 mb-5">
               <label htmlFor="fname" className="block mb-2 text-sm font-medium">
@@ -234,7 +234,7 @@ function Company() {
               )}
             </div>
 
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="company_taxpayer"
@@ -278,13 +278,13 @@ function Company() {
                 <span className="text-error">{errors.company_address}</span>
               )}
             </div>
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label htmlFor="province" className="block mb-2 font-medium">
                   จังหวัด
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.province}
                   onChange={(e) => {
                     const selectedProvince = e.target.value;
@@ -314,10 +314,10 @@ function Company() {
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="district" className="block mb-2 font-medium">
-                  อำเภอ
+                  อำเภอ / เขต
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.district}
                   onChange={(e) => {
                     const selectedDistrict = e.target.value;
@@ -346,10 +346,10 @@ function Company() {
               </div>
               <div className="flex-1 mb-5">
                 <label htmlFor="subdistrict" className="block mb-2 font-medium">
-                  ตำบล
+                  ตำบล / แขวง
                 </label>
                 <select
-                  className="select select-bordered w-full max-w-xs mb-1"
+                  className="select select-bordered w-full  mb-1"
                   value={values.subdistrict}
                   onChange={(e) => {
                     setValues({
@@ -390,7 +390,7 @@ function Company() {
               </div>
             </div>
 
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="company_phone"
@@ -435,7 +435,7 @@ function Company() {
                 )}
               </div>
             </div>
-            <div className="mt-5 2xl:flex gap-x-5">
+            <div className="mt-5 xl:flex gap-x-5">
               <div className="flex-1 mb-5">
                 <label
                   htmlFor="company_logo"

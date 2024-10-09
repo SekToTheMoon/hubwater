@@ -109,7 +109,7 @@ function product() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <table className="w-full table-auto hidden md:inline-table">
+          <table className="w-full table-auto hidden lg:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">รหัสสินค้า</th>
@@ -175,7 +175,7 @@ function product() {
             </tbody>
           </table>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
             {product.map((item, index) => (
               <div key={index} className="space-y-3 p-4 rounded-lg shadow">
                 <div className="flex justify-between">
@@ -195,7 +195,7 @@ function product() {
 
                   <div className="join join-vertical">
                     <Link
-                      to={`stock/${product.product_id}`}
+                      to={`stock/${item.product_id}`}
                       className="btn btn-secondary btn-sm join-item"
                     >
                       สต๊อก

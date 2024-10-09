@@ -581,11 +581,15 @@ function Dashboard() {
                 <div className="flex gap-5 w-full 2xl:flex-col 2xl:pt-7">
                   <p>
                     <span className="text-blue-500">รายได้รวม : </span>
-                    {`${TotalIncomeAndExpense?.sumIncome}`}
+                    {`${new Intl.NumberFormat().format(
+                      TotalIncomeAndExpense?.sumIncome
+                    )}`}
                   </p>
                   <p>
                     <span className="text-pink-500">ค่าใช้จ่ายรวม : </span>
-                    {`${TotalIncomeAndExpense?.sumExpense}`}
+                    {`${new Intl.NumberFormat().format(
+                      TotalIncomeAndExpense?.sumExpense
+                    )}`}
                   </p>
                 </div>
                 <Line
@@ -638,7 +642,7 @@ function Dashboard() {
                         >
                           {item.doc_month}
                         </div>
-                        <div>{item.total}</div>
+                        <div>{new Intl.NumberFormat().format(item.total)}</div>
                       </div>
                     </div>
                   </div>
@@ -673,13 +677,15 @@ function Dashboard() {
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
           <h2 className="card-title my-2">ค่าใช้จ่ายสั่งซื้อสินค้า</h2>
           <form onSubmit={handleSubmitBuyProduct}>
-            <div className="flex justify-between gap-2  md:flex-col xl:flex-row">
-              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
-                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+            <div className="flex justify-between gap-2  mb-3">
+              <div className="flex flex-col ">
+                <label className="col-sm-2 col-form-label text-sm">
+                  เริ่มต้น
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control max-w-32"
+                    className="form-control max-w-32 border rounded-md px-2 py-1 "
                     value={buyProductDateRanges.startDate}
                     onChange={(e) =>
                       setBuyProductDataDateRanges({
@@ -690,12 +696,14 @@ function Dashboard() {
                   />
                 </div>
               </div>
-              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
-                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+              <div className="flex flex-col ">
+                <label className="col-sm-2 col-form-label text-sm">
+                  สิ้นสุด
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control max-w-32"
+                    className="form-control max-w-32 border rounded-md px-2 py-1"
                     value={buyProductDateRanges.endDate}
                     onChange={(e) =>
                       setBuyProductDataDateRanges({
@@ -707,10 +715,10 @@ function Dashboard() {
                   <span className="text-danger"> </span>
                 </div>
               </div>
-              <div className="mb-4 ">
+              <div className="">
                 <label className="col-sm-2 col-form-label"></label>
                 <div className="col-sm-5">
-                  <button className="btn btn-primary"> ค้นหา </button>
+                  <button className="btn btn-primary mt-3"> ค้นหา </button>
                 </div>
               </div>
             </div>
@@ -740,7 +748,9 @@ function Dashboard() {
                         <div className="hidden sm:block">
                           {item.product_name}
                         </div>
-                        <div>{item.sumLot} บาท</div>
+                        <div>
+                          {new Intl.NumberFormat().format(item.sumLot)} บาท
+                        </div>
                       </div>
                     </div>
                   </li>
@@ -754,13 +764,15 @@ function Dashboard() {
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
           <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
           <form onSubmit={handleSubmitCommition}>
-            <div className="flex justify-between gap-2  md:flex-col xl:flex-row">
-              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
-                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+            <div className="flex justify-between gap-2 mb-3 ">
+              <div className="flex flex-col ">
+                <label className="col-sm-2 col-form-label text-sm">
+                  เริ่มต้น
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control max-w-32"
+                    className="form-control max-w-32 border rounded-md px-2 py-1"
                     value={commitionDateRanges.startDate}
                     onChange={(e) =>
                       setCommitionDateRanges({
@@ -771,12 +783,14 @@ function Dashboard() {
                   />
                 </div>
               </div>
-              <div className="flex flex-col mb-4 lg:flex-row lg:justify-between lg:mb-0 xl:flex-col xl:mb-4">
-                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+              <div className="flex flex-col ">
+                <label className="col-sm-2 col-form-label text-sm">
+                  สิ้นสุด
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control max-w-32"
+                    className="form-control max-w-32 border rounded-md px-2 py-1"
                     value={commitionDateRanges.endDate}
                     onChange={(e) =>
                       setCommitionDateRanges({
@@ -791,7 +805,7 @@ function Dashboard() {
               <div className="mb-4 ">
                 <label className="col-sm-2 col-form-label"></label>
                 <div className="col-sm-5">
-                  <button className="btn btn-primary"> ค้นหา </button>
+                  <button className="btn btn-primary mt-3"> ค้นหา </button>
                 </div>
               </div>
             </div>
@@ -808,7 +822,13 @@ function Dashboard() {
                           {item.employee_fname + " " + item.employee_lname}
                         </div>
                       </div>
-                      <div className=""> {item.total_commission} บาท</div>
+                      <div>
+                        {" "}
+                        {new Intl.NumberFormat().format(
+                          item.total_commission
+                        )}{" "}
+                        บาท
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -823,13 +843,15 @@ function Dashboard() {
 
           <figure className="h-full mt-3 ">
             <form onSubmit={handleSubmitTopSale}>
-              <div className="flex flex-wrap justify-between gap-2">
-                <div className=" mb-4 ">
-                  <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+              <div className="flex flex-wrap justify-start gap-2">
+                <div>
+                  <label className="col-sm-2 col-form-label text-sm">
+                    เริ่มต้น
+                  </label>
                   <div className="col-sm-5">
                     <input
                       type="date"
-                      className="form-control"
+                      className="form-control border rounded-md px-2 py-1"
                       value={DateRanges.startDate}
                       onChange={(e) =>
                         setDateRanges({
@@ -840,12 +862,14 @@ function Dashboard() {
                     />
                   </div>
                 </div>
-                <div className=" mb-4 ">
-                  <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+                <div>
+                  <label className="col-sm-2 col-form-label text-sm">
+                    สิ้นสุด
+                  </label>
                   <div className="col-sm-5">
                     <input
                       type="date"
-                      className="form-control"
+                      className="form-control border rounded-md px-2 py-1"
                       value={DateRanges.endDate}
                       onChange={(e) =>
                         setDateRanges({
@@ -858,13 +882,13 @@ function Dashboard() {
                   </div>
                 </div>
 
-                <div className=" mb-4 ">
-                  <label className="col-sm-2 col-form-label">
+                <div>
+                  <label className="col-sm-2 col-form-label text-sm">
                     ประเภทสินค้า
                   </label>
                   <div className="col-sm-5">
                     <select
-                      className=" w-full"
+                      className=" w-full border rounded-md px-2 py-1"
                       value={DateRanges.selectCategory}
                       onChange={(e) =>
                         setDateRanges({
@@ -886,19 +910,19 @@ function Dashboard() {
                 <div className="mb-4 ">
                   <label className="col-sm-2 col-form-label"></label>
                   <div className="col-sm-5">
-                    <button className="btn btn-primary "> ค้นหา </button>
+                    <button className="btn btn-primary mt-3"> ค้นหา </button>
                   </div>
                 </div>
               </div>
             </form>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-96">
               <table className="table">
                 <thead>
                   <tr>
                     <th>ลำดับ</th>
                     <th>รหัส</th>
                     <th>ชื่อสินค้า</th>
-                    <th>ยอดขายหน่วย</th>
+                    <th>ราคาขาย</th>
                     <th>จำนวนที่ขายได้</th>
                     <th>ยอดขายทั้งหมด</th>
                   </tr>
@@ -917,9 +941,17 @@ function Dashboard() {
                           />
                         </td>
                         <td>{list.product_name}</td>
-                        <td>{list.product_price}</td>
-                        <td>{list.total_quantity_sold}</td>
-                        <td>{list.total_sales_amount}</td>
+                        <td className="text-right">
+                          {new Intl.NumberFormat().format(list.product_price)}
+                        </td>
+                        <td className="text-center">
+                          {list.total_quantity_sold}
+                        </td>
+                        <td className="text-right">
+                          {new Intl.NumberFormat().format(
+                            list.total_sales_amount
+                          )}
+                        </td>
                       </tr>
                     ))
                   ) : (
@@ -938,13 +970,15 @@ function Dashboard() {
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-8">
           <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
           <form onSubmit={handleSubmitSaleProduct}>
-            <div className="flex flex-wrap justify-between gap-2">
-              <div className=" mb-4 ">
-                <label className="col-sm-2 col-form-label">เริ่มต้น</label>
+            <div className="flex flex-wrap justify-start gap-2">
+              <div>
+                <label className="col-sm-2 col-form-label text-sm">
+                  เริ่มต้น
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control"
+                    className="form-control border rounded-md px-2 py-1"
                     value={saleProductDateRanges.startDate}
                     onChange={(e) =>
                       setSaleProductDateRanges({
@@ -955,12 +989,14 @@ function Dashboard() {
                   />
                 </div>
               </div>
-              <div className=" mb-4 ">
-                <label className="col-sm-2 col-form-label">สิ้นสุด</label>
+              <div>
+                <label className="col-sm-2 col-form-label text-sm">
+                  สิ้นสุด
+                </label>
                 <div className="col-sm-5">
                   <input
                     type="date"
-                    className="form-control"
+                    className="form-control border rounded-md px-2 py-1"
                     value={saleProductDateRanges.endDate}
                     onChange={(e) =>
                       setSaleProductDateRanges({
@@ -972,11 +1008,13 @@ function Dashboard() {
                   <span className="text-danger"> </span>
                 </div>
               </div>
-              <div className=" mb-4 ">
-                <label className="col-sm-2 col-form-label">ประเภทสินค้า</label>
+              <div>
+                <label className="col-sm-2 col-form-label text-sm">
+                  ประเภทสินค้า
+                </label>
                 <div className="col-sm-5">
                   <select
-                    className=" w-full"
+                    className=" w-full border rounded-md px-2 py-1"
                     value={saleProductDateRanges.selectCategory}
                     onChange={(e) =>
                       setSaleProductDateRanges({
@@ -997,8 +1035,8 @@ function Dashboard() {
               </div>
               <div className="mb-4 ">
                 <label className="col-sm-2 col-form-label"></label>
-                <div className="col-sm-5">
-                  <button className="btn btn-primary"> ค้นหา </button>
+                <div className="col-sm-5 items-end">
+                  <button className="btn btn-primary mt-3">ค้นหา</button>
                 </div>
               </div>
             </div>

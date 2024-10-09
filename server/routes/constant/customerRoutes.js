@@ -26,7 +26,7 @@ router.get("/customer", function (req, res) {
   fetch += " LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-  db.execute(fetch, fetchValue, (err, result, field) => {
+  db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
         "SELECT COUNT(customer_id) AS total FROM customer WHERE customer_del='0'",
@@ -63,65 +63,74 @@ router.post("/customer/insert", async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const idnext = await getNextID("CUS", "customer");
-    db.query(
-      sql,
-      [
-        idnext,
-        req.body.fname,
-        req.body.lname,
-        req.body.address,
-        req.body.type,
-        req.body.nid,
-        req.body.line,
-        req.body.facebook,
-        req.body.email,
-        req.body.sex,
-        req.body.bdate,
-        "0",
-        req.body.subdistrict,
-      ],
-      (err) => {
-        if (err) {
-          return res.status(500).json({ msg: "insert ผิด" });
-        }
-        if (req.body.type === "นิติบุคคล") {
-          db.query(
-            "INSERT INTO corporation (customer_id, le_type, le_name, le_tax, b_name, b_num) VALUES (?, ?, ?, ?, ?, ?)",
-            [
-              idnext,
-              req.body.le_type,
-              req.body.le_name,
-              req.body.le_tax,
-              req.body.b_name,
-              req.body.b_num,
-            ],
-            (err, data) => {
-              if (err) {
-                return res.status(500).json({
-                  msg: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนิติบุคคล",
-                });
-              }
-            }
-          );
-        }
-        if (req.body.phone) {
-          req.body.phone.forEach((tel) => {
+    await db
+      .promise()
+      .query(
+        sql,
+        [
+          idnext,
+          req.body.fname,
+          req.body.lname,
+          req.body.address,
+          req.body.type,
+          req.body.nid,
+          req.body.line,
+          req.body.facebook,
+          req.body.email,
+          req.body.sex,
+          req.body.bdate,
+          "0",
+          req.body.subdistrict,
+        ],
+        (err) => {
+          if (err) {
+            return res.status(500).json({ msg: "insert ผิด" });
+          }
+          if (req.body.type === "นิติบุคคล") {
             db.query(
-              "INSERT INTO customer_tel (customer_id, tel) VALUES (?, ?)",
-              [idnext, tel],
+              "INSERT INTO corporation (customer_id, le_type, le_name, le_tax, b_name, b_num) VALUES (?, ?, ?, ?, ?, ?)",
+              [
+                idnext,
+                req.body.le_type,
+                req.body.le_name,
+                req.body.le_tax,
+                req.body.b_name,
+                req.body.b_num,
+              ],
               (err, data) => {
                 if (err) {
                   return res.status(500).json({
-                    msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์ลูกค้า",
+                    msg: "เกิดข้อผิดพลาดในการเพิ่มข้อมูลนิติบุคคล",
                   });
                 }
               }
             );
-          });
+          }
         }
-        res.status(201).json({ msg: "เพิ่มข้อมูลลูกค้าสำเร็จ" });
-      }
-    );
+      );
+
+    if (req.body.phone) {
+      const phonePromises = req.body.phone.map((tel) => {
+        return new Promise((resolve, reject) => {
+          db.query(
+            "INSERT INTO customer_tel (customer_id, tel) VALUES (?, ?)",
+            [idnext, tel],
+            (err, data) => {
+              if (err) {
+                reject(err); // ถ้ามี error ให้ reject
+              } else {
+                resolve(data); // ถ้า success ให้ resolve
+              }
+            }
+          );
+        });
+      });
+
+      // ใช้ Promise.all เพื่อรอให้ทุกเบอร์โทรถูกเพิ่มเสร็จ
+      await Promise.all(phonePromises);
+    }
+
+    res.status(201).json({ msg: "เพิ่มข้อมูลลูกค้าสำเร็จ" });
   } else {
     res.status(409).json({
       msg: "มี ตำแหน่ง นี้อยู่ในระบบแล้ว",
@@ -236,15 +245,19 @@ router.put("/customer/edit/:id", async (req, res) => {
       customerId,
     ];
 
-    db.query(updateCustomerQuery, updateCustomerValues, (err, result) => {
-      if (err) {
-        res.status(500).json({ msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลลูกค้า" });
-        return;
-      }
+    await db
+      .promise()
+      .query(updateCustomerQuery, updateCustomerValues, (err, result) => {
+        if (err) {
+          res
+            .status(500)
+            .json({ msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลลูกค้า" });
+          return;
+        }
 
-      // ถ้าเป็นนิติบุคคล
-      if (req.body.type === "นิติบุคคล") {
-        const updateCorporationQuery = `
+        // ถ้าเป็นนิติบุคคล
+        if (req.body.type === "นิติบุคคล") {
+          const updateCorporationQuery = `
             UPDATE corporation 
             SET 
               le_type = ?, 
@@ -256,59 +269,64 @@ router.put("/customer/edit/:id", async (req, res) => {
               customer_id = ?;
           `;
 
-        const updateCorporationValues = [
-          req.body.le_type,
-          req.body.le_name,
-          req.body.le_tax,
-          req.body.b_name,
-          req.body.b_num,
-          customerId,
-        ];
+          const updateCorporationValues = [
+            req.body.le_type,
+            req.body.le_name,
+            req.body.le_tax,
+            req.body.b_name,
+            req.body.b_num,
+            customerId,
+          ];
 
-        db.query(
-          updateCorporationQuery,
-          updateCorporationValues,
-          (err, data) => {
-            if (err) {
-              res.status(500).json({
-                msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลนิติบุคคล",
-              });
-              return;
-            }
-          }
-        );
-      }
-
-      // ลบเบอร์โทรศัพท์เก่าและเพิ่มเบอร์โทรศัพท์ใหม่
-      const deletePhoneQuery = `DELETE FROM customer_tel WHERE customer_id = ?`;
-      db.query(deletePhoneQuery, [customerId], (err, result) => {
-        if (err) {
-          res.status(500).json({
-            msg: "เกิดข้อผิดพลาดในการลบเบอร์โทรศัพท์ลูกค้าเก่า",
-          });
-          return;
-        }
-
-        if (req.body.phone) {
-          req.body.phone.forEach((tel) => {
-            db.query(
-              "INSERT INTO customer_tel (customer_id, tel) VALUES (?, ?)",
-              [customerId, tel],
-              (err, data) => {
-                if (err) {
-                  res.status(500).json({
-                    msg: "เกิดข้อผิดพลาดในการเพิ่มเบอร์โทรศัพท์ลูกค้าใหม่",
-                  });
-                  return;
-                }
+          db.query(
+            updateCorporationQuery,
+            updateCorporationValues,
+            (err, data) => {
+              if (err) {
+                res.status(500).json({
+                  msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลนิติบุคคล",
+                });
+                return;
               }
-            );
-          });
+            }
+          );
         }
       });
 
-      res.status(200).json({ msg: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
+    // ลบเบอร์โทรศัพท์เก่าและเพิ่มเบอร์โทรศัพท์ใหม่
+    const deletePhoneQuery = `DELETE FROM customer_tel WHERE customer_id = ?`;
+    await db.promise().query(deletePhoneQuery, [customerId], (err, result) => {
+      if (err) {
+        res.status(500).json({
+          msg: "เกิดข้อผิดพลาดในการลบเบอร์โทรศัพท์ลูกค้าเก่า",
+        });
+        return;
+      }
     });
+
+    // เพิ่มเบอร์โทรศัพท์ใหม่
+    if (req.body.phone) {
+      const phonePromises = req.body.phone.map((tel) => {
+        return new Promise((resolve, reject) => {
+          db.query(
+            "INSERT INTO customer_tel (customer_id, tel) VALUES (?, ?)",
+            [customerId, tel],
+            (err, data) => {
+              if (err) {
+                reject(err); // ถ้ามี error ให้ reject
+              } else {
+                resolve(data); // ถ้า success ให้ resolve
+              }
+            }
+          );
+        });
+      });
+
+      // ใช้ Promise.all เพื่อรอให้ทุกเบอร์โทรถูกเพิ่มเสร็จ
+      await Promise.all(phonePromises);
+    }
+
+    res.status(200).json({ msg: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
   } else {
     res.status(409).json({ msg: "มีลูกค้าที่มีข้อมูลเดียวกันอยู่ในระบบแล้ว" });
   }
@@ -323,7 +341,7 @@ router.delete("/customer/delete/:id", (req, res) => {
     `;
   const id = req.params.id;
   const values = ["1", id];
-  db.execute(sql, values, (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       res.status(500).json({
         msg: "Error delete customer" + err,

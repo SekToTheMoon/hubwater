@@ -206,7 +206,7 @@ function Out() {
             </div>
           </div>
 
-          <table className="w-full table-auto hidden md:inline-table">
+          <table className="w-full table-auto hidden lg:inline-table">
             <thead className="bg-base-200 text-left">
               <tr className=" border-b">
                 <th className="pl-4 py-3">วันที่</th>
@@ -229,7 +229,9 @@ function Out() {
                     >
                       {out.out_id}
                     </td>
-                    <td className="text-center">{out.out_total}</td>
+                    <td className="text-right pr-2">
+                      {Intl.NumberFormat().format(out.out_total)}
+                    </td>
                     <td>{out.employee_fname}</td>
                     <td className="flex gap-2">
                       <select
@@ -283,7 +285,7 @@ function Out() {
               )}
             </tbody>
           </table>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
             {Out && Out.length !== 0
               ? Out.map((out, index) => (
                   <div
