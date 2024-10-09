@@ -1,5 +1,5 @@
 import axios from "axios";
-const BASE_URL = "http://localhost:3001";
+const BASE_URL = "http://hubwater-production-7ee5.up.railway.app";
 
 export default axios.create({ baseURL: BASE_URL });
 
