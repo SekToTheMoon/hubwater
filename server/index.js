@@ -15,7 +15,7 @@ const corsOptions = {
   origin: ["http://localhost:5173", "https://hubwater.netlify.app"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
   methods: ["GET", "POST", "PUT", "DELETE"],
 };
-ตั้งค่ามิดเดิลแวร์;
+// ตั้งค่ามิดเดิลแวร์;
 app.use(express.json());
 app.use(credentials);
 app.use(cors(corsOptions));

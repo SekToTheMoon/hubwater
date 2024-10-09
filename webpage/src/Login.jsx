@@ -55,7 +55,7 @@ function Login() {
       }
     } catch (error) {
       if (!error?.response) {
-        console.log("error จากการ validate ข้อมูลไม่ถูกต้อง");
+        console.log(error);
         const newErrors = {};
         error?.inner?.forEach((err) => {
           newErrors[err.path] = err.message;
