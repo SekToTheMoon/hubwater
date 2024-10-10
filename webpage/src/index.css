@@ -8,6 +8,13 @@
   font-family: "Noto Sans Thai", sans-serif;
 }
 
+.hero-background {
+  background-image: url("./assets/rainbow-vortex.svg"); /* ระบุเส้นทางที่ถูกต้องของรูปภาพ */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* add the code bellow */
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */

@@ -5,7 +5,6 @@ import "react-toastify/dist/ReactToastify.css";
 import useAuth from "./hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
-import rainbowVortex from "./assets/rainbow-vortex.svg";
 function Login() {
   const navigate = useNavigate();
   const { setAuth } = useAuth();
@@ -79,12 +78,7 @@ function Login() {
   return (
     <>
       <main className="artboard flex justify-center h-screen">
-        <div
-          className="hero min-h-screen "
-          style={{
-            backgroundImage: `url(${rainbowVortex})`,
-          }}
-        >
+        <div className="hero min-h-screen hero-background">
           <div className="hero-content flex-col w-2/3 md:w-1/2 xl:w-1/3">
             <div className="text-center mb-2 ">
               <h1 className="text-3xl font-bold text-white opacity-75">
