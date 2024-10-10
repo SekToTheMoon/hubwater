@@ -231,12 +231,12 @@ function I_quotation() {
         <div className="flex items-center justify-center ">
           <form
             onSubmit={handleSubmit}
-            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+            className="mx-auto w-full xl:w-full xl:max-w-4xl"
           >
-            <div className="mt-5 mb-2 xl:flex justify-between">
+            <div className="mt-5 w-full mb-2 xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
-                  <span className="">ชื่อลูกค้า</span>
+                  <span>ชื่อลูกค้า</span>
                 </label>
                 <select
                   className="select select-bordered"
@@ -260,11 +260,11 @@ function I_quotation() {
                   <span className="text-error">{errors.customer_id}</span>
                 )}
                 <label className="label">
-                  <span className="">ข้อมูลลูกค้า</span>
+                  <span>ข้อมูลลูกค้า</span>
                 </label>
                 <div className="rounded-[12px] border px-3 py-1">
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.customer_address
                         ? "รายละเอียดที่อยู่ : " +
@@ -273,7 +273,7 @@ function I_quotation() {
                     </span>
                   </label>
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.le_tax
                         ? "เลขประจำตัวผู้เสียภาษี : " +
@@ -282,7 +282,7 @@ function I_quotation() {
                     </span>
                   </label>
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.le_name
                         ? "สำนักงาน :" + selectCustomerDetail.data.le_name
@@ -294,7 +294,7 @@ function I_quotation() {
               <div className="w-50">
                 <div className="form-control">
                   <label className="label">
-                    <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                    <span>จำนวนเงินรวมทั้งสิ้น</span>
                   </label>
                   <input
                     type="text"
@@ -309,7 +309,7 @@ function I_quotation() {
                 </div>
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">วันที่:</span>
+                    <span>วันที่:</span>
                   </label>
                   <input
                     type="date"
@@ -333,7 +333,7 @@ function I_quotation() {
                 )}
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">เครดิต (วัน):</span>
+                    <span>เครดิต (วัน):</span>
                   </label>
                   <input
                     type="text"
@@ -349,7 +349,7 @@ function I_quotation() {
                 )}
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">ครบกำหนด:</span>
+                    <span>ครบกำหนด:</span>
                   </label>
                   <input
                     type="date"
@@ -360,7 +360,7 @@ function I_quotation() {
                 </div>
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">พนักงานขาย:</span>
+                    <span>พนักงานขาย:</span>
                   </label>
                   <input
                     readOnly
@@ -374,7 +374,7 @@ function I_quotation() {
             <hr />
             <div className="flex mt-2">
               <label className="label">
-                <span className="">รายละเอียด:</span>
+                <span>รายละเอียด:</span>
               </label>
               <input
                 type="text"
@@ -552,7 +552,7 @@ function I_quotation() {
                 </div>
               </label>
               <label className="label">
-                <span className="">ราคาหลังหักส่วนลด</span>
+                <span>ราคาหลังหักส่วนลด</span>
                 <div>{values.quotation_total}</div>
               </label>
               {errors.disc_cash && (
@@ -584,7 +584,7 @@ function I_quotation() {
               </label>
 
               <label className="label">
-                <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                <span>จำนวนเงินรวมทั้งสิ้น</span>
                 <div>
                   {values.quotation_vat
                     ? (values.quotation_total * 1.07).toFixed(2)
@@ -596,7 +596,7 @@ function I_quotation() {
 
               <label className="label">
                 <label className="label cursor-pointer">
-                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <span>หักภาษี ณ ที่จ่าย</span>
                   <select
                     value={values.quotation_tax}
                     onChange={(e) => {
@@ -621,7 +621,7 @@ function I_quotation() {
 
               {values.quotation_tax ? (
                 <label className="label">
-                  <span className="">ยอดชำระ</span>
+                  <span>ยอดชำระ</span>
                   <div>
                     {(
                       values.quotation_total *
