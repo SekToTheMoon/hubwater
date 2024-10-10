@@ -329,10 +329,10 @@ function I_bill() {
         <div className="flex items-center ">
           <form
             onSubmit={handleSubmit}
-            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+            className="mx-auto w-full xl:w-full xl:max-w-4xl"
           >
             <div className="mt-5 mb-2 xl:flex justify-between">
-              <div className="form-control w-25 ">
+              <div className="form-control ">
                 <label className="label">
                   <span>ชื่อลูกค้า</span>
                 </label>

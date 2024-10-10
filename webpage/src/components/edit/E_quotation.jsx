@@ -393,15 +393,15 @@ function E_quotation() {
         <div className="flex items-center ">
           <form
             onSubmit={handleSubmit}
-            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+            className="mx-auto w-full xl:w-full xl:max-w-4xl"
           >
-            <div className="mt-5 mb-2 xl:flex justify-between">
-              <div className="form-control w-25">
+            <div className="mt-5 mb-2 w-full xl:flex justify-between">
+              <div className="form-control ">
                 <label className="label">
-                  <span className="">ชื่อลูกค้า</span>
+                  <span>ชื่อลูกค้า</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className="select select-bordered w-full"
                   name="customer_id"
                   value={values.customer_id}
                   onChange={(e) => {
@@ -422,11 +422,11 @@ function E_quotation() {
                   <span className="text-error">{errors.customer_id}</span>
                 )}
                 <label className="label">
-                  <span className="">ข้อมูลลูกค้า</span>
+                  <span>ข้อมูลลูกค้า</span>
                 </label>
-                <div className="rounded-[12px] border px-3 py-1">
+                <div className="rounded-[12px] border px-3 py-1 ">
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.customer_address
                         ? "รายละเอียดที่อยู่ : " +
@@ -435,7 +435,7 @@ function E_quotation() {
                     </span>
                   </label>
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.le_tax
                         ? "เลขประจำตัวผู้เสียภาษี : " +
@@ -444,7 +444,7 @@ function E_quotation() {
                     </span>
                   </label>
                   <label className="label">
-                    <span className="">
+                    <span>
                       {" "}
                       {selectCustomerDetail.data.le_name
                         ? "สำนักงาน :" + selectCustomerDetail.data.le_name
@@ -456,7 +456,7 @@ function E_quotation() {
               <div className="w-50">
                 <div className="form-control">
                   <label className="label">
-                    <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                    <span>จำนวนเงินรวมทั้งสิ้น</span>
                   </label>
                   <input
                     type="text"
@@ -471,7 +471,7 @@ function E_quotation() {
                 </div>
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">วันที่:</span>
+                    <span>วันที่:</span>
                   </label>
                   <input
                     type="date"
@@ -495,7 +495,7 @@ function E_quotation() {
                 )}
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">เครดิต (วัน):</span>
+                    <span>เครดิต (วัน):</span>
                   </label>
                   <input
                     type="text"
@@ -511,7 +511,7 @@ function E_quotation() {
                 )}
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">ครบกำหนด:</span>
+                    <span>ครบกำหนด:</span>
                   </label>
                   <input
                     type="date"
@@ -522,7 +522,7 @@ function E_quotation() {
                 </div>
                 <div className="flex justify-between">
                   <label className="label">
-                    <span className="">พนักงานขาย:</span>
+                    <span>พนักงานขาย:</span>
                   </label>
                   <input
                     readOnly
@@ -536,7 +536,7 @@ function E_quotation() {
             <hr />
             <div className="flex mt-2">
               <label className="label">
-                <span className="">รายละเอียด:</span>
+                <span>รายละเอียด:</span>
               </label>
               <input
                 type="text"
@@ -720,7 +720,7 @@ function E_quotation() {
                 </div>
               </label>
               <label className="label">
-                <span className="">ราคาหลังหักส่วนลด</span>
+                <span>ราคาหลังหักส่วนลด</span>
                 <div>{values.quotation_total}</div>
               </label>
               {errors.disc_cash && (
@@ -754,7 +754,7 @@ function E_quotation() {
 
               <div>
                 <label className="label">
-                  <span className="">จำนวนเงินรวมทั้งสิ้น</span>
+                  <span>จำนวนเงินรวมทั้งสิ้น</span>
                   <div>
                     {values.quotation_vat
                       ? (values.quotation_total * 1.07).toFixed(2)
@@ -765,7 +765,7 @@ function E_quotation() {
               <hr />
               <label className="label">
                 <label className="label cursor-pointer">
-                  <span className="">หักภาษี ณ ที่จ่าย</span>
+                  <span>หักภาษี ณ ที่จ่าย</span>
                   <select
                     value={values.quotation_tax}
                     onChange={(e) => {
@@ -789,7 +789,7 @@ function E_quotation() {
               </label>
               {values.quotation_tax ? (
                 <label className="label">
-                  <span className="">ยอดชำระ</span>
+                  <span>ยอดชำระ</span>
                   <div>
                     {(
                       values.quotation_total *

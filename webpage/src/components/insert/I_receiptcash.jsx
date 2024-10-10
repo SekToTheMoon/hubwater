@@ -200,9 +200,9 @@ function I_receiptcash() {
         <div className="flex items-center justify-center">
           <form
             onSubmit={handleSubmit}
-            className="mx-auto min-w-96 xl:w-full xl:max-w-4xl"
+            className="mx-auto w-full xl:w-full xl:max-w-4xl"
           >
-            <div className="mt-5 mb-2 xl:flex justify-between">
+            <div className="mt-5 w-full mb-2 xl:flex justify-between">
               <div className="form-control w-25">
                 <label className="label">
                   <span className="">ชื่อลูกค้า</span>
