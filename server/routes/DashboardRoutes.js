@@ -275,9 +275,9 @@ router.get("/getIncome", async (req, res) => {
       AND DATE_FORMAT(i.iv_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
       AND rc_del = '0'
       GROUP BY 
-      DATE_FORMAT(i.iv_date, '%Y-%m-%d')
+      DATE_FORMAT(i.iv_date, '%m-%d')
       ORDER BY 
-      DATE_FORMAT(i.iv_date, '%Y-%m-%d');`;
+      DATE_FORMAT(i.iv_date, '%m-%d');`;
 
     startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const endDate = new Date(
