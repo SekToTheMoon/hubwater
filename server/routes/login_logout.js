@@ -18,7 +18,7 @@ router.post("/login", (req, res) => {
     return res.status(400).json({ message: "กรุณากรอก username และ password" });
 
   db.query(
-    "SELECT employee_username, employee_password FROM employee WHERE employee_username = ?",
+    "SELECT employee_username, employee_password FROM employee WHERE employee_username = ? and employee_del = 0",
     [username],
     (err, result) => {
       if (err) {
@@ -31,7 +31,7 @@ router.post("/login", (req, res) => {
           if (isMatch) {
             // ทำการ query ข้อมูล employee ที่ล็อกอินเพื่อสร้าง token
             db.query(
-              "SELECT employee_id, employee_img,employee_fname, employee_lname, posit_permission, posit_name FROM employee JOIN posit on employee.posit_id = posit.posit_id WHERE employee_username = ?",
+              "SELECT employee_id, employee_img,employee_fname, employee_lname, posit_permission, posit_name FROM employee JOIN posit on employee.posit_id = posit.posit_id WHERE employee_username = ? ",
               [username],
               (err, emp) => {
                 if (err) {

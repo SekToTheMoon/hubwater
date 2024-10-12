@@ -2,7 +2,11 @@
 export default {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        1368: "1368px",
+      },
+    },
   },
   plugins: [require("daisyui")],
 };

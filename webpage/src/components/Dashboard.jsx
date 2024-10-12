@@ -573,9 +573,11 @@ function Dashboard() {
       <h1 className="text-3xl mb-5 text-neutral-content">ภาพรวมบริษัท</h1>
       <main className="grid grid-cols-8  gap-4">
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg xl:col-span-8">
-          <h2 className="card-title my-2">รายได้และค่าใช้จ่ายตามเอกสาร</h2>
+          <h2 className="text-xl font-bold my-2">
+            รายได้และค่าใช้จ่ายตามเอกสาร
+          </h2>
           {selectTimeline(fetchIncomeAndExpense)}
-          <figure className="flex flex-col mt-3 max-h-[30rem] 2xl:flex-row-reverse ">
+          <figure className="flex flex-col w-full p-2 mt-3 aspect-[20/11]  max-h-[30rem] 2xl:flex-row-reverse ">
             {incomeAndExpense && (
               <>
                 <div className="flex gap-5 w-full 2xl:flex-col 2xl:pt-7">
@@ -602,21 +604,21 @@ function Dashboard() {
             )}
           </figure>
         </div>
-        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5 flex flex-col">
-          <h2 className="card-title my-2">สรุปยอดเก็บเงิน</h2>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5 ">
+          <h2 className="text-xl font-bold my-2">สรุปยอดเก็บเงิน</h2>
           {selectTimeline(fetchIncome)}
-          <figure className="h-full mt-3">
+          <figure className="aspect-[2/1] mt-3">
             {incomeData && StackedBarChart(incomeData)}
           </figure>
         </div>
 
-        <div className="col-span-8 bg-base-100 shadow-xl p-5 overflow-y-auto rounded-lg lg:col-span-3 flex flex-col">
-          <h2 className="card-title my-2">ยอดค้างรับ</h2>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 overflow-y-auto rounded-lg lg:col-span-3 ">
+          <h2 className="text-xl font-bold my-2">ยอดค้างรับ</h2>
           {selectTimeline(fetchWaitToPlay)}
-          <div className="overflow-y-scroll no-scrollbar h-72 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
+          <div className="overflow-y-scroll no-scrollbar h-64 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
             {waitToPay?.data?.length > 0 ? (
               <>
-                {waitToPay.data.map((item, index) => (
+                {waitToPay?.data.map((item, index) => (
                   <div key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
                       <div className="flex flex-col">
@@ -654,19 +656,19 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5">
-          <h2 className="card-title my-2">สรุปยอดชำระเงิน</h2>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-5 ">
+          <h2 className="text-xl font-bold my-2">สรุปยอดชำระเงิน</h2>
           {selectTimeline(fetchExpense)}
-          <figure className="h-full mt-3 ">
+          <figure className="aspect-[2/1]  mt-3 ">
             {expenseData && StackedBarChart(expenseData)}
           </figure>
         </div>
         <div className="col-span-8 rounded-lg bg-base-100 p-5 shadow-xl lg:col-span-3">
-          <h2 className="card-title my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
+          <h2 className="text-xl font-bold my-2">ค่าใช้จ่ายตามหมวดหมู่</h2>
 
           {selectTimeline(fetchExpenseByCategory)}
 
-          <figure className="h-full px-10 mt-3 max-w-96 mx-auto ">
+          <figure className="overflow-y-scroll no-scrollbar h-64 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
             {expenseTypeData ? (
               <Doughnut data={expenseTypeData} />
             ) : (
@@ -675,9 +677,9 @@ function Dashboard() {
           </figure>
         </div>
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
-          <h2 className="card-title my-2">ค่าใช้จ่ายสั่งซื้อสินค้า</h2>
+          <h2 className="text-xl font-bold my-2">ค่าใช้จ่ายสั่งซื้อสินค้า</h2>
           <form onSubmit={handleSubmitBuyProduct}>
-            <div className="flex justify-between gap-2  mb-3">
+            <div className="flex justify-between items-center gap-1 mb-3 sm:gap-2">
               <div className="flex flex-col ">
                 <label className="col-sm-2 col-form-label text-sm">
                   เริ่มต้น
@@ -716,18 +718,18 @@ function Dashboard() {
                 </div>
               </div>
               <div className="">
-                <label className="col-sm-2 col-form-label"></label>
-                <div className="col-sm-5">
-                  <button className="btn btn-primary mt-3"> ค้นหา </button>
-                </div>
+                <button className="btn btn-sm btn-primary  sm:btn-md">
+                  {" "}
+                  ค้นหา{" "}
+                </button>
               </div>
             </div>
           </form>
-          <figure className="overflow-y-auto no-scrollbar max-h-96">
+          <figure className="overflow-y-auto no-scrollbar max-h-56 lg:max-h-96">
             {buyProductData?.length > 0 ? (
               <ul>
                 <hr />
-                {buyProductData.map((item, index) => (
+                {buyProductData?.map((item, index) => (
                   <li key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
                       <div className="flex flex-col">
@@ -762,9 +764,9 @@ function Dashboard() {
           </figure>
         </div>
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
-          <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
+          <h2 className="text-xl font-bold my-2">ค่าคอมมิสชั่น</h2>
           <form onSubmit={handleSubmitCommition}>
-            <div className="flex justify-between gap-2 mb-3 ">
+            <div className="flex justify-between gap-1 mb-3 sm:gap-2">
               <div className="flex flex-col ">
                 <label className="col-sm-2 col-form-label text-sm">
                   เริ่มต้น
@@ -805,7 +807,10 @@ function Dashboard() {
               <div className="mb-4 ">
                 <label className="col-sm-2 col-form-label"></label>
                 <div className="col-sm-5">
-                  <button className="btn btn-primary mt-3"> ค้นหา </button>
+                  <button className="btn btn-sm btn-primary mt-3 sm:btn-md">
+                    {" "}
+                    ค้นหา{" "}
+                  </button>
                 </div>
               </div>
             </div>
@@ -813,7 +818,7 @@ function Dashboard() {
           <figure className="overflow-y-auto no-scrollbar max-h-96">
             {Commition?.length > 0 ? (
               <ul>
-                {Commition.map((item, index) => (
+                {Commition?.map((item, index) => (
                   <li key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
                       <div className="flex flex-col">
@@ -839,7 +844,7 @@ function Dashboard() {
           </figure>
         </div>
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-8">
-          <h2 className="card-title my-2">รายงานสินค้าขายดี</h2>
+          <h2 className="text-xl font-bold my-2">รายงานสินค้าขายดี</h2>
 
           <figure className="h-full mt-3 ">
             <form onSubmit={handleSubmitTopSale}>
@@ -929,7 +934,7 @@ function Dashboard() {
                 </thead>
                 <tbody>
                   {TopSale?.length > 0 ? (
-                    TopSale.map((list, index) => (
+                    TopSale?.map((list, index) => (
                       <tr key={index}>
                         <td>{index + 1}</td>
                         <td>
@@ -968,7 +973,7 @@ function Dashboard() {
         </div>
 
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-8">
-          <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
+          <h2 className="text-xl font-bold my-2">ยอดขายตามสินค้า</h2>
           <form onSubmit={handleSubmitSaleProduct}>
             <div className="flex flex-wrap justify-start gap-2">
               <div>
