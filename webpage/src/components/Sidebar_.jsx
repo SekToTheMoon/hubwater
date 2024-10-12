@@ -160,6 +160,7 @@ function Sidebar_() {
             HubWater
           </span>
           <button
+            aria-label="Sidebar botton"
             onClick={() => setOpen(!open)}
             className={`p-1.5 rounded-lg hover:bg-primary/20 ${
               isMobile ? "hidden" : "block"

@@ -25,6 +25,7 @@ function All() {
             type="checkbox"
             value="dark"
             className="toggle theme-controller bg-base-content col-span-2 col-start-1 row-start-1"
+            aria-label="switch theme"
           />
           <svg
             className="stroke-base-100 fill-base-100 col-start-1 row-start-1"
