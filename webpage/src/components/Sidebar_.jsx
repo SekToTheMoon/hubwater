@@ -142,23 +142,26 @@ function Sidebar_() {
   return (
     <div className="flex">
       <aside
-        className={`h-screen flex flex-col bg-base-100 shadow-2xl  no-scrollbar max-w-60 md:overflow-y-scroll  ${
-          isMobile ? (sidebarOpen ? "fixed block" : "hidden") : "block"
-        } `}
+        className={`h-screen flex flex-col bg-base-100 shadow-2xl no-scrollbar max-w-60 md:overflow-y-scroll transition-all duration-300 ease-out transform ${
+          isMobile
+            ? sidebarOpen
+              ? "fixed opacity-100 translate-x-0"
+              : "fixed opacity-0 -translate-x-0"
+            : "opacity-100 translate-x-0 "
+        }`}
       >
         <div className="p-4 pb-2 justify-between items-center h-12 hidden md:flex">
-          <img
-            src="http://hubwater-production-7ee5.up.railway.app/img/logo/logo.png"
-            className={`overflow-hidden transition-all ${
-              open ? "w-12" : "hidden"
-            }`}
-            alt="Logo"
-          />
-          <span
-            className={`overflow-hidden transition-all ${open ? "" : "hidden"}`}
-          >
-            HubWater
-          </span>
+          <div className="w-full flex justify-center">
+            {" "}
+            <img
+              src={`${import.meta.env.VITE_API_URL}/img/logo/logo.png`}
+              className={`overflow-hidden transition-all ${
+                open ? "w-28 object-cover" : "hidden"
+              }`}
+              alt="Logo"
+            />
+          </div>
+
           <button
             aria-label="Sidebar botton"
             onClick={() => setOpen(!open)}
@@ -204,16 +207,16 @@ function Sidebar_() {
         <UserSection open={open} signOut={signOut} />
       </aside>
       <button
-        className="fixed top-5 left-[1.4rem] z-50 md:hidden"
+        className="fixed top-3 left-[0.9rem] z-50 rounded-full p-2 hover:bg-base-200 md:hidden"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
-        {sidebarOpen ? <X /> : <Menu />}
+        {sidebarOpen ? <X className="animate-spin90 " /> : <Menu />}
       </button>
     </div>
   );
 }
 
-function Submenu({ open, openSub, setOpenSub, menu }) {
+function Submenu({ open, menu }) {
   return open ? (
     <details>
       <summary>
@@ -271,9 +274,9 @@ function UserSection({ open, signOut }) {
       <div className={`${open ? "avatar" : "hidden"}`}>
         <div className="w-10 rounded-full">
           <img
-            src={`http://hubwater-production-7ee5.up.railway.app/img/avatar/${localStorage.getItem(
-              "employee_img"
-            )}`}
+            src={`${
+              import.meta.env.VITE_API_URL
+            }/img/avatar/${localStorage.getItem("employee_img")}`}
             alt="User Avatar"
           />
         </div>

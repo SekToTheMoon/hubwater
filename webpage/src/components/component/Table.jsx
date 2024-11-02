@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 
 export default function Table({ data, headers, onDelete }) {
   return (
-    <div className="overflow-x-auto hidden md:block">
-      <table className="w-full table-auto">
-        <thead className="bg-base-300 text-left">
+    <div className="relative overflow-x-auto hidden shadow-md rounded-lg lg:block">
+      <table className="w-full table-auto ">
+        <thead className="bg-base-200 text-left uppercase">
           <tr>
             {headers.map((header, index) =>
               index > 2 ? (
@@ -29,7 +29,10 @@ export default function Table({ data, headers, onDelete }) {
             data.map((item, index) => {
               const rowData = Object.values(item);
               return (
-                <tr key={index} className="border-b">
+                <tr
+                  key={index}
+                  className="border-b border-base-content/30 hover:bg-base-200/50"
+                >
                   {rowData.map((td, tdIndex) =>
                     tdIndex > 2 ? (
                       <td

@@ -13,7 +13,7 @@ router.get("/out", function (req, res) {
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
   const sort_by = req.query.sort_by;
-  const sort_type = req.query.sort_type;
+  const des = req.query.des;
   const search = req.query.search;
   const idx_start = (page - 1) * per_page;
 
@@ -26,8 +26,10 @@ router.get("/out", function (req, res) {
     fetchValue = Array(3).fill(`${search}%`);
   }
 
-  if (sort_by && sort_type) {
-    fetch += "order by out_id DESC ORDER BY " + sort_by + " " + sort_type;
+  if (sort_by) {
+    fetch += ` ORDER BY ${sort_by} ${des === "true" ? "DESC" : "ASC"}`;
+  } else {
+    fetch += ` ORDER BY out_date DESC `;
   }
 
   fetch += " LIMIT ?, ?";

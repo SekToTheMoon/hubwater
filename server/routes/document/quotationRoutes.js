@@ -4,40 +4,42 @@ const { db } = require("../../database");
 const moment = require("moment");
 
 router.get("/quotation", function (req, res) {
-  let fetch = `SELECT q.quotation_id, q.quotation_date, q.quotation_vat, c.customer_fname,e.employee_fname, q.quotation_total, q.quotation_status ,q.quotation_num 
+  let fetch = `SELECT q.qt_id, q.qt_date, q.qt_vat, c.customer_fname,e.employee_fname, q.qt_total, q.qt_status ,q.qt_num 
       , b.bn_id , i.iv_id FROM quotation q JOIN employee e ON q.employee_id = e.employee_id JOIN customer c ON c.customer_id = q.customer_id 
-      Left JOIN quotation_has_bill b on q.quotation_id = b.quotation_id  
-      Left JOIN quotation_has_invoice i on q.quotation_id = i.quotation_id  
-      WHERE q.quotation_del = '0'`;
+      Left JOIN quotation_has_bill b on q.qt_id = b.qt_id  
+      Left JOIN quotation_has_invoice i on q.qt_id = i.qt_id  
+      WHERE q.qt_del = '0'`;
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
   const sort_by = req.query.sort_by;
-  const sort_type = req.query.sort_type;
+  const des = req.query.des;
   const search = req.query.search;
   const idx_start = (page - 1) * per_page;
 
   if (search) {
     fetch += ` AND (
-        q.quotation_id LIKE ?
+        q.qt_id LIKE ?
         OR c.customer_fname LIKE ?
-        OR q.quotation_date LIKE ?
+        OR q.qt_date LIKE ?
       )`;
     fetchValue = Array(3).fill(`${search}%`);
   }
 
-  if (sort_by && sort_type) {
-    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  if (sort_by) {
+    fetch += ` ORDER BY ${sort_by} ${des === "true" ? "DESC" : "ASC"}`;
+  } else {
+    fetch += ` ORDER BY qt_date DESC `;
   }
 
-  fetch += "order by quotation_id DESC LIMIT ?, ?";
+  fetch += " LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
-
+  console.log(fetch);
   db.query(fetch, fetchValue, (err, result, field) => {
     if (!err) {
       db.query(
-        "SELECT COUNT(quotation_id) AS total FROM quotation WHERE quotation_del='0'",
+        "SELECT COUNT(qt_id) AS total FROM quotation WHERE qt_del='0'",
         (err, totalrs) => {
           if (!err) {
             const total = totalrs[0].total;
@@ -60,35 +62,32 @@ router.get("/quotation", function (req, res) {
 });
 
 router.post("/quotation/insert", async (req, res) => {
-  const sql = `insert into quotation (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,quotation_total,quotation_del,quotation_detail,quotation_vat,quotation_tax,employee_id,customer_id,quotation_dateend,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  const sql = `insert into quotation (qt_id,qt_num,qt_date,qt_status,qt_credit,qt_total,qt_del,qt_detail,qt_vat,qt_tax,employee_id,customer_id,qt_dateend,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
   const next = await db
     .promise()
     .query(
-      `select LPAD(IFNULL(Max(SUBSTR(quotation_id, 12, 5)),0)+1,5,'0') as next from quotation where quotation_date = ?;`,
-      req.body.quotation_date
+      `select LPAD(IFNULL(Max(SUBSTR(qt_id, 12, 5)),0)+1,5,'0') as next from quotation where qt_date = ?;`,
+      req.body.qt_date
     );
   console.log(next[0][0].next + " from next");
   const idnext =
-    "QT" +
-    moment(req.body.quotation_date).format("YYYYMMDD") +
-    "-" +
-    next[0][0].next;
+    "QT" + moment(req.body.qt_date).format("YYYYMMDD") + "-" + next[0][0].next;
   db.query(
     sql,
     [
       idnext,
       1,
-      req.body.quotation_date,
+      req.body.qt_date,
       "รออนุมัติ",
-      req.body.quotation_credit,
-      req.body.quotation_total,
+      req.body.qt_credit,
+      req.body.qt_total,
       "0",
-      req.body.quotation_detail,
-      req.body.quotation_vat,
-      req.body.quotation_tax,
+      req.body.qt_detail,
+      req.body.qt_vat,
+      req.body.qt_tax,
       req.body.employee_id,
       req.body.customer_id,
-      req.body.quotation_dateend,
+      req.body.qt_dateend,
       req.body.disc_cash,
       req.body.disc_percent,
     ],
@@ -104,7 +103,7 @@ router.post("/quotation/insert", async (req, res) => {
         req.body.items.forEach((item, index) => {
           console.log(item);
           db.query(
-            `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
+            `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,qt_id,qt_num) values (?,?,?,?,?,?,?,?)`,
             [
               item.listq_number,
               item.product_price,
@@ -147,14 +146,14 @@ router.post("/quotation/insert", async (req, res) => {
 router.get("/getquotation/:id", function (req, res) {
   const quotationId = req.params.id;
   const version = req.query.version;
-  const sqlQuotation = `SELECT quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id,disc_cash,disc_percent FROM quotation WHERE quotation_id = ? and quotation_num = ?;`;
+  const sqlQuotation = `SELECT qt_date, qt_total, qt_credit, qt_detail, qt_vat, qt_tax, qt_status, employee_id, customer_id,disc_cash,disc_percent FROM quotation WHERE qt_id = ? and qt_num = ?;`;
   db.query(sqlQuotation, [quotationId, version], (err, quotationDetail) => {
     if (err) {
       console.log(err);
       return res.json(err);
     }
 
-    const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  quotation_num FROM listq WHERE quotation_id = ? and quotation_num = ?;`;
+    const sqlListq = `SELECT listq_number, listq_price, listq_amount, listq_total, product_id, lot_number,  qt_num FROM listq WHERE qt_id = ? and qt_num = ?;`;
     db.query(sqlListq, [quotationId, version], (err, listqDetail) => {
       if (err) {
         console.log(err);
@@ -211,15 +210,15 @@ router.put("/quotation/edit/:id", async (req, res) => {
   const oldVersion = parseInt(req.query.version);
   const version = oldVersion + 1;
   const updateQuotationSql = `insert into quotation 
-  (quotation_id,quotation_num,quotation_date,quotation_status,quotation_credit,
-  quotation_total,quotation_del,quotation_detail,quotation_vat,
-  quotation_tax,employee_id,customer_id,quotation_dateend,disc_cash,disc_percent)
+  (qt_id,qt_num,qt_date,qt_status,qt_credit,
+  qt_total,qt_del,qt_detail,qt_vat,
+  qt_tax,employee_id,customer_id,qt_dateend,disc_cash,disc_percent)
    values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
   const SQLDeleteOldVersion =
-    "update quotation set quotation_del = 1 where quotation_id = ? and quotation_num = ? ;";
+    "update quotation set qt_del = 1 where qt_id = ? and qt_num = ? ;";
 
-  console.log(req.body.quotation_status);
-  if (req.body.quotation_status == "ดำเนินการแล้ว")
+  console.log(req.body.qt_status);
+  if (req.body.qt_status == "ดำเนินการแล้ว")
     return res
       .status(501)
       .json({ msg: "ไม่สามารถแก้ไขใบเสนอราคาที่ดำเนินการแล้วได้" });
@@ -228,17 +227,17 @@ router.put("/quotation/edit/:id", async (req, res) => {
     .query(updateQuotationSql, [
       quotationId,
       version,
-      req.body.quotation_date,
+      req.body.qt_date,
       "รออนุมัติ",
-      req.body.quotation_credit,
-      req.body.quotation_total,
+      req.body.qt_credit,
+      req.body.qt_total,
       "0",
-      req.body.quotation_detail,
-      req.body.quotation_vat,
-      req.body.quotation_tax,
+      req.body.qt_detail,
+      req.body.qt_vat,
+      req.body.qt_tax,
       req.body.employee_id,
       req.body.customer_id,
-      req.body.quotation_dateend,
+      req.body.qt_dateend,
       req.body.disc_cash,
       req.body.disc_percent,
     ]);
@@ -252,7 +251,7 @@ router.put("/quotation/edit/:id", async (req, res) => {
       return db
         .promise()
         .query(
-          `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,quotation_id,quotation_num) values (?,?,?,?,?,?,?,?)`,
+          `insert into listq (listq_number,listq_price,listq_amount,listq_total,product_id,lot_number,qt_id,qt_num) values (?,?,?,?,?,?,?,?)`,
           [
             item.listq_number,
             item.product_price,
@@ -280,137 +279,13 @@ router.put("/quotation/edit/:id", async (req, res) => {
   }
 });
 
-// router.put("/quotation/edit/:id", async (req, res) => {
-//   const quotationId = req.params.id;
-
-//   const updateQuotationSql = `UPDATE quotation
-//                                 SET quotation_date = ?, quotation_credit = ?, quotation_total = ?, quotation_detail = ?,
-//                                     quotation_vat = ?, quotation_tax = ?, employee_id = ?, customer_id = ?, quotation_dateend = ?
-//                                 WHERE quotation_id = ?`;
-
-//   db.query(
-//     updateQuotationSql,
-//     [
-//       req.body.quotation_date,
-//       req.body.quotation_credit,
-//       req.body.quotation_total,
-//       req.body.quotation_detail,
-//       req.body.quotation_vat,
-//       req.body.quotation_tax,
-//       req.body.employee_id,
-//       req.body.customer_id,
-//       req.body.quotation_dateend,
-//       quotationId,
-//     ],
-//     async (err) => {
-//       if (err) {
-//         console.log(err);
-//         return res.status(500).json({ msg: "Update ข้อมูลใบเสนอราคาผิดพลาด" });
-//       }
-
-//       const sqlListq = `SELECT listq_number,
-//         product_id
-//                           FROM listq WHERE quotation_id = ?`;
-
-//       const [existingItems] = await db.promise().query(sqlListq, [quotationId]);
-
-//       const existingItemMap = new Map();
-//       existingItems.forEach((item) => {
-//         const key = `${item.product_id}-${item.listq_number}`;
-//         existingItemMap.set(key, item);
-//       });
-
-//       const newItemMap = new Map();
-//       req.body.items.forEach((item) => {
-//         const key = `${item.product_id}-${item.listq_number}`;
-//         newItemMap.set(key, item);
-//       });
-
-//       const toInsert = [];
-//       const toUpdate = [];
-//       const toDelete = [];
-
-//       newItemMap.forEach((item, key) => {
-//         if (existingItemMap.has(key)) {
-//           toUpdate.push(item);
-//           existingItemMap.delete(key);
-//         } else {
-//           toInsert.push(item);
-//         }
-//       });
-//       console.log(toUpdate);
-
-//       existingItemMap.forEach((item, key) => {
-//         toDelete.push(item);
-//       });
-
-//       const insertPromises = toInsert.map((item, index) => {
-//         return db.promise().query(
-//           `INSERT INTO listq (listq_number, listq_price, listq_amount, listq_total, product_id, lot_number, quotation_id, quotation_num)
-//              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-//           [
-//             item.listq_number,
-//             item.product_price,
-//             item.listq_amount,
-//             item.listq_total,
-//             item.product_id,
-//             item.lot_number,
-//             quotationId,
-//             1,
-//           ]
-//         );
-//       });
-
-//       const updatePromises = toUpdate.map((item) => {
-//         return db.promise().query(
-//           `UPDATE listq SET listq_price = ?, listq_amount = ?, listq_total = ?, lot_number = ?
-//              WHERE listq_number = ? AND quotation_id = ?`,
-//           [
-//             item.listq_price,
-//             item.listq_amount,
-//             item.listq_total,
-//             item.lot_number,
-//             item.listq_number,
-//             quotationId,
-//           ]
-//         );
-//       });
-
-//       const deletePromises = toDelete.map((item) => {
-//         return db
-//           .promise()
-//           .query(
-//             `DELETE FROM listq WHERE listq_number = ? AND quotation_id = ?`,
-//             [item.listq_number, quotationId]
-//           );
-//       });
-
-//       try {
-//         await Promise.all([
-//           ...insertPromises,
-//           ...updatePromises,
-//           ...deletePromises,
-//         ]);
-//         res
-//           .status(200)
-//           .json({ msg: "แก้ไขใบเสนอราคาและรายการสินค้าเรียบร้อยแล้ว" });
-//       } catch (err) {
-//         console.log(err);
-//         res
-//           .status(500)
-//           .json({ msg: "เกิดข้อผิดพลาดในการปรับปรุงรายการสินค้า" });
-//       }
-//     }
-//   );
-// });
-
 // เหลือการ auth ก่อนการ delete
 router.delete("/quotation/delete/:id", (req, res) => {
   const sql = `
       UPDATE quotation 
       SET 
-        quotation_del = ?
-      WHERE quotation_id = ?;
+        qt_del = ?
+      WHERE qt_id = ?;
     `;
   const id = req.params.id;
   const values = ["1", id];

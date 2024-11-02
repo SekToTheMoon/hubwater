@@ -5,7 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
-import io from "socket.io-client";
+import useSocket from "../services/socket";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
@@ -26,6 +26,8 @@ function Receipt() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState(null);
+  const [ascDes, setAscDes] = useState(true);
   const [receiptForDel, setReceiptfordel] = useState(null);
   // const [indexToUpdate, setIndexToUpdate] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
@@ -39,6 +41,9 @@ function Receipt() {
     let url = `/Receipt?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
+    }
+    if (sort) {
+      url += `&sort_by=${sort}&des=${ascDes}`;
     }
     try {
       const response = await axios.get(url);
@@ -182,31 +187,9 @@ function Receipt() {
       //   messageSuccess = false; ทำไมไม่ทำอย่างนี้
       navigate("/Receipt");
     }
-  }, [currentPage, perPage]);
+  }, [currentPage, perPage, sort, ascDes]);
 
-  useEffect(() => {
-    const socket = io("http://hubwater-production-7ee5.up.railway.app");
-    socket.on("statusUpdate", ({ status, id }) => {
-      if (id.startsWith("RC")) {
-        setReceipt((oldReceipts) => {
-          let newReceipts = [...oldReceipts];
-          const index = newReceipts.findIndex((q) => q.rc_id === id);
-          if (index !== -1) {
-            newReceipts[index].rc_status = status;
-          }
-          return newReceipts;
-        });
-      }
-    });
-
-    return () => {
-      console.log("Cleaning up socket");
-      socket.disconnect();
-    };
-  }, []);
-  useEffect(() => {
-    console.log(ReceiptMoney);
-  }, [ReceiptMoney]);
+  useSocket(setReceipt);
 
   return (
     <>
@@ -218,108 +201,199 @@ function Receipt() {
               <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
             </div>
           </div>
-
-          <table className="w-full text-center table-auto hidden lg:inline-table">
-            <thead className="bg-base-200">
-              <tr className="border-b">
-                <th className="pl-4 py-3">วันที่</th>
-                <th>เลขเอกสาร</th>
-                <th>ลูกค้า</th>
-                <th className="text-center">ยอดรวมสุทธิ</th>
-                <th>พนักงาน</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Receipt && Receipt.length !== 0 ? (
-                Receipt.map((receipt) => (
-                  <tr className="border-b" key={receipt.rc_id}>
-                    <td className="pl-4 py-3">
-                      {receipt.rc_date.substring(0, 10)}
-                    </td>
-                    <td className="group relative ">
-                      <span
-                        className="cursor-pointer hover:underline "
-                        onClick={() =>
-                          navigate(`view?receipt=${receipt.rc_id}`)
-                        }
-                      >
-                        {receipt.rc_id}
-                      </span>
-                      {receipt.iv_id && (
-                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
-                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
-                          <div className="flex flex-col space-y-2">
-                            <DocumentLink
-                              to={`/invoice/view/${receipt.iv_id}`}
-                              id={receipt.iv_id}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td>{receipt.customer_fname}</td>
-                    <td className="text-right pr-2">
-                      {receipt.rc_vat
-                        ? Intl.NumberFormat().format(
-                            (receipt.rc_total * 1.07).toFixed(2)
-                          )
-                        : Intl.NumberFormat().format(receipt.rc_total)}
-                    </td>
-                    <td>{receipt.employee_fname}</td>
-                    <td className="flex gap-2">
-                      <select
-                        value={receipt.rc_status}
-                        className="select select-bordered pl-2 w-[7.1rem]"
-                        onChange={(e) => {
-                          if (e.target.value === "เก็บเงิน") {
-                            setReceiptMoney({
-                              ...receipt,
-                              rc_payday: moment(new Date()).format(
-                                "YYYY-MM-DD"
-                              ),
-                            });
-                            fetchBank();
-                          } else {
-                            handleSelectChange(e, receipt);
-                          }
+          <div className="relative hidden shadow-md lg:block">
+            <table className="w-full text-center table-auto hidden lg:inline-table">
+              <thead className="bg-base-200">
+                <tr className="border-b">
+                  <th className="pl-4 py-3">
+                    <div class="flex items-center justify-center">
+                      วันที่
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rc_date");
+                          setAscDes(!ascDes);
                         }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        {statusReceipt[receipt.rc_status][roll].map(
-                          (element, idx) => (
-                            <option key={idx} value={element}>
-                              {element}
-                            </option>
-                          )
-                        )}
-                      </select>
-                      <div className="dropdown dropdown-hover ">
-                        <div tabIndex={0} role="button" className="p-2">
-                          ...
-                        </div>
-                        <ul
-                          tabIndex={0}
-                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      เลขเอกสาร
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rc_id");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      ลูกค้า
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("customer_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      ยอดรวมสุทธิ
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rc_total");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      พนักงาน
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("employee_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Receipt && Receipt.length !== 0 ? (
+                  Receipt.map((receipt) => (
+                    <tr
+                      className="border-b border-base-content/30 hover:bg-base-200/50"
+                      key={receipt.rc_id}
+                    >
+                      <td className="pl-4 py-3">
+                        {receipt.rc_date.substring(0, 10)}
+                      </td>
+                      <td className="group relative ">
+                        <span
+                          className="cursor-pointer hover:underline "
+                          onClick={() =>
+                            navigate(`view?receipt=${receipt.rc_id}`)
+                          }
                         >
-                          <li>
-                            <button onClick={() => setReceiptfordel(receipt)}>
-                              ลบ
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                          {receipt.rc_id}
+                        </span>
+                        {receipt.iv_id && (
+                          <div className="absolute bg-base-100 shadow-md border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                            <p className="font-bold mb-2 text-secondary">
+                              เอกสารที่เกี่ยวข้อง
+                            </p>
+                            <div className="flex flex-col space-y-2">
+                              <DocumentLink
+                                to={`/invoice/view/${receipt.iv_id}`}
+                                id={receipt.iv_id}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td>{receipt.customer_fname}</td>
+                      <td className="text-right pr-2">
+                        {receipt.rc_vat
+                          ? Intl.NumberFormat().format(
+                              (receipt.rc_total * 1.07).toFixed(2)
+                            )
+                          : Intl.NumberFormat().format(receipt.rc_total)}
+                      </td>
+                      <td>{receipt.employee_fname}</td>
+                      <td className="flex gap-2">
+                        <select
+                          value={receipt.rc_status}
+                          className="select select-bordered pl-2 w-[7.1rem]"
+                          onChange={(e) => {
+                            if (e.target.value === "เก็บเงิน") {
+                              setReceiptMoney({
+                                ...receipt,
+                                rc_payday: moment(new Date()).format(
+                                  "YYYY-MM-DD"
+                                ),
+                              });
+                              fetchBank();
+                            } else {
+                              handleSelectChange(e, receipt);
+                            }
+                          }}
+                        >
+                          {statusReceipt[receipt.rc_status][roll].map(
+                            (element, idx) => (
+                              <option key={idx} value={element}>
+                                {element}
+                              </option>
+                            )
+                          )}
+                        </select>
+                        <div className="dropdown dropdown-hover ">
+                          <div tabIndex={0} role="button" className="p-2">
+                            ...
+                          </div>
+                          <ul
+                            tabIndex={0}
+                            className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                          >
+                            <li>
+                              <button onClick={() => setReceiptfordel(receipt)}>
+                                ลบ
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="pt-5 text-center">
+                      ไม่มีข้อมูล
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="pt-5 text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
           <MobileDocTable
             data={Receipt}
             onDelete={setReceiptfordel}

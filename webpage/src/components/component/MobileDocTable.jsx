@@ -35,7 +35,7 @@ function MobileDocTable({
                   </Link>
 
                   <div className="text-sm p-1">
-                    <div>ลูกค้า : {rowData[3]}</div>
+                    <div>ลูกค้า : {rowData[3] ? rowData[3] : "หน้าร้าน"}</div>
 
                     <div className="break-words">
                       {Intl.NumberFormat().format(rowData[5])}
@@ -75,7 +75,7 @@ function MobileDocTable({
                     <Link
                       to={
                         rowData[0].startsWith("QT")
-                          ? `edit/${rowData[0]}?version=${item.quotation_num}`
+                          ? `edit/${rowData[0]}?version=${item.qt_num}`
                           : `edit/${rowData[0]}`
                       }
                       className="btn btn-warning text-warning-content btn-sm opacity-80"

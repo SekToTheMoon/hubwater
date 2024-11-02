@@ -21,8 +21,8 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
       idField = "quotation";
       listname = "listq";
       numberQT = queryData.numberQT;
-      sqlSelect = `SELECT quotation_num, quotation_date, quotation_total, quotation_credit, quotation_detail, quotation_vat, quotation_tax, quotation_status, employee_id, customer_id FROM quotation WHERE quotation_id = ?;`;
-      sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, lot_number,  quotation_num ,product_name FROM listq join product on listq.product_id = product.product_id WHERE quotation_id = ?;`;
+      sqlSelect = `SELECT qt_num, qt_date, qt_total, qt_credit, qt_detail, qt_vat, qt_tax, qt_status, employee_id, customer_id FROM quotation WHERE qt_id = ?;`;
+      sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, lot_number,  qt_num ,product_name FROM listq join product on listq.product_id = product.product_id WHERE qt_id = ?;`;
     } else if (id.startsWith("BN")) {
       header = `ใบวางบิล`;
       tableName = "bill";

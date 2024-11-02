@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 function MobileTable({ data, onDelete, htmlTemplate }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
       {data.map((item, index) => {
         const rowData = Object.values(item);
         return (

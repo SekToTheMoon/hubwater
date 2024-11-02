@@ -116,7 +116,7 @@ function Customer() {
   return (
     <>
       <div className="overflow-x-auto">
-        <div className="rounded-box bg-base-100 px-12 py-8 ">
+        <div className="rounded-box bg-base-100 p-5">
           <h1 className="text-2xl mb-5">ลูกค้า</h1>
           <div className="flex justify-between items-center mb-5">
             <Link to="insert" className="btn btn-primary">

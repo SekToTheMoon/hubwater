@@ -4,6 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
+import option from "../../constants/pageList";
 
 function E_posit() {
   const axios = useAxiosPrivate();
@@ -176,21 +177,8 @@ function E_posit() {
               </label>
             </div>
             <hr />
-            <div className="grid grid-cols-5 gap-x-32">
-              {[
-                "Dashboard",
-                "พนักงานขาย",
-                "ลูกค้า",
-                "เอกสารขาย",
-                "ขายหน้าร้าน",
-                "ค่าใช้จ่าย",
-                "สินค้า",
-                "ค่าคงที่สินค้า",
-                "บริษัทคู่ค้า",
-                "แผนก",
-                "ตำแหน่ง",
-                "บัญชีธนาคาร",
-              ].map((permission, index) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-3">
+              {option.map((permission, index) => (
                 <div className="form-control" key={index}>
                   <label className="label cursor-pointer">
                     <span className="label-text">{permission}</span>

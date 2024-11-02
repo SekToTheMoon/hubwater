@@ -130,16 +130,16 @@ function I_invoice() {
       setEmployee(response.data.employee_name);
       setValues({
         ...values,
-        invoice_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
-        invoice_detail: quotationDetail.quotation_detail,
-        invoice_vat: quotationDetail.quotation_vat,
-        invoice_tax: quotationDetail.quotation_tax,
+        invoice_total: quotationDetail.qt_total, //รวมเป็นเงินเท่าไหร่
+        invoice_detail: quotationDetail.qt_detail,
+        invoice_vat: quotationDetail.qt_vat,
+        invoice_tax: quotationDetail.qt_tax,
         disc_cash: quotationDetail.disc_cash,
         disc_percent: quotationDetail.disc_percent,
-        invoice_credit: quotationDetail.quotation_credit,
-        invoice_status: quotationDetail.quotation_status,
+        invoice_credit: quotationDetail.qt_credit,
+        invoice_status: quotationDetail.qt_status,
         invoice_dateend: moment(new Date())
-          .add(quotationDetail.quotation_credit, "days")
+          .add(quotationDetail.qt_credit, "days")
           .format("YYYY-MM-DD"),
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
@@ -354,7 +354,7 @@ function I_invoice() {
       if (quotation) {
         updatedValues = {
           ...updatedValues,
-          quotation_id: quotation,
+          qt_id: quotation,
           version: version,
         };
       }

@@ -847,7 +847,7 @@ GROUP BY
 });
 
 router.get("/getTopSale", async (req, res) => {
-  const { startDate, endDate, category } = req.query;
+  const { startDate, endDate, category, productName } = req.query;
   console.log(startDate, endDate, category);
   let sql = `
   SELECT 
@@ -872,21 +872,21 @@ router.get("/getTopSale", async (req, res) => {
       )
 `;
 
+  // สร้างอาร์เรย์สำหรับเก็บค่า parameters
+  const params = [startDate, endDate];
+
   // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่มเงื่อนไข T.type_name
   if (category !== "ทั้งหมด") {
     sql += " AND T.type_id = ?";
+    params.push(category);
+  }
+  if (productName !== "") {
+    sql += " AND P.product_name LIKE ?";
+    params.push("%" + productName + "%");
   }
 
   // เพิ่มส่วน GROUP BY
   sql += " GROUP BY P.product_id";
-
-  // สร้างอาร์เรย์สำหรับเก็บค่า parameters
-  const params = [startDate, endDate];
-
-  // ถ้า category ไม่เท่ากับ 'ทั้งหมด' ให้เพิ่ม category ในอาร์เรย์ params
-  if (category !== "ทั้งหมด") {
-    params.push(category);
-  }
 
   try {
     const [topSaleDate] = await db.promise().query(sql, params);

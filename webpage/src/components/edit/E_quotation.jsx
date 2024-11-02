@@ -24,15 +24,15 @@ function E_quotation() {
 
   const [originalValues, setOriginalValues] = useState(null);
   const [values, setValues] = useState({
-    quotation_date: moment(new Date()).format("YYYY-MM-DD"),
-    quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
-    quotation_credit: 0,
+    qt_date: moment(new Date()).format("YYYY-MM-DD"),
+    qt_dateend: moment(new Date()).format("YYYY-MM-DD"),
+    qt_credit: 0,
     disc_cash: 0,
     disc_percent: "",
-    quotation_total: 0, //รวมเป็นเงินเท่าไหร่
-    quotation_detail: "",
-    quotation_vat: true,
-    quotation_tax: 0,
+    qt_total: 0, //รวมเป็นเงินเท่าไหร่
+    qt_detail: "",
+    qt_vat: true,
+    qt_tax: 0,
     employee_id: "",
     customer_id: "",
     items: [],
@@ -47,12 +47,12 @@ function E_quotation() {
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    quotation_credit: Yup.number()
+    qt_credit: Yup.number()
       .required("โปรดจำนวนวันเครดิต")
       .min(0, "จำนวนวันเคดิตไม่สามารถติดลบได้")
       .typeError("โปรดใส่เครดิตเป็นตัวเลข"),
     customer_id: Yup.string().required("โปรดเลือกลูกค้า"),
-    quotation_date: Yup.date()
+    qt_date: Yup.date()
       .max(new Date(), "ไม่สามาถาใส่วันที่เกินวันปัจจุบัน")
       .required("โปรดเลือกวันที่ออกใบเสนอราคา"),
     disc_cash: Yup.number()
@@ -62,8 +62,8 @@ function E_quotation() {
         "disc_cash",
         "ส่วนลดไม่สามารถมากกว่าราคาสินค้าทั้งหมด",
         function (value) {
-          const { quotation_total } = this.parent;
-          return value < quotation_total + value;
+          const { qt_total } = this.parent;
+          return value < qt_total + value;
         }
       ),
     items: Yup.array()
@@ -94,14 +94,14 @@ function E_quotation() {
 
     // เปรียบเทียบค่าที่สำคัญ
     const keysToCompare = [
-      "quotation_date",
-      "quotation_credit",
-      "quotation_total",
-      "quotation_detail",
-      "quotation_vat",
-      "quotation_tax",
+      "qt_date",
+      "qt_credit",
+      "qt_total",
+      "qt_detail",
+      "qt_vat",
+      "qt_tax",
       "customer_id",
-      "quotation_dateend",
+      "qt_dateend",
       "disc_cash",
     ];
 
@@ -154,40 +154,32 @@ function E_quotation() {
       });
       setEmployee(response.data.employee_name);
       setValues({
-        quotation_date: moment(quotationDetail.quotation_date).format(
-          "YYYY-MM-DD"
-        ),
-        quotation_credit: quotationDetail.quotation_credit,
-        quotation_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
-        quotation_detail: quotationDetail.quotation_detail,
-        quotation_vat: quotationDetail.quotation_vat,
-        quotation_tax: quotationDetail.quotation_tax,
-        quotation_status: quotationDetail.quotation_status,
+        qt_date: moment(quotationDetail.qt_date).format("YYYY-MM-DD"),
+        qt_credit: quotationDetail.qt_credit,
+        qt_total: quotationDetail.qt_total, //รวมเป็นเงินเท่าไหร่
+        qt_detail: quotationDetail.qt_detail,
+        qt_vat: quotationDetail.qt_vat,
+        qt_tax: quotationDetail.qt_tax,
+        qt_status: quotationDetail.qt_status,
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
         items: quotationList || [],
-        quotation_dateend: moment(quotationDetail.quotation_dateend).format(
-          "YYYY-MM-DD"
-        ),
+        qt_dateend: moment(quotationDetail.qt_dateend).format("YYYY-MM-DD"),
         disc_cash: quotationDetail.disc_cash,
         disc_percent: quotationDetail.disc_percent,
       });
       setOriginalValues({
-        quotation_date: moment(quotationDetail.quotation_date).format(
-          "YYYY-MM-DD"
-        ),
-        quotation_credit: quotationDetail.quotation_credit,
-        quotation_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
-        quotation_detail: quotationDetail.quotation_detail,
-        quotation_vat: quotationDetail.quotation_vat,
-        quotation_tax: quotationDetail.quotation_tax,
-        quotation_status: quotationDetail.quotation_status,
+        qt_date: moment(quotationDetail.qt_date).format("YYYY-MM-DD"),
+        qt_credit: quotationDetail.qt_credit,
+        qt_total: quotationDetail.qt_total, //รวมเป็นเงินเท่าไหร่
+        qt_detail: quotationDetail.qt_detail,
+        qt_vat: quotationDetail.qt_vat,
+        qt_tax: quotationDetail.qt_tax,
+        qt_status: quotationDetail.qt_status,
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
         items: quotationList || [],
-        quotation_dateend: moment(quotationDetail.quotation_dateend).format(
-          "YYYY-MM-DD"
-        ),
+        qt_dateend: moment(quotationDetail.qt_dateend).format("YYYY-MM-DD"),
         disc_cash: quotationDetail.disc_cash,
         disc_percent: quotationDetail.disc_percent,
       });
@@ -230,7 +222,7 @@ function E_quotation() {
       return {
         ...prevValues,
         items: updatedItems,
-        quotation_total: newTotal.toFixed(2),
+        qt_total: newTotal.toFixed(2),
       };
     });
   };
@@ -240,23 +232,23 @@ function E_quotation() {
   //เกี่ยวกับวันที่เครดิต
   const handleCreditChange = (e) => {
     const creditDays = e.target.value;
-    const newEndDate = moment(values.quotation_date)
+    const newEndDate = moment(values.qt_date)
       .add(parseInt(creditDays), "days")
       .format("YYYY-MM-DD");
     setValues({
       ...values,
-      quotation_credit: creditDays,
-      quotation_dateend: newEndDate,
+      qt_credit: creditDays,
+      qt_dateend: newEndDate,
     });
   };
   const handleEndDateChange = (e) => {
     const endDate = moment(e.target.value);
-    const startDate = moment(values.quotation_date);
+    const startDate = moment(values.qt_date);
     const creditDays = endDate.diff(startDate, "days");
     setValues({
       ...values,
-      quotation_dateend: e.target.value,
-      quotation_credit: creditDays.toString(),
+      qt_dateend: e.target.value,
+      qt_credit: creditDays.toString(),
     });
   };
 
@@ -354,7 +346,7 @@ function E_quotation() {
 
     setValues((prevValues) => ({
       ...prevValues,
-      quotation_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
+      qt_total: (newTotalBeforeDisc - newDisc_cash).toFixed(2),
       disc_cash: newDisc_cash.toFixed(2),
     }));
   }, [values.items, values.disc_percent]);
@@ -461,9 +453,9 @@ function E_quotation() {
                   <input
                     type="text"
                     value={
-                      values.quotation_vat
-                        ? (values.quotation_total * 1.07).toFixed(2)
-                        : values.quotation_total
+                      values.qt_vat
+                        ? (values.qt_total * 1.07).toFixed(2)
+                        : values.qt_total
                     }
                     className="input "
                     readOnly
@@ -475,22 +467,22 @@ function E_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_date}
+                    value={values.qt_date}
                     onChange={(e) => {
                       setValues({
                         ...values,
-                        quotation_date: e.target.value,
-                        quotation_dateend: moment(e.target.value)
-                          .add(values.quotation_credit, "days")
+                        qt_date: e.target.value,
+                        qt_dateend: moment(e.target.value)
+                          .add(values.qt_credit, "days")
                           .format("YYYY-MM-DD"),
                       });
                     }}
                     className="input input-bordered w-1/2 "
                   />
                 </div>
-                {errors.quotation_date && (
+                {errors.qt_date && (
                   <span className="text-error flex justify-end">
-                    {errors.quotation_date}
+                    {errors.qt_date}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -499,14 +491,14 @@ function E_quotation() {
                   </label>
                   <input
                     type="text"
-                    value={values.quotation_credit}
+                    value={values.qt_credit}
                     className="input input-bordered w-1/2"
                     onChange={handleCreditChange}
                   />
                 </div>
-                {errors.quotation_credit && (
+                {errors.qt_credit && (
                   <span className="text-error flex justify-end">
-                    {errors.quotation_credit}
+                    {errors.qt_credit}
                   </span>
                 )}
                 <div className="flex justify-between">
@@ -515,7 +507,7 @@ function E_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_dateend}
+                    value={values.qt_dateend}
                     onChange={handleEndDateChange}
                     className="input input-bordered w-1/2 "
                   />
@@ -541,9 +533,9 @@ function E_quotation() {
               <input
                 type="text"
                 className="input input-bordered flex-1"
-                value={values.quotation_detail}
+                value={values.qt_detail}
                 onChange={(e) => {
-                  setValues({ ...values, quotation_detail: e.target.value });
+                  setValues({ ...values, qt_detail: e.target.value });
                 }}
               />
             </div>
@@ -601,7 +593,7 @@ function E_quotation() {
                             setValues({
                               ...values,
                               items: updatedItems,
-                              quotation_total: newTotal.toFixed(2),
+                              qt_total: newTotal.toFixed(2),
                             });
                           }
                         }}
@@ -674,9 +666,7 @@ function E_quotation() {
                         ...values,
                         disc_percent: disc,
                         disc_cash: handleDisc,
-                        quotation_total: (totalBeforeDisc - handleDisc).toFixed(
-                          2
-                        ),
+                        qt_total: (totalBeforeDisc - handleDisc).toFixed(2),
                       });
                     }}
                   />
@@ -700,9 +690,7 @@ function E_quotation() {
 
                         setValues({
                           ...values,
-                          quotation_total: (
-                            totalBeforeDisc - handleDisc
-                          ).toFixed(2),
+                          qt_total: (totalBeforeDisc - handleDisc).toFixed(2),
                           disc_cash: disc, // เก็บค่า input เป็น string
                           disc_percent: "",
                         });
@@ -721,7 +709,7 @@ function E_quotation() {
               </label>
               <label className="label">
                 <span>ราคาหลังหักส่วนลด</span>
-                <div>{values.quotation_total}</div>
+                <div>{values.qt_total}</div>
               </label>
               {errors.disc_cash && (
                 <span className="text-error flex justify-end">
@@ -733,22 +721,20 @@ function E_quotation() {
                 <label className="label cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={values.quotation_vat}
+                    checked={values.qt_vat}
                     className="checkbox mr-2"
-                    value={values.quotation_vat}
+                    value={values.qt_vat}
                     onChange={() =>
                       setValues({
                         ...values,
-                        quotation_vat: !values.quotation_vat,
+                        qt_vat: !values.qt_vat,
                       })
                     }
                   />
                   <span>ภาษีมูลค่าเพิ่ม 7%</span>
                 </label>
                 <div>
-                  {values.quotation_vat
-                    ? (values.quotation_total * 0.07).toFixed(2)
-                    : ""}
+                  {values.qt_vat ? (values.qt_total * 0.07).toFixed(2) : ""}
                 </div>
               </label>
 
@@ -756,9 +742,9 @@ function E_quotation() {
                 <label className="label">
                   <span>จำนวนเงินรวมทั้งสิ้น</span>
                   <div>
-                    {values.quotation_vat
-                      ? (values.quotation_total * 1.07).toFixed(2)
-                      : values.quotation_total}
+                    {values.qt_vat
+                      ? (values.qt_total * 1.07).toFixed(2)
+                      : values.qt_total}
                   </div>
                 </label>
               </div>
@@ -767,10 +753,10 @@ function E_quotation() {
                 <label className="label cursor-pointer">
                   <span>หักภาษี ณ ที่จ่าย</span>
                   <select
-                    value={values.quotation_tax}
+                    value={values.qt_tax}
                     onChange={(e) => {
                       const percentTax = parseInt(e.target.value);
-                      setValues({ ...values, quotation_tax: percentTax });
+                      setValues({ ...values, qt_tax: percentTax });
                     }}
                   >
                     <option value="0">0%</option>
@@ -779,22 +765,18 @@ function E_quotation() {
                   </select>
                 </label>
                 <div>
-                  {values.quotation_tax
-                    ? (
-                        (values.quotation_tax / 100) *
-                        values.quotation_total
-                      ).toFixed(2)
+                  {values.qt_tax
+                    ? ((values.qt_tax / 100) * values.qt_total).toFixed(2)
                     : ""}
                 </div>
               </label>
-              {values.quotation_tax ? (
+              {values.qt_tax ? (
                 <label className="label">
                   <span>ยอดชำระ</span>
                   <div>
-                    {(
-                      values.quotation_total *
-                      (1.07 - values.quotation_tax / 100)
-                    ).toFixed(2)}
+                    {(values.qt_total * (1.07 - values.qt_tax / 100)).toFixed(
+                      2
+                    )}
                   </div>
                 </label>
               ) : (

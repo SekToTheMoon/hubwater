@@ -109,71 +109,74 @@ function product() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <table className="w-full table-auto hidden lg:inline-table">
-            <thead className="bg-base-200 text-left">
-              <tr className=" border-b">
-                <th className="pl-4 py-3">รหัสสินค้า</th>
-                <th>ชื่อสินค้า</th>
-                <th>ราคา</th>
-                <th className="text-center">คงเหลือ</th>
-                <th className="text-center hidden lg:table-cell">
-                  จุดสั่งซื้อ
-                </th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {product && product.length !== 0 ? (
-                product.map((product) => (
-                  <tr
-                    className={
-                      product.product_reorder >= product.product_amount
-                        ? "text-error border-b"
-                        : " border-b"
-                    }
-                    key={product.product_id}
-                  >
-                    <td className="pl-4 py-3 ">{product.product_id}</td>
-                    <td className="align-middle">{product.product_name}</td>
-                    <td className="align-middle">{product.product_price}</td>
-                    <td className="text-center align-middle">
-                      {product.product_amount}
-                    </td>
-                    <td className="text-center align-middle hidden lg:table-cell">
-                      {product.product_reorder}
-                    </td>
+          <div className="relative overflow-x-auto hidden shadow-md rounded-lg lg:block">
+            <table className="w-full table-auto ">
+              <thead className="bg-base-200 text-left">
+                <tr className=" border-b">
+                  <th className="pl-4 py-3">รหัสสินค้า</th>
+                  <th>ชื่อสินค้า</th>
+                  <th className="text-center">ราคา</th>
+                  <th className="text-center">คงเหลือ</th>
+                  <th className="text-center hidden lg:table-cell">
+                    จุดสั่งซื้อ
+                  </th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {product && product.length !== 0 ? (
+                  product.map((product) => (
+                    <tr
+                      className={`border-b border-base-content/30 hover:bg-base-200/50 ${
+                        product.product_reorder >= product.product_amount &&
+                        "text-error "
+                      }`}
+                      key={product.product_id}
+                    >
+                      <td className="pl-4 py-3 ">{product.product_id}</td>
+                      <td className="align-middle">{product.product_name}</td>
+                      <td className="align-middle text-right">
+                        {product.product_price}
+                      </td>
+                      <td className="text-center align-middle">
+                        {product.product_amount}
+                      </td>
+                      <td className="text-center align-middle hidden lg:table-cell">
+                        {product.product_reorder}
+                      </td>
 
-                    <td className="py-3 flex gap-2 items-center">
-                      <Link
-                        to={`stock/${product.product_id}`}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        สต๊อก
-                      </Link>
-                      <Link
-                        to={`edit/${product.product_id}`}
-                        className="btn btn-primary btn-sm"
-                      >
-                        แก้ไข
-                      </Link>
-                      <button
-                        className="btn btn-error btn-sm"
-                        onClick={() => setProductForDel(product.product_id)}
-                      >
-                        ลบ
-                      </button>
+                      <td className="py-3 flex gap-2 items-center">
+                        <Link
+                          to={`stock/${product.product_id}`}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          สต๊อก
+                        </Link>
+                        <Link
+                          to={`edit/${product.product_id}`}
+                          className="btn btn-primary btn-sm"
+                        >
+                          แก้ไข
+                        </Link>
+                        <button
+                          className="btn btn-error btn-sm"
+                          onClick={() => setProductForDel(product.product_id)}
+                        >
+                          ลบ
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center">
+                      ไม่มีข้อมูล
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
             {product.map((item, index) => (
@@ -184,7 +187,7 @@ function product() {
                       {item.product_id}
                     </span>
 
-                    <div className="text-sm mt-3">
+                    <div className="text-sm mt-3 pr-1">
                       <div>สินค้า : {item.product_name}</div>
                       <div className="flex gap-x-3 flex-wrap">
                         <div>ราคา : {item.product_price}</div>

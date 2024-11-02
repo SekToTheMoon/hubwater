@@ -24,11 +24,10 @@ const PersistLogin = () => {
       }
     };
 
-    // persist added here AFTER tutorial video
     // Avoids unwanted call to verifyRefreshToken
     // && persist
     !auth?.accessToken ? verifyRefreshToken() : setIsLoading(false);
-    // console.log(auth, " from PersistLogin line 29 ,auth");
+
     return () => (isMounted = false);
   }, []);
 
@@ -37,7 +36,17 @@ const PersistLogin = () => {
     console.log(`aT: ${JSON.stringify(auth)}`);
   }, [isLoading]);
   // !persist ? <Outlet /> :
-  return <>{isLoading ? <p>Loading...</p> : <Outlet />}</>;
+  return (
+    <>
+      {isLoading ? (
+        <div className="h-screen flex justify-center items-center">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      ) : (
+        <Outlet />
+      )}
+    </>
+  );
 };
 
 export default PersistLogin;

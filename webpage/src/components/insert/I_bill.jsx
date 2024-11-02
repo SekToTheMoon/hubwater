@@ -127,16 +127,16 @@ function I_bill() {
       setEmployee(response.data.employee_name);
       setValues({
         ...values,
-        bill_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
-        bill_detail: quotationDetail.quotation_detail,
-        bill_vat: quotationDetail.quotation_vat,
-        bill_tax: quotationDetail.quotation_tax,
+        bill_total: quotationDetail.qt_total, //รวมเป็นเงินเท่าไหร่
+        bill_detail: quotationDetail.qt_detail,
+        bill_vat: quotationDetail.qt_vat,
+        bill_tax: quotationDetail.qt_tax,
         disc_cash: quotationDetail.disc_cash,
         disc_percent: quotationDetail.disc_percent,
-        bill_credit: quotationDetail.quotation_credit,
-        bill_status: quotationDetail.quotation_status,
+        bill_credit: quotationDetail.qt_credit,
+        bill_status: quotationDetail.qt_status,
         bill_dateend: moment(new Date())
-          .add(quotationDetail.quotation_credit, "days")
+          .add(quotationDetail.qt_credit, "days")
           .format("YYYY-MM-DD"),
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
@@ -270,7 +270,7 @@ function I_bill() {
       if (quotation) {
         updatedRequestValues = {
           ...updatedRequestValues,
-          quotation_id: quotation,
+          qt_id: quotation,
           version: version,
         };
       }

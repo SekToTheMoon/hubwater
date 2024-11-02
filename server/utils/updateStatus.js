@@ -10,7 +10,7 @@ const updateStatus = (io, id, status, res) => {
 
   if (id.startsWith("QT")) {
     tableName = "quotation";
-    idField = "quotation";
+    idField = "qt";
   } else if (id.startsWith("BN")) {
     tableName = "bill";
     idField = "bn";

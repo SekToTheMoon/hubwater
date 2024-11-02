@@ -3,6 +3,7 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
+import option from "../../constants/pageList";
 
 function I_posit() {
   const axios = useAxiosPrivate();
@@ -165,21 +166,8 @@ function I_posit() {
             </div>
             <hr />
 
-            <div className="grid grid-cols-5 gap-x-32">
-              {[
-                "Dashboard",
-                "พนักงานขาย",
-                "ลูกค้า",
-                "เอกสารขาย",
-                "ขายหน้าร้าน",
-                "ค่าใช้จ่าย",
-                "สินค้า",
-                "ค่าคงที่สินค้า",
-                "บริษัทคู่ค้า",
-                "แผนก",
-                "ตำแหน่ง",
-                "บัญชีธนาคาร",
-              ].map((permission, index) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-3">
+              {option.map((permission, index) => (
                 <div className="form-control" key={index}>
                   <label className="label cursor-pointer">
                     <span className="label-text">{permission}</span>

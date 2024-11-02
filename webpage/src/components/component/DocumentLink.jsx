@@ -5,7 +5,10 @@ const DocumentLink = ({ to, id }) => {
   if (!id) return null;
 
   return (
-    <Link to={to} className="flex items-center hover:underline">
+    <Link
+      to={to}
+      className="flex items-center hover:underline hover:text-accent"
+    >
       <svg
         className="w-4 h-4 mr-2"
         fill="currentColor"

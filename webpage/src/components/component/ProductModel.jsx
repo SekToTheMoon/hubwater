@@ -92,22 +92,17 @@ function ProductModel({ setValues, list }) {
                 {selectedProduct.map((product) => (
                   <tr key={product.product_id}>
                     <td>
-                      <div className="w-10 md:w-20">
-                        <img
-                          src={`http://hubwater-production-7ee5.up.railway.app/img/product/${product.product_img}`}
-                          alt={product.product_name}
-                          className="w-full"
-                        />
-                      </div>
+                      <img
+                        src={`http://hubwater-production-7ee5.up.railway.app/img/product/${product.product_img}`}
+                        alt={product.product_name}
+                        className="w-10 md:w-20 aspect-square object-cover  rounded"
+                      />
                     </td>
                     <td>{product.product_name}</td>
                     <td>{product.product_price}</td>
                     <td>{product.product_amount}</td>
                     <td>{product.unit_name}</td>
                     <td>
-                      {/* <button onClick={() => handleSelectProduct(product)}>
-                      เลือก
-                    </button> */}
                       <button
                         className="btn"
                         onClick={() => {

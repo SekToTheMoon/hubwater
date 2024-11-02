@@ -6,7 +6,7 @@ const { getTransactionID } = require("../../utils/generateId");
 
 module.exports = (io) => {
   router.get("/bill", function (req, res) {
-    let fetch = `SELECT b.bn_id, b.bn_date, b.bn_vat, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type , q.quotation_id , i.iv_id
+    let fetch = `SELECT b.bn_id, b.bn_date, b.bn_vat, c.customer_fname,e.employee_fname, b.bn_total, b.bn_status,b.bn_type , q.qt_id , i.iv_id
       FROM bill b JOIN employee e ON b.employee_id = e.employee_id 
       JOIN customer c ON c.customer_id = b.customer_id 
       Left JOIN quotation_has_bill q on b.bn_id = q.bn_id  
@@ -16,7 +16,7 @@ module.exports = (io) => {
     const page = parseInt(req.query.page);
     const per_page = parseInt(req.query.per_page);
     const sort_by = req.query.sort_by;
-    const sort_type = req.query.sort_type;
+    const des = req.query.des;
     const search = req.query.search;
     const idx_start = (page - 1) * per_page;
 
@@ -29,11 +29,13 @@ module.exports = (io) => {
       fetchValue = Array(3).fill(`${search}%`);
     }
 
-    if (sort_by && sort_type) {
-      fetch += " ORDER BY " + sort_by + " " + sort_type;
+    if (sort_by) {
+      fetch += ` ORDER BY ${sort_by} ${des === "true" ? "DESC" : "ASC"}`;
+    } else {
+      fetch += ` ORDER BY bn_date DESC `;
     }
 
-    fetch += "ORDER BY b.bn_date DESC  LIMIT ?, ?";
+    fetch += " LIMIT ?, ?";
     fetchValue.push(idx_start);
     fetchValue.push(per_page);
 
@@ -64,7 +66,7 @@ module.exports = (io) => {
 
   router.post("/bill/insert", async (req, res) => {
     const sqlInsertBill = `INSERT INTO bill (bn_id, bn_date, bn_status, bn_credit, bn_total, bn_del, bn_detail, bn_vat, bn_tax, employee_id, customer_id, bn_type, bn_dateend,disc_cash,disc_percent) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-    const sqlInertQtBn = `INSERT INTO quotation_has_bill (bn_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
+    const sqlInertQtBn = `INSERT INTO quotation_has_bill (bn_id, qt_id, qt_num ) VALUES (?,?,?)`;
 
     try {
       const connection = await pool.promise().getConnection();
@@ -109,16 +111,14 @@ module.exports = (io) => {
 
           await Promise.all(itemPromises);
         }
-        //ต้องแก้ ใบที่ ของใบเสนอราคาด้วย ตอนนี้กำหนดเป็น 1 ไปก่อน
-        if (req.body.quotation_id) {
+        if (req.body.qt_id) {
           await connection.query(sqlInertQtBn, [
             idnext,
-            req.body.quotation_id,
+            req.body.qt_id,
             req.body.version,
           ]);
-          updateStatus(io, req.body.quotation_id, "ดำเนินการแล้ว", res);
+          updateStatus(io, req.body.qt_id, "ดำเนินการแล้ว", res);
         }
-
         await connection.commit();
         res.status(201).json({ msg: "เพิ่มใบแล้ว" });
       } catch (err) {

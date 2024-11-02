@@ -10,7 +10,7 @@ router.get("/receiptcash", function (req, res) {
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
   const sort_by = req.query.sort_by;
-  const sort_type = req.query.sort_type;
+  const des = req.query.des;
   const search = req.query.search;
   const idx_start = (page - 1) * per_page;
 
@@ -23,11 +23,13 @@ router.get("/receiptcash", function (req, res) {
     fetchValue = Array(3).fill(`${search}%`);
   }
 
-  if (sort_by && sort_type) {
-    fetch += " ORDER BY " + sort_by + " " + sort_type;
+  if (sort_by) {
+    fetch += ` ORDER BY ${sort_by} ${des === "true" ? "DESC" : "ASC"}`;
+  } else {
+    fetch += ` ORDER BY rf_date DESC `;
   }
 
-  fetch += " order by rf_id DESC  LIMIT ?, ?";
+  fetch += " LIMIT ?, ?";
   fetchValue.push(idx_start);
   fetchValue.push(per_page);
 

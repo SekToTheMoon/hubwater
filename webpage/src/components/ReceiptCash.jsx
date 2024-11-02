@@ -5,7 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
-import io from "socket.io-client";
+import useSocket from "../services/socket";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
@@ -25,6 +25,8 @@ function ReceiptCash() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState(null);
+  const [ascDes, setAscDes] = useState(true);
   const [receiptCashForDel, setReceiptCashfordel] = useState(null);
   // const [indexToUpdate, setIndexToUpdate] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
@@ -38,6 +40,9 @@ function ReceiptCash() {
     let url = `/ReceiptCash?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
+    }
+    if (sort) {
+      url += `&sort_by=${sort}&des=${ascDes}`;
     }
     try {
       const response = await axios.get(url);
@@ -168,31 +173,9 @@ function ReceiptCash() {
       //   messageSuccess = false; ทำไมไม่ทำอย่างนี้
       navigate("/ReceiptCash");
     }
-  }, [currentPage, perPage]);
+  }, [currentPage, perPage, sort, ascDes]);
 
-  useEffect(() => {
-    const socket = io("http://hubwater-production-7ee5.up.railway.app");
-    socket.on("statusUpdate", ({ status, id }) => {
-      if (id.startsWith("RF")) {
-        setReceiptCash((oldReceiptCashs) => {
-          let newReceiptCashs = [...oldReceiptCashs];
-          const index = newReceiptCashs.findIndex((q) => q.rf_id === id);
-          if (index !== -1) {
-            newReceiptCashs[index].rf_status = status;
-          }
-          return newReceiptCashs;
-        });
-      }
-    });
-
-    return () => {
-      console.log("Cleaning up socket");
-      socket.disconnect();
-    };
-  }, []);
-  useEffect(() => {
-    console.log(ReceiptCashMoney);
-  }, [ReceiptCashMoney]);
+  useSocket(setReceiptCash);
 
   return (
     <>
@@ -205,100 +188,195 @@ function ReceiptCash() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-
-          <table className="w-full text-center table-auto hidden lg:inline-table">
-            <thead className="bg-base-200 ">
-              <tr className=" border-b">
-                <th className="pl-4 py-3">วันที่</th>
-                <th>เลขเอกสาร</th>
-                <th>ลูกค้า</th>
-                <th className="text-center">ยอดรวมสุทธิ</th>
-                <th>พนักงาน</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ReceiptCash && ReceiptCash.length !== 0 ? (
-                ReceiptCash.map((receiptCash, index) => (
-                  <tr className="border-b" key={receiptCash.rf_id}>
-                    <td className="pl-4 py-3">
-                      {receiptCash.rf_date.substring(0, 10)}
-                    </td>
-                    <td
-                      className="cursor-pointer"
-                      onClick={() => navigate(`view/${receiptCash.rf_id}`)}
-                    >
-                      {receiptCash.rf_id}
-                    </td>
-                    <td>
-                      {receiptCash.customer_fname
-                        ? receiptCash.customer_fname
-                        : "cash sale / ขายเงินสด"}
-                    </td>
-                    <td className="text-right">
-                      {receiptCash.rf_vat
-                        ? Intl.NumberFormat().format(
-                            (receiptCash.rf_total * 1.07).toFixed(2)
-                          )
-                        : Intl.NumberFormat().format(receiptCash.rf_total)}
-                    </td>
-                    <td>{receiptCash.employee_fname}</td>
-                    <td className="flex gap-2">
-                      <select
-                        value={receiptCash.rf_status}
-                        className="select select-bordered w-36 max-w-36"
-                        onChange={(e) => {
-                          if (e.target.value === "เก็บเงิน") {
-                            setReceiptCashMoney({
-                              ...receiptCash,
-                              rf_date: moment(new Date()).format("YYYY-MM-DD"),
-                            });
-                            fetchBank();
-                          } else {
-                            handleSelectChange(e, receiptCash);
-                          }
+          <div className="relative hidden shadow-md lg:block">
+            <table className="w-full text-center table-auto hidden lg:inline-table">
+              <thead className="bg-base-200 ">
+                <tr className=" border-b">
+                  <th className="pl-4 py-3 ">
+                    <div class="flex items-center justify-center">
+                      วันที่
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rf_date");
+                          setAscDes(!ascDes);
                         }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        {statusReceiptCash[receiptCash.rf_status][roll].map(
-                          (element, idx) => (
-                            <option key={idx} value={element}>
-                              {element}
-                            </option>
-                          )
-                        )}
-                      </select>
-                      <div className="dropdown dropdown-hover ">
-                        <div tabIndex={0} role="button" className="p-2">
-                          ...
-                        </div>
-                        <ul
-                          tabIndex={0}
-                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      เลขเอกสาร
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rf_id");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      ลูกค้า
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("customer_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      ยอดรวมสุทธิ
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("rf_total");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="flex items-center justify-center">
+                      พนักงาน
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("employee_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ReceiptCash && ReceiptCash.length !== 0 ? (
+                  ReceiptCash.map((receiptCash, index) => (
+                    <tr
+                      className="border-b border-base-content/30 hover:bg-base-200/50"
+                      key={receiptCash.rf_id}
+                    >
+                      <td className="pl-4 py-3">
+                        {receiptCash.rf_date.substring(0, 10)}
+                      </td>
+                      <td
+                        className="cursor-pointer"
+                        onClick={() => navigate(`view/${receiptCash.rf_id}`)}
+                      >
+                        {receiptCash.rf_id}
+                      </td>
+                      <td>
+                        {receiptCash.customer_fname
+                          ? receiptCash.customer_fname
+                          : "cash sale / ขายเงินสด"}
+                      </td>
+                      <td className="text-right">
+                        {receiptCash.rf_vat
+                          ? Intl.NumberFormat().format(
+                              (receiptCash.rf_total * 1.07).toFixed(2)
+                            )
+                          : Intl.NumberFormat().format(receiptCash.rf_total)}
+                      </td>
+                      <td>{receiptCash.employee_fname}</td>
+                      <td className="flex gap-2">
+                        <select
+                          value={receiptCash.rf_status}
+                          className="select select-bordered w-36 max-w-36"
+                          onChange={(e) => {
+                            if (e.target.value === "เก็บเงิน") {
+                              setReceiptCashMoney({
+                                ...receiptCash,
+                                rf_date: moment(new Date()).format(
+                                  "YYYY-MM-DD"
+                                ),
+                              });
+                              fetchBank();
+                            } else {
+                              handleSelectChange(e, receiptCash);
+                            }
+                          }}
                         >
-                          <li>
-                            <Link to={`edit/${receiptCash.rf_id}`}>แก้ไข</Link>
-                          </li>
-                          <li>
-                            <button
-                              onClick={() => setReceiptCashfordel(receiptCash)}
-                            >
-                              ลบ
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                          {statusReceiptCash[receiptCash.rf_status][roll].map(
+                            (element, idx) => (
+                              <option key={idx} value={element}>
+                                {element}
+                              </option>
+                            )
+                          )}
+                        </select>
+                        <div className="dropdown dropdown-hover ">
+                          <div tabIndex={0} role="button" className="p-2">
+                            ...
+                          </div>
+                          <ul
+                            tabIndex={0}
+                            className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                          >
+                            <li>
+                              <Link to={`edit/${receiptCash.rf_id}`}>
+                                แก้ไข
+                              </Link>
+                            </li>
+                            <li>
+                              <button
+                                onClick={() =>
+                                  setReceiptCashfordel(receiptCash)
+                                }
+                              >
+                                ลบ
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="pt-5 text-center">
+                      ไม่มีข้อมูล
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="pt-5 text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
           <MobileDocTable
             data={ReceiptCash}
             onDelete={setReceiptCashfordel}

@@ -7,7 +7,7 @@ const { getTransactionID } = require("../../utils/generateId");
 module.exports = (io) => {
   router.get("/invoice", function (req, res) {
     let fetch = `SELECT i.iv_id, i.iv_date, i.iv_vat, c.customer_fname,e.employee_fname,
-      i.iv_total, i.iv_status ,q.quotation_id , b.bn_id ,r.rc_id
+      i.iv_total, i.iv_status ,q.qt_id , b.bn_id ,r.rc_id
       FROM invoice i JOIN employee e ON i.employee_id = e.employee_id 
       JOIN customer c ON c.customer_id = i.customer_id 
       Left JOIN quotation_has_invoice q on i.iv_id = q.iv_id  
@@ -18,7 +18,7 @@ module.exports = (io) => {
     const page = parseInt(req.query.page);
     const per_page = parseInt(req.query.per_page);
     const sort_by = req.query.sort_by;
-    const sort_type = req.query.sort_type;
+    const des = req.query.des;
     const search = req.query.search;
     const idx_start = (page - 1) * per_page;
 
@@ -31,11 +31,13 @@ module.exports = (io) => {
       fetchValue = Array(3).fill(`${search}%`);
     }
 
-    if (sort_by && sort_type) {
-      fetch += " ORDER BY " + sort_by + " " + sort_type;
+    if (sort_by) {
+      fetch += ` ORDER BY ${sort_by} ${des === "true" ? "DESC" : "ASC"}`;
+    } else {
+      fetch += ` ORDER BY iv_date DESC `;
     }
 
-    fetch += "order by iv_id DESC LIMIT ?, ?";
+    fetch += " LIMIT ?, ?";
     fetchValue.push(idx_start);
     fetchValue.push(per_page);
 
@@ -66,7 +68,7 @@ module.exports = (io) => {
 
   router.post("/invoice/insert", async (req, res) => {
     const sqlInsertInvoice = `insert into invoice (iv_id,iv_date,iv_status,iv_credit,iv_total,iv_del,iv_detail,iv_vat,iv_tax,employee_id,customer_id,iv_dateend,disc_cash,disc_percent) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-    const sqlInertQtIv = `INSERT INTO quotation_has_invoice (iv_id, quotation_id, quotation_num ) VALUES (?,?,?)`;
+    const sqlInertQtIv = `INSERT INTO quotation_has_invoice (iv_id, qt_id, qt_num ) VALUES (?,?,?)`;
     const sqlInertBnIv = `INSERT INTO bill_has_invoice (iv_id, bn_id ) VALUES (?,?)`;
 
     try {
@@ -114,13 +116,13 @@ module.exports = (io) => {
           await Promise.all(itemPromises);
         }
         //ต้องแก้ ใบที่ ของใบเสนอราคาด้วย ตอนนี้กำหนดเป็น 1 ไปก่อน
-        if (req.body.quotation_id) {
+        if (req.body.qt_id) {
           await connection.query(sqlInertQtIv, [
             idnext,
-            req.body.quotation_id,
+            req.body.qt_id,
             req.body.version,
           ]);
-          updateStatus(io, req.body.quotation_id, "ดำเนินการแล้ว", res);
+          updateStatus(io, req.body.qt_id, "ดำเนินการแล้ว", res);
         }
         if (req.body.bn_id) {
           await connection.query(sqlInertBnIv, [idnext, req.body.bn_id]);

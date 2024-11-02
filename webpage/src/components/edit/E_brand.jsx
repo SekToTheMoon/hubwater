@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import useAuth from "../../hooks/useAuth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import * as Yup from "yup";
 function E_brand() {
+  const axios = useAxiosPrivate();
   const { id } = useParams();
   const { auth } = useAuth();
   const token = auth?.accessToken;

@@ -11,7 +11,7 @@ const initSocket = (server) => {
 
   const io = socketIo(server, {
     cors: {
-      origin: "https://hubwater.netlify.app", // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
+      origin: ["https://hubwater.netlify.app", "http://localhost:5173"], // เปลี่ยนเป็นพอร์ตที่ React ใช้ทำงาน
       methods: ["GET", "POST", "PUT", "DELETE"],
     },
   });

@@ -15,19 +15,19 @@ function View_quotation() {
   // ดึงค่าจาก query parameters
   const version = queryParams.get("version");
   const [values, setValues] = useState({
-    quotation_date: moment(new Date()).format("YYYY-MM-DD"),
-    quotation_credit: 0,
+    qt_date: moment(new Date()).format("YYYY-MM-DD"),
+    qt_credit: 0,
     disc_cash: (0).toFixed(2),
     disc_percent: "",
-    quotation_total: 0, //รวมเป็นเงินเท่าไหร่
-    quotation_detail: "",
-    quotation_vat: true,
-    quotation_tax: 0,
+    qt_total: 0, //รวมเป็นเงินเท่าไหร่
+    qt_detail: "",
+    qt_vat: true,
+    qt_tax: 0,
     employee_id: "",
     customer_id: "",
     customer_name: "",
     items: [],
-    quotation_dateend: moment(new Date()).format("YYYY-MM-DD"),
+    qt_dateend: moment(new Date()).format("YYYY-MM-DD"),
   });
 
   const [quotationEmployee, setEmployee] = useState("");
@@ -59,20 +59,16 @@ function View_quotation() {
 
       setEmployee(response.data.employee_name);
       setValues({
-        quotation_date: moment(quotationDetail.quotation_date).format(
-          "YYYY-MM-DD"
-        ),
-        quotation_credit: quotationDetail.quotation_credit,
-        quotation_total: quotationDetail.quotation_total, //รวมเป็นเงินเท่าไหร่
-        quotation_detail: quotationDetail.quotation_detail,
-        quotation_vat: quotationDetail.quotation_vat,
-        quotation_tax: quotationDetail.quotation_tax,
+        qt_date: moment(quotationDetail.qt_date).format("YYYY-MM-DD"),
+        qt_credit: quotationDetail.qt_credit,
+        qt_total: quotationDetail.qt_total, //รวมเป็นเงินเท่าไหร่
+        qt_detail: quotationDetail.qt_detail,
+        qt_vat: quotationDetail.qt_vat,
+        qt_tax: quotationDetail.qt_tax,
         employee_id: quotationDetail.employee_id,
         customer_id: quotationDetail.customer_id,
         items: quotationList || [],
-        quotation_dateend: moment(quotationDetail.quotation_dateend).format(
-          "YYYY-MM-DD"
-        ),
+        qt_dateend: moment(quotationDetail.qt_dateend).format("YYYY-MM-DD"),
         disc_cash: quotationDetail.disc_cash,
         disc_percent: quotationDetail.disc_percent,
       });
@@ -172,9 +168,9 @@ function View_quotation() {
                   <input
                     type="text"
                     value={
-                      values.quotation_vat
-                        ? (values.quotation_total * 1.07).toFixed(0)
-                        : values.quotation_total
+                      values.qt_vat
+                        ? (values.qt_total * 1.07).toFixed(0)
+                        : values.qt_total
                     }
                     className="input text-3xl"
                     readOnly
@@ -186,7 +182,7 @@ function View_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_date}
+                    value={values.qt_date}
                     className="input input-bordered w-1/2 "
                     readOnly
                   />
@@ -197,7 +193,7 @@ function View_quotation() {
                   </label>
                   <input
                     type="text"
-                    value={values.quotation_credit}
+                    value={values.qt_credit}
                     className="input input-bordered w-1/2"
                     readOnly
                   />
@@ -208,7 +204,7 @@ function View_quotation() {
                   </label>
                   <input
                     type="date"
-                    value={values.quotation_dateend}
+                    value={values.qt_dateend}
                     className="input input-bordered w-1/2 "
                     readOnly
                   />
@@ -234,7 +230,7 @@ function View_quotation() {
               <input
                 type="text"
                 className="input input-bordered flex-1"
-                value={values.quotation_detail}
+                value={values.qt_detail}
                 readOnly
               />
             </div>
@@ -282,8 +278,7 @@ function View_quotation() {
                 <span className="my-auto">รวมเป็นเงิน</span>
                 <div className="w1/2">
                   {(
-                    parseFloat(values.quotation_total) +
-                    parseFloat(values.disc_cash)
+                    parseFloat(values.qt_total) + parseFloat(values.disc_cash)
                   ).toFixed(2)}
                 </div>
               </label>
@@ -301,32 +296,30 @@ function View_quotation() {
               </label>
               <label className="label">
                 <span className="">ราคาหลังหักส่วนลด</span>
-                <div className="w1/2">{values.quotation_total}</div>
+                <div className="w1/2">{values.qt_total}</div>
               </label>
               <label className="label">
                 <label className="label cursor-pointer">
                   <input
                     disabled={true}
                     type="checkbox"
-                    checked={values.quotation_vat}
+                    checked={values.qt_vat}
                     className="checkbox mr-2"
-                    value={values.quotation_vat}
+                    value={values.qt_vat}
                   />
                   <span>ภาษีมูลค่าเพิ่ม 7%</span>
                 </label>
                 <div className="w1/2 ">
-                  {values.quotation_vat
-                    ? (values.quotation_total * 0.07).toFixed(2)
-                    : ""}
+                  {values.qt_vat ? (values.qt_total * 0.07).toFixed(2) : ""}
                 </div>
               </label>
 
               <label className="label">
                 <span className="">จำนวนเงินรวมทั้งสิ้น</span>
                 <div className="w1/2">
-                  {values.quotation_vat
-                    ? (values.quotation_total * 1.07).toFixed(2)
-                    : values.quotation_total}
+                  {values.qt_vat
+                    ? (values.qt_total * 1.07).toFixed(2)
+                    : values.qt_total}
                 </div>
               </label>
               <hr />
@@ -334,30 +327,26 @@ function View_quotation() {
               <label className="label">
                 <label className="label cursor-pointer">
                   <span className="">หักภาษี ณ ที่จ่าย</span>
-                  <select value={values.quotation_tax} disabled={true}>
+                  <select value={values.qt_tax} disabled={true}>
                     <option value="0">0%</option>
                     <option value="1">1%</option>
                     <option value="3">3%</option>
                   </select>
                 </label>
                 <div className="w1/2">
-                  {values.quotation_tax
-                    ? (
-                        (values.quotation_tax / 100) *
-                        values.quotation_total
-                      ).toFixed(2)
+                  {values.qt_tax
+                    ? ((values.qt_tax / 100) * values.qt_total).toFixed(2)
                     : ""}
                 </div>
               </label>
 
-              {values.quotation_tax ? (
+              {values.qt_tax ? (
                 <label className="label">
                   <span className="">ยอดชำระ</span>
                   <div className="w1/2">
-                    {(
-                      values.quotation_total *
-                      (1.07 - values.quotation_tax / 100)
-                    ).toFixed(2)}
+                    {(values.qt_total * (1.07 - values.qt_tax / 100)).toFixed(
+                      2
+                    )}
                   </div>
                 </label>
               ) : (

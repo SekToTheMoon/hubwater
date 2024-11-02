@@ -5,7 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
-import io from "socket.io-client";
+import useSocket from "../services/socket";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
@@ -23,6 +23,8 @@ function Invoice() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState(null);
+  const [ascDes, setAscDes] = useState(true);
   const [invoiceForDel, setInvoicefordel] = useState(null);
   const totalPages = Math.ceil(totalRows / perPage);
   const statusInvoice = statusOptions[2];
@@ -35,6 +37,9 @@ function Invoice() {
     let url = `/Invoice?page=${currentPage}&per_page=${perPage}`;
     if (search != "") {
       url += `&search=${search}`;
+    }
+    if (sort) {
+      url += `&sort_by=${sort}&des=${ascDes}`;
     }
     try {
       const response = await axios.get(url);
@@ -160,28 +165,9 @@ function Invoice() {
       });
       navigate("/Invoice");
     }
-  }, [currentPage, perPage]);
+  }, [currentPage, perPage, sort, ascDes]);
 
-  useEffect(() => {
-    const socket = io("http://hubwater-production-7ee5.up.railway.app");
-    socket.on("statusUpdate", ({ status, id }) => {
-      if (id.startsWith("IV")) {
-        setInvoice((oldInvoice) => {
-          let newInvoice = [...oldInvoice];
-          const index = newInvoice.findIndex((q) => q.iv_id === id);
-          if (index !== -1) {
-            newInvoice[index].iv_status = status;
-          }
-          return newInvoice;
-        });
-      }
-    });
-
-    return () => {
-      console.log("Cleaning up socket");
-      socket.disconnect();
-    };
-  }, []);
+  useSocket(setInvoice);
 
   return (
     <>
@@ -223,121 +209,214 @@ function Invoice() {
               </div>
             </dialog>
           )}
-
-          <table className="w-full text-center table-auto hidden lg:inline-table">
-            <thead className="bg-base-200">
-              <tr className=" border-b">
-                <th className="pl-4 py-3">วันที่</th>
-                <th>เลขเอกสาร</th>
-                <th>ลูกค้า</th>
-                <th className="text-center">ยอดรวมสุทธิ</th>
-                <th>พนักงาน</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Invoice && Invoice.length !== 0 ? (
-                Invoice.map((invoice, index) => (
-                  <tr className="border-b" key={invoice.iv_id}>
-                    <td className="pl-4 py-3">
-                      {invoice.iv_date.substring(0, 10)}
-                    </td>
-                    <td className="group relative ">
-                      <span
-                        className="cursor-pointer hover:underline "
-                        onClick={() => navigate(`view/${invoice.iv_id}`)}
+          <div className="relative hidden shadow-md lg:block">
+            <table className="w-full text-center table-auto hidden lg:inline-table">
+              <thead className="bg-base-200">
+                <tr className=" border-b">
+                  <th className="pl-4 py-3">
+                    <div class="flex items-center justify-center">
+                      วันที่
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("iv_date");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        {invoice.iv_id}
-                      </span>
-                      {(invoice.quotation_id ||
-                        invoice.bn_id ||
-                        invoice.rc_id) && (
-                        <div className="absolute bg-white  border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
-                          <p className="font-bold mb-2">เอกสารที่เกี่ยวข้อง</p>
-                          <div className="flex flex-col space-y-2">
-                            <DocumentLink
-                              to={`/quotation/view/${invoice.quotation_id}`}
-                              id={invoice.quotation_id}
-                            />
-                            <DocumentLink
-                              to={`/invoice/view/${invoice.bn_id}`}
-                              id={invoice.bn_id}
-                            />
-                            <DocumentLink
-                              to={`/receipt/view?receipt=${invoice.rc_id}`}
-                              id={invoice.rc_id}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td>{invoice.customer_fname}</td>
-                    <td className="text-right pr-2">
-                      {invoice.iv_vat
-                        ? Intl.NumberFormat().format(
-                            (invoice.iv_total * 1.07).toFixed(2)
-                          )
-                        : Intl.NumberFormat().format(invoice.iv_total)}
-                    </td>
-                    <td>{invoice.employee_fname}</td>
-                    <td className="flex gap-2">
-                      <select
-                        value={invoice.iv_status}
-                        className="select select-bordered w-36 max-w-36"
-                        onChange={(e) => handleSelectChange(e, invoice)}
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    {" "}
+                    <div class="flex items-center justify-center">
+                      เลขเอกสาร
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("iv_id");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        {statusInvoice[invoice.iv_status][roll].map(
-                          (element, idx) => (
-                            <option key={idx} value={element}>
-                              {element}
-                            </option>
-                          )
-                        )}
-                      </select>
-                      <div className="dropdown dropdown-hover ">
-                        <div tabIndex={0} role="button" className="p-2">
-                          ...
-                        </div>
-                        <ul
-                          tabIndex={0}
-                          className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    {" "}
+                    <div class="flex items-center justify-center">
+                      ลูกค้า
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("customer_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    {" "}
+                    <div class="flex items-center justify-center">
+                      ยอดรวมสุทธิ
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("iv_total");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>
+                    {" "}
+                    <div class="flex items-center justify-center">
+                      พนักงาน
+                      <svg
+                        class="w-3 h-3 ms-1.5"
+                        onClick={() => {
+                          setSort("employee_fname");
+                          setAscDes(!ascDes);
+                        }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Invoice && Invoice.length !== 0 ? (
+                  Invoice.map((invoice, index) => (
+                    <tr
+                      className="border-b border-base-content/30 hover:bg-base-200/50"
+                      key={invoice.iv_id}
+                    >
+                      <td className="pl-4 py-3">
+                        {invoice.iv_date.substring(0, 10)}
+                      </td>
+                      <td className="group relative ">
+                        <span
+                          className="cursor-pointer hover:underline "
+                          onClick={() => navigate(`view/${invoice.iv_id}`)}
                         >
-                          <li
-                            className={
-                              invoice.iv_status === "ดำเนินการแล้ว"
-                                ? "disabled"
-                                : ""
-                            }
+                          {invoice.iv_id}
+                        </span>
+                        {(invoice.qt_id || invoice.bn_id || invoice.rc_id) && (
+                          <div className="absolute bg-base-100 shadow-md border py-2 px-3 rounded-md inline-block whitespace-nowrap top-0 left-full text-sm  z-10 invisible font-sm group-hover:visible ">
+                            <p className="font-bold mb-2 text-secondary">
+                              เอกสารที่เกี่ยวข้อง
+                            </p>
+                            <div className="flex flex-col space-y-2">
+                              <DocumentLink
+                                to={`/quotation/view/${invoice.qt_id}`}
+                                id={invoice.qt_id}
+                              />
+                              <DocumentLink
+                                to={`/invoice/view/${invoice.bn_id}`}
+                                id={invoice.bn_id}
+                              />
+                              <DocumentLink
+                                to={`/receipt/view?receipt=${invoice.rc_id}`}
+                                id={invoice.rc_id}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td>{invoice.customer_fname}</td>
+                      <td className="text-right pr-2">
+                        {invoice.iv_vat
+                          ? Intl.NumberFormat().format(
+                              (invoice.iv_total * 1.07).toFixed(2)
+                            )
+                          : Intl.NumberFormat().format(invoice.iv_total)}
+                      </td>
+                      <td>{invoice.employee_fname}</td>
+                      <td className="flex gap-2">
+                        <select
+                          value={invoice.iv_status}
+                          className="select select-bordered w-36 max-w-36"
+                          onChange={(e) => handleSelectChange(e, invoice)}
+                        >
+                          {statusInvoice[invoice.iv_status][roll].map(
+                            (element, idx) => (
+                              <option key={idx} value={element}>
+                                {element}
+                              </option>
+                            )
+                          )}
+                        </select>
+                        <div className="dropdown dropdown-hover ">
+                          <div tabIndex={0} role="button" className="p-2">
+                            ...
+                          </div>
+                          <ul
+                            tabIndex={0}
+                            className="dropdown-content z-[1] menu shadow bg-base-100 rounded-box"
                           >
-                            <Link
-                              onClick={(e) =>
-                                invoice.iv_status === "ดำเนินการแล้ว" &&
-                                e.preventDefault()
+                            <li
+                              className={
+                                invoice.iv_status === "ดำเนินการแล้ว"
+                                  ? "disabled"
+                                  : ""
                               }
-                              to={`edit/${invoice.iv_id}`}
                             >
-                              แก้ไข
-                            </Link>
-                          </li>
-                          <li>
-                            <button onClick={() => setInvoicefordel(invoice)}>
-                              ลบ
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                              <Link
+                                onClick={(e) =>
+                                  invoice.iv_status === "ดำเนินการแล้ว" &&
+                                  e.preventDefault()
+                                }
+                                to={`edit/${invoice.iv_id}`}
+                              >
+                                แก้ไข
+                              </Link>
+                            </li>
+                            <li>
+                              <button onClick={() => setInvoicefordel(invoice)}>
+                                ลบ
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="pt-5 text-center">
+                      ไม่มีข้อมูล
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="pt-5 text-center">
-                    ไม่มีข้อมูล
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
           <MobileDocTable
             data={Invoice}
             onDelete={setInvoicefordel}

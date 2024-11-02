@@ -36,8 +36,8 @@ function Dashboard() {
   const [incomeAndExpense, setIncomeAndExpense] = useState(null);
   const [CrossTab, setCrossTab] = useState();
   const [expenseTypeData, setExpenseTypeData] = useState(null);
-  const [buyProductData, setBuyProductData] = useState(null);
-  const [Commition, setCommition] = useState([]);
+  const [buyProductData, setBuyProductData] = useState({ data: [], total: "" });
+  const [Commition, setCommition] = useState({ data: [], total: "" });
   const [waitToPay, setWaitToPay] = useState();
   const [TopSale, setTopSale] = useState();
   const [TotalIncomeAndExpense, setTotalIncomeAndExpense] = useState(null);
@@ -49,6 +49,7 @@ function Dashboard() {
     startDate: moment().subtract(1, "years").format("YYYY-MM-DD"),
     endDate: moment(new Date()).format("YYYY-MM-DD"),
     selectCategory: "ทั้งหมด",
+    productName: "",
   });
 
   const [saleProductDateRanges, setSaleProductDateRanges] = useState({
@@ -73,7 +74,8 @@ function Dashboard() {
       fetchTopSale(
         DateRanges.startDate,
         DateRanges.endDate,
-        DateRanges.selectCategory
+        DateRanges.selectCategory,
+        DateRanges.productName
       );
     } else {
       alert("Please select a valid date range");
@@ -287,7 +289,11 @@ function Dashboard() {
       const response = await axiosPrivate.get(
         `/getCommition?startDate=${startDate}&&endDate=${endDate}`
       );
-      setCommition(response.data);
+      const totalCommission = response.data.reduce(
+        (total, item) => parseFloat(item.total_commission) + total,
+        0
+      );
+      setCommition({ data: response.data, total: totalCommission });
     } catch (error) {
       console.error("Error fetching sales data:", error);
     }
@@ -297,7 +303,11 @@ function Dashboard() {
       const response = await axiosPrivate.get(
         `/getBuyProduct?startDate=${startDate}&&endDate=${endDate}`
       );
-      setBuyProductData(response.data);
+      const totalBuy = response.data.reduce(
+        (total, item) => parseFloat(item.sumLot) + total,
+        0
+      );
+      setBuyProductData({ data: response.data, total: totalBuy });
     } catch (error) {
       console.error("Error fetching sales data:", error);
     }
@@ -312,10 +322,10 @@ function Dashboard() {
       console.error("Error fetching data:", error);
     }
   };
-  const fetchTopSale = async (startDate, endDate, category) => {
+  const fetchTopSale = async (startDate, endDate, category, productName) => {
     try {
       const response = await axiosPrivate.get(
-        `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`
+        `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}&&productName=${productName}`
       );
       const data = response.data;
       setTopSale(data);
@@ -343,230 +353,11 @@ function Dashboard() {
     fetchTopSale(
       DateRanges.startDate,
       DateRanges.endDate,
-      DateRanges.selectCategory
+      DateRanges.selectCategory,
+      DateRanges.productName
     );
     fetchCategoryProduct();
   }, []);
-
-  // useEffect(() => {
-  //   let isMounted = true;
-  //   const controller = new AbortController();
-
-  //   const fetchCategoryProduct1 = async () => {
-  //     try {
-  //       const response = await axiosPrivate.get(`/getCategoryProduct`, {
-  //         signal: controller.signal,
-  //       });
-  //       setCategoryProduct(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   const fetchIncome1 = async (timeline) => {
-  //     try {
-  //       const response = await axiosPrivate.get(
-  //         `/getIncome?timeline=${timeline}`,
-  //         {
-  //           signal: controller.signal,
-  //         }
-  //       );
-  //       const data = response.data;
-  //       setIncomeData({
-  //         labels: data.labels,
-  //         datasets: [
-  //           {
-  //             label: "รายได้รวม",
-  //             data: data.totalIncomeData,
-  //             backgroundColor: "rgba(75, 192, 192, 0.5)",
-  //             borderColor: "rgba(75, 192, 192, 1)",
-  //             borderWidth: 1,
-  //           },
-  //           {
-  //             label: "เก็บเงินแล้ว",
-  //             data: data.incomeData,
-  //             backgroundColor: "rgba(54, 162, 235, 1)",
-  //             borderColor: "rgba(54, 162, 235, 1)",
-  //             borderWidth: 1,
-  //           },
-  //         ],
-  //       });
-  //       setTotalIncome(data.totalIncomeSum);
-  //       setTotalReceived(data.totalReceivedSum);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   const fetchExpense1 = async (timeline) => {
-  //     try {
-  //       const response = await axiosPrivate.get(
-  //         `/getExpense?timeline=${timeline}`,
-  //         {
-  //           signal: controller.signal,
-  //         }
-  //       );
-  //       const data = response.data;
-  //       setExpenseData({
-  //         labels: data.labels,
-  //         datasets: [
-  //           {
-  //             label: "ค่าใช้จ่ายรวม",
-  //             data: data.totalExpenseData,
-  //             backgroundColor: "rgba(255, 99, 132, 0.5)",
-  //             borderColor: "rgba(255, 99, 132, 1)",
-  //             borderWidth: 1,
-  //           },
-  //           {
-  //             label: "ชำระเงินแล้ว",
-  //             data: data.expenseData,
-  //             backgroundColor: "rgba(255, 99, 132, 1)",
-  //             borderColor: "rgba(255, 99, 132, 1)",
-  //             borderWidth: 1,
-  //           },
-  //         ],
-  //       });
-  //       // setTotalIncome(data.totalIncomeSum);
-  //       // setTotalReceived(data.totalReceivedSum);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   const fetchIncomeAndExpense1 = async (timeline) => {
-  //     try {
-  //       const responseIncome = await axiosPrivate.get(
-  //         `/getIncome?timeline=${timeline}`,
-  //         {
-  //           signal: controller.signal,
-  //         }
-  //       );
-  //       const responseExpense = await axiosPrivate.get(
-  //         `/getExpense?timeline=${timeline}`,
-  //         {
-  //           signal: controller.signal,
-  //         }
-  //       );
-  //       const dataIncome = responseIncome.data;
-  //       const dataExpense = responseExpense.data;
-
-  //       setIncomeAndExpense({
-  //         labels: dataIncome.labels,
-  //         datasets: [
-  //           {
-  //             label: "รายได้รวม",
-  //             data: dataIncome.totalIncomeData,
-  //             backgroundColor: "rgba(54, 162, 235, 0.2)",
-  //             borderColor: "rgba(54, 162, 235, 1)",
-  //             borderWidth: 1,
-  //           },
-  //           {
-  //             label: "ค่าใช้จ่ายรวม",
-  //             data: dataExpense.totalExpenseData,
-  //             backgroundColor: "rgba(255, 99, 132, 0.2)",
-  //             borderColor: "rgba(255, 99, 132, 1)",
-
-  //             borderWidth: 1,
-  //           },
-  //         ],
-  //       });
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   const fetchSaleProduct1 = async (startDate, endDate) => {
-  //     let url = `/getSaleProduct?startDate=${startDate}&&endDate=${endDate}`;
-  //     try {
-  //       const response = await axiosPrivate.get(url, {
-  //         signal: controller.signal,
-  //       });
-  //       // const labels = response.data.map((item) => item.product_name);
-  //       const data = response.data;
-  //       setCrossTab(data);
-  //     } catch (error) {
-  //       console.error("Error fetching sales data:", error);
-  //     }
-  //   };
-  //   const fetchExpenseByCategory1 = async (timeline) => {
-  //     let url = `/getExpenseByCategory?timeline=${timeline}`;
-  //     try {
-  //       const response = await axiosPrivate.get(url, {
-  //         signal: controller.signal,
-  //       });
-  //       const labels = response.data.map((item) => item.expensetype_name);
-  //       const data = response.data.map((item) =>
-  //         parseInt(item.total_expense_amount)
-  //       );
-  //       setExpenseTypeData({
-  //         labels: labels,
-  //         datasets: [
-  //           {
-  //             label: "ยอดชำระ",
-  //             data: data,
-  //             backgroundColor: [
-  //               "rgba(255, 99, 132, 0.8)",
-  //               "rgba(54, 162, 235, 0.8)",
-  //               "rgba(255, 206, 86, 0.8)",
-  //               "rgba(75, 192, 192, 0.8)",
-  //               "rgba(153, 102, 255, 0.8)",
-  //               "rgba(255, 159, 64, 0.8)",
-  //             ],
-  //             borderColor: [
-  //               "rgba(255, 99, 132, 1)",
-  //               "rgba(54, 162, 235, 1)",
-  //               "rgba(255, 206, 86, 1)",
-  //               "rgba(75, 192, 192, 1)",
-  //               "rgba(153, 102, 255, 1)",
-  //               "rgba(255, 159, 64, 1)",
-  //             ],
-  //             borderWidth: 1,
-  //           },
-  //         ],
-  //       });
-  //     } catch (error) {
-  //       console.error("Error fetching sales data:", error);
-  //     }
-  //   };
-  //   const fetchCommition1 = async (timeline) => {
-  //     let url = `/getCommition?timeline=${timeline}`;
-  //     try {
-  //       const response = await axiosPrivate.get(url, {
-  //         signal: controller.signal,
-  //       });
-
-  //       setCommition(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching sales data:", error);
-  //     }
-  //   };
-  //   const fetchTopSale1 = async (startDate, endDate, category) => {
-  //     try {
-  //       const response = await axiosPrivate.get(
-  //         `/getTopSale?startDate=${startDate}&&endDate=${endDate}&&category=${category}`,
-  //         {
-  //           signal: controller.signal,
-  //         }
-  //       );
-  //       const data = response.data;
-  //       setTopSale(data);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-  //   fetchIncome1("year");
-  //   fetchExpense1("year");
-  //   fetchSaleProduct1(
-  //     saleProductDateRanges.startDate,
-  //     saleProductDateRanges.endDate
-  //   );
-  //   fetchIncomeAndExpense1("year");
-  //   fetchExpenseByCategory1("year");
-  //   fetchCommition1("year");
-  //   fetchTopSale1(DateRanges.startDate, DateRanges.endDate, selectCategory);
-  //   fetchCategoryProduct1();
-
-  //   return () => {
-  //     isMounted = false;
-  //     controller.abort();
-  //   };
-  // }, []);
 
   return (
     <>
@@ -666,7 +457,7 @@ function Dashboard() {
 
           {selectTimeline(fetchExpenseByCategory)}
 
-          <figure className="overflow-y-scroll no-scrollbar h-64 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
+          <figure className="overflow-y-scroll no-scrollbar flex justify-center h-64 mt-3 md:h-48 lg:h-64 xl:h-72 2xl:h-96">
             {expenseTypeData ? (
               <Doughnut data={expenseTypeData} />
             ) : (
@@ -723,10 +514,10 @@ function Dashboard() {
             </div>
           </form>
           <figure className="overflow-y-auto no-scrollbar max-h-56 lg:max-h-96">
-            {buyProductData?.length > 0 ? (
+            {buyProductData?.data?.length > 0 ? (
               <ul>
                 <hr />
-                {buyProductData.map((item, index) => (
+                {buyProductData.data.map((item, index) => (
                   <li key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
                       <div className="flex flex-col">
@@ -759,6 +550,17 @@ function Dashboard() {
               <div className=" text-center">ไม่มีข้อมูล</div>
             )}
           </figure>
+          <div className=" mt-2 text-right">
+            <p>
+              รวมทั้งสิ้น :{" "}
+              <span className="text-secondary">
+                {buyProductData.total
+                  ? Intl.NumberFormat().format(buyProductData.total.toFixed(2))
+                  : "0"}
+              </span>{" "}
+              บาท
+            </p>
+          </div>
         </div>
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-4">
           <h2 className="card-title my-2">ค่าคอมมิสชั่น</h2>
@@ -812,9 +614,9 @@ function Dashboard() {
             </div>
           </form>
           <figure className="overflow-y-auto no-scrollbar max-h-96">
-            {Commition?.length > 0 ? (
+            {Commition?.data?.length > 0 ? (
               <ul>
-                {Commition.map((item, index) => (
+                {Commition.data.map((item, index) => (
                   <li key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
                       <div className="flex flex-col">
@@ -823,13 +625,7 @@ function Dashboard() {
                           {item.employee_fname + " " + item.employee_lname}
                         </div>
                       </div>
-                      <div>
-                        {" "}
-                        {new Intl.NumberFormat().format(
-                          item.total_commission
-                        )}{" "}
-                        บาท
-                      </div>
+                      <div> {item.total_commission} บาท</div>
                     </div>
                   </li>
                 ))}
@@ -838,6 +634,17 @@ function Dashboard() {
               <div className=" text-center">ไม่มีข้อมูล</div>
             )}
           </figure>
+          <div className=" mt-2 text-right">
+            <p>
+              รวมทั้งสิ้น :{" "}
+              <span className="text-secondary">
+                {Commition.total
+                  ? Intl.NumberFormat().format(Commition.total?.toFixed(2))
+                  : "0"}
+              </span>{" "}
+              บาท
+            </p>
+          </div>
         </div>
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-8">
           <h2 className="card-title my-2">รายงานสินค้าขายดี</h2>
@@ -879,7 +686,6 @@ function Dashboard() {
                         })
                       }
                     />
-                    <span className="text-danger"> </span>
                   </div>
                 </div>
 
@@ -889,7 +695,7 @@ function Dashboard() {
                   </label>
                   <div className="col-sm-5">
                     <select
-                      className=" w-full border rounded-md px-2 py-1"
+                      className="max-w-[9.8rem] border rounded-md px-2 py-1"
                       value={DateRanges.selectCategory}
                       onChange={(e) =>
                         setDateRanges({
@@ -908,6 +714,25 @@ function Dashboard() {
                     </select>
                   </div>
                 </div>
+
+                <div>
+                  <label className="col-sm-2 col-form-label text-sm">
+                    ชื่อสินค้า
+                  </label>
+                  <div className="col-sm-5">
+                    <input
+                      type="text"
+                      className="max-w-[9.8rem] form-control border rounded-md px-2 py-1"
+                      value={DateRanges.productName}
+                      onChange={(e) =>
+                        setDateRanges({
+                          ...DateRanges,
+                          productName: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
                 <div className="mb-4 ">
                   <label className="col-sm-2 col-form-label"></label>
                   <div className="col-sm-5">
@@ -921,8 +746,8 @@ function Dashboard() {
                 <thead>
                   <tr>
                     <th>ลำดับ</th>
-                    <th>รหัส</th>
-                    <th>ชื่อสินค้า</th>
+                    <th></th>
+                    <th>สินค้า</th>
                     <th>ราคาขาย</th>
                     <th>จำนวนที่ขายได้</th>
                     <th>ยอดขายทั้งหมด</th>
@@ -934,14 +759,15 @@ function Dashboard() {
                       <tr key={index}>
                         <td>{index + 1}</td>
                         <td>
-                          {list.product_id}{" "}
                           <img
-                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${list.product_img}`}
+                            src={`${import.meta.env.VITE_API_URL}/img/product/${
+                              list.product_img
+                            }`}
                             alt={list.product_name}
-                            className="w-10 h-10 mx-auto"
+                            className="min-w-10 aspect-square"
                           />
                         </td>
-                        <td>{list.product_name}</td>
+                        <td>{list.product_id + " " + list.product_name}</td>
                         <td className="text-right">
                           {new Intl.NumberFormat().format(list.product_price)}
                         </td>
