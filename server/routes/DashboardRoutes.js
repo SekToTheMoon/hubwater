@@ -784,19 +784,8 @@ GROUP BY
       t.expensetype_id;
 `;
 
-  //   const BuyStockSQL = `SELECT
-  //       'สั่งซื้อสินค้า' as expensetype_name,
-  //       SUM(lot_price*lot_total) AS total_expense_amount
-  // FROM
-  //       (select lot_price, lot_total ,product_id from lot where ${BuyStockCondition}) lot
-  // WHERE
-  //       product_id IN (SELECT product_id FROM product WHERE product_del = '0')
-  // `;
   try {
     const [SaleProduct] = await db.promise().query(sql);
-    // const [BuyProduct] = await db.promise().query(BuyStockSQL);
-    // const buyProductData = BuyProduct[0];
-    // SaleProduct.push(buyProductData);
     res.status(200).json(SaleProduct);
   } catch (error) {
     console.error(error);
@@ -900,7 +889,6 @@ router.get("/getTopSale", async (req, res) => {
 router.get("/getSaleProduct", async (req, res) => {
   const { startDate, endDate, category } = req.query;
 
-  console.log("log getsaleproduct ", startDate, endDate, category);
   let sql = `SELECT 
       P.product_name, 
       SUM(I.listi_amount * I.listi_price) AS total_sales_amount,

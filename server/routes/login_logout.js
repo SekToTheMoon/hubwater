@@ -18,7 +18,7 @@ router.post("/login", (req, res) => {
     return res.status(400).json({ message: "กรุณากรอก username และ password" });
 
   db.query(
-    "SELECT employee_username, employee_password FROM employee WHERE employee_username = ?",
+    "SELECT employee_username, employee_password FROM employee WHERE employee_username = ? and employee_del = 0 ",
     [username],
     (err, result) => {
       if (err) {

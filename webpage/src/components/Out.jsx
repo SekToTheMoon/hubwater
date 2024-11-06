@@ -5,7 +5,6 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
-
 import useSocket from "../services/socket";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
@@ -17,7 +16,6 @@ function Out() {
   const { auth } = useAuth();
   //ดึงตำแหน่งมาเพื่อมาเซ็ต option ใน roll
   const roll = auth.posit_name === "หัวหน้า" ? "หัวหน้า" : "ลูกน้อง";
-
   const [Out, setOut] = useState([]);
   const [Banks, setBanks] = useState([]);
   const [OutMoney, setOutMoney] = useState();
@@ -304,7 +302,7 @@ function Out() {
                             }
                           }}
                         >
-                          {statusOut[out.out_status][roll].map(
+                          {(statusOut[out.out_status]?.[roll] || []).map(
                             (element, idx) => (
                               <option key={idx} value={element}>
                                 {element}
@@ -370,9 +368,9 @@ function Out() {
                         <select
                           value={out.out_status}
                           className="select select-sm select-bordered   max-w-xs"
-                          onChange={(e) => handleSelectChange(e, item)}
+                          onChange={(e) => handleSelectChange(e, out)}
                         >
-                          {statusOut[out.out_status][roll].map(
+                          {(statusOut[out.out_status]?.[roll] || []).map(
                             (element, idx) => (
                               <option key={idx} value={element}>
                                 {element}

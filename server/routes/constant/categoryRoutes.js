@@ -4,7 +4,7 @@ const { db } = require("../../database");
 const { getNextID } = require("../../utils/generateId");
 
 router.get("/type", function (req, res) {
-  let fetch = "select type_id,type_name,type_category from type";
+  let fetch = "select type_id,type_category from type";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);
@@ -18,7 +18,7 @@ router.get("/type", function (req, res) {
   }
   fetch += " Where type_del ='0' ";
   if (search) {
-    fetch += "and type_name LIKE ? ";
+    fetch += "and type_category LIKE ? ";
     fetchValue.push("%" + search + "%");
   }
   fetch += " limit ?, ?";
@@ -52,28 +52,23 @@ router.get("/type", function (req, res) {
 router.post("/type/insert", async (req, res) => {
   const [rows] = await db
     .promise()
-    .query("SELECT type_id FROM type WHERE type_name = ? and type_category=?", [
-      req.body.type_name,
+    .query("SELECT type_id FROM type WHERE type_category=?", [
       req.body.type_category,
     ]);
 
   if (rows.length === 0) {
     const sql =
-      "insert into type (type_id,type_name,type_category,type_del) values (?,?,?,?)";
+      "insert into type (type_id,type_category,type_del) values (?,?,?)";
     const idnext = await getNextID("TYP", "type");
-    db.query(
-      sql,
-      [idnext, req.body.type_name, req.body.type_category, "0"],
-      (err, data) => {
-        if (err) {
-          res.status(500).json({ msg: err });
-          return;
-        }
-        res.status(201).json({
-          msg: "เพิ่มประเภทสำเร็จ",
-        });
+    db.query(sql, [idnext, req.body.type_category, "0"], (err, data) => {
+      if (err) {
+        res.status(500).json({ msg: err });
+        return;
       }
-    );
+      res.status(201).json({
+        msg: "เพิ่มประเภทสำเร็จ",
+      });
+    });
   } else {
     res.status(409).json({
       msg: "มี ประเภท นี้อยู่ในระบบแล้ว",
@@ -84,7 +79,7 @@ router.post("/type/insert", async (req, res) => {
 router.get("/gettype/:id", (req, res) => {
   const id = req.params.id;
   if (id == "all") {
-    const sql = "select type_id, type_name ,type_category from type";
+    const sql = "select type_id,type_category from type";
     db.query(sql, (err, data) => {
       if (err) {
         return res.json(err);
@@ -92,7 +87,7 @@ router.get("/gettype/:id", (req, res) => {
       return res.json(data);
     });
   } else {
-    const sql = "select type_name ,type_category from type where type_id =?";
+    const sql = "select type_category from type where type_id =?";
     db.query(sql, [id], (err, data) => {
       if (err) {
         return res.json(err);
@@ -106,21 +101,20 @@ router.put("/type/edit/:id", async (req, res) => {
   const id = req.params.id;
   const [rows] = await db
     .promise()
-    .query(
-      "SELECT type_id FROM type WHERE type_name = ? and type_category =? and type_id != ?",
-      [req.body.type_name, req.body.type_category, id]
-    );
+    .query("SELECT type_id FROM type WHERE type_category =? and type_id != ?", [
+      req.body.type_category,
+      id,
+    ]);
 
   if (rows.length === 0) {
     const sql = `
     UPDATE type 
     SET 
-      type_name = ? ,
       type_category = ?
     WHERE type_id = ?;
   `;
 
-    const values = [req.body.type_name, req.body.type_category];
+    const values = [req.body.type_category];
 
     db.query(sql, [...values, id], (err, result) => {
       if (err) {

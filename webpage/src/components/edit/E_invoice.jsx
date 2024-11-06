@@ -125,7 +125,7 @@ function E_invoice() {
   const fetchInvoice = async () => {
     try {
       const response = await axios.get(
-        `http://hubwater-production-7ee5.up.railway.app/getinvoice/${id}`
+        `${import.meta.env.VITE_API_URL}/getinvoice/${id}`
       );
       const ivDetail = response.data.ivDetail[0];
       const invoiceList = response.data.listiDetail;
@@ -183,7 +183,7 @@ function E_invoice() {
   const fetchCustomer = async () => {
     try {
       const res = await axios.get(
-        "http://hubwater-production-7ee5.up.railway.app/getcustomers"
+        "${import.meta.env.VITE_API_URL}/getcustomers"
       );
       setSelectCustomer(res.data);
     } catch (err) {
@@ -193,8 +193,7 @@ function E_invoice() {
   const fetchCustomerDetail = async (customer_id) => {
     try {
       const res = await axios.get(
-        "http://hubwater-production-7ee5.up.railway.app/getcustomer/" +
-          customer_id
+        "${import.meta.env.VITE_API_URL}/getcustomer/" + customer_id
       );
       setSelectCustomerDetail({
         data: res.data.data[0],
@@ -283,7 +282,7 @@ function E_invoice() {
   const handleEdit = async (updatedValues) => {
     try {
       await axios.put(
-        "http://hubwater-production-7ee5.up.railway.app/invoice/edit/" + id,
+        "${import.meta.env.VITE_API_URL}/invoice/edit/" + id,
         updatedValues
       );
       toast.success("invoice inserted successfully", {
@@ -529,7 +528,9 @@ function E_invoice() {
                       <div className="avatar p-2">
                         <div className="w-20 rounded">
                           <img
-                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${item.product_img}`}
+                            src={`${import.meta.env.VITE_API_URL}/img/product/${
+                              item.product_img
+                            }`}
                             alt="Product"
                           />
                         </div>

@@ -22,7 +22,7 @@ function Type() {
   const navigate = useNavigate();
   let messageSuccess = state && state.msg;
 
-  const headers = ["รหัสประเภท", "ชื่อประเภท", "ชื่อหมวดหมู่"];
+  const headers = ["รหัสประเภท", "ชื่อหมวดหมู่"];
 
   const fetchTypes = async () => {
     let url = `/Type?page=${currentPage}&per_page=${perPage}`;
@@ -106,7 +106,6 @@ function Type() {
       <span className="text-secondary font-bold hover:underline">
         {rowData[0]}
       </span>
-
       <div>ประเภทสินค้า : {rowData[1]}</div>
     </div>
   );

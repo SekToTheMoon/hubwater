@@ -415,7 +415,9 @@ function E_receiptcash() {
                         <td>
                           <div className="avatar p-2">
                             <img
-                              src={`http://hubwater-production-7ee5.up.railway.app/img/product/${product.product_img}`}
+                              src={`${
+                                import.meta.env.VITE_API_URL
+                              }/img/product/${product.product_img}`}
                               alt={product.product_name}
                               className="w-20 h-20"
                             />
@@ -654,7 +656,9 @@ function E_receiptcash() {
                       <div className="avatar">
                         <div className="w-20 rounded">
                           <img
-                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${item.product_img}`}
+                            src={`${import.meta.env.VITE_API_URL}/img/product/${
+                              item.product_img
+                            }`}
                             alt="Product"
                           />
                         </div>

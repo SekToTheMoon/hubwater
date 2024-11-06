@@ -8,13 +8,12 @@ import * as Yup from "yup";
 function E_type() {
   const axios = useAxiosPrivate();
 
-  const [values, setValues] = useState({ type_name: "", type_category: "" });
+  const [values, setValues] = useState({ type_category: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const { id } = useParams();
 
   const validationSchema = Yup.object({
-    type_name: Yup.string().required("กรุณากรอกชื่อ ประเภท"),
     type_category: Yup.string().required("กรุณากรอกชื่อ หมวดหมู่"),
   });
 
@@ -57,7 +56,6 @@ function E_type() {
       .get("/gettype/" + id)
       .then((res) =>
         setValues({
-          type_name: res.data[0].type_name,
           type_category: res.data[0].type_category,
         })
       )
@@ -70,19 +68,6 @@ function E_type() {
         <hr className="my-4" />
         <div className="flex items-center">
           <form onSubmit={handleSubmit}>
-            <label className="block mb-2  font-medium ">ชื่อประเภท</label>
-            <input
-              type="text"
-              placeholder="กรอกชื่อประเภท"
-              value={values.type_name}
-              className="input input-bordered w-full mb-2"
-              onChange={(e) =>
-                setValues({ ...values, type_name: e.target.value })
-              }
-            />
-            {errors.type_name && (
-              <span className="text-error">{errors.type_name}</span>
-            )}
             <label className="block mb-2  font-medium ">ชื่อหมวดหมู่</label>
             <input
               type="text"
@@ -93,7 +78,7 @@ function E_type() {
                 setValues({ ...values, type_category: e.target.value })
               }
             />
-            {errors.type_name && (
+            {errors.type_category && (
               <span className="text-error">{errors.type_category}</span>
             )}
             <button type="submit" className="btn btn-primary w-full">

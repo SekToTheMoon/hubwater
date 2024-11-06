@@ -764,7 +764,7 @@ function Dashboard() {
                               list.product_img
                             }`}
                             alt={list.product_name}
-                            className="min-w-10 aspect-square"
+                            className="min-w-10 w-12 aspect-square object-cover"
                           />
                         </td>
                         <td>{list.product_id + " " + list.product_name}</td>

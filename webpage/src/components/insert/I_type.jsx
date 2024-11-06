@@ -5,13 +5,10 @@ import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 function I_type() {
   const axios = useAxiosPrivate();
-  const [values, setValues] = useState({ type_name: "", type_category: "" });
+  const [values, setValues] = useState({ type_category: "" });
   const [errors, setErrors] = useState({});
 
   const validationSchema = Yup.object({
-    type_name: Yup.string()
-      .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
-      .required("กรุณากรอกชื่อ ประเภท"),
     type_category: Yup.string()
       .max(45, "ความยาวไม่เกิน 45 ตัวอักษร")
       .required("กรุณากรอกชื่อ หมวดหมู่"),
@@ -68,18 +65,6 @@ function I_type() {
         <hr className="my-4" />
         <div className="flex items-center">
           <form onSubmit={handleSubmit}>
-            <label className="block mb-2  font-medium ">ชื่อประเภท</label>
-            <input
-              type="text"
-              placeholder="กรอกชื่อประเภท"
-              className="input input-bordered w-full mb-2"
-              onChange={(e) =>
-                setValues({ ...values, type_name: e.target.value })
-              }
-            />
-            {errors.type_name && (
-              <span className="text-error">{errors.type_name}</span>
-            )}
             <label className="block mb-2  font-medium ">ชื่อหมวดหมู่</label>
             <input
               type="text"

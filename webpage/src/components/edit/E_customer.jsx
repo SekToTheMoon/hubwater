@@ -591,7 +591,7 @@ function E_customer() {
                     เลือก
                   </option>
                   <option value="นิติบุคคล">นิติบุคคล</option>
-                  <option value="บคุคลธรรมดา">บคุคลธรรมดา</option>
+                  <option value="บุคคลธรรมดา">บุคคลธรรมดา</option>
                 </select>
                 {errors.type && (
                   <span className="text-error">{errors.type}</span>
@@ -649,9 +649,16 @@ function E_customer() {
                   <select
                     className="select select-bordered w-full  mb-1"
                     value={values.le_type}
-                    onChange={(e) =>
-                      setValues({ ...values, le_type: e.target.value })
-                    }
+                    onChange={(e) => {
+                      e.target.value === "สำนักงาน"
+                        ? setValues({
+                            ...values,
+                            le_type: e.target.value,
+                            b_name: "",
+                            b_num: "",
+                          })
+                        : setValues({ ...values, le_type: e.target.value });
+                    }}
                   >
                     <option value="" disabled>
                       เลือก

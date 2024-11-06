@@ -563,7 +563,9 @@ function E_quotation() {
                       <div className="avatar p-2">
                         <div className="w-20 rounded">
                           <img
-                            src={`http://hubwater-production-7ee5.up.railway.app/img/product/${item.product_img}`}
+                            src={`${import.meta.env.VITE_API_URL}/img/product/${
+                              item.product_img
+                            }`}
                             alt="Product"
                           />
                         </div>

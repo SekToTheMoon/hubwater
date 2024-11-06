@@ -196,7 +196,6 @@ router.get("/getcustomers", (req, res) => {
 
 router.put("/customer/edit/:id", async (req, res) => {
   const customerId = req.params.id;
-
   // ตรวจสอบว่ามีลูกค้าที่มีข้อมูลเดียวกันหรือไม่
   const [rows] = await db
     .promise()
@@ -247,51 +246,55 @@ router.put("/customer/edit/:id", async (req, res) => {
 
     await db
       .promise()
-      .query(updateCustomerQuery, updateCustomerValues, (err, result) => {
+      .query(updateCustomerQuery, updateCustomerValues, (err) => {
         if (err) {
           res
             .status(500)
             .json({ msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลลูกค้า" });
           return;
         }
-
-        // ถ้าเป็นนิติบุคคล
-        if (req.body.type === "นิติบุคคล") {
-          const updateCorporationQuery = `
-            UPDATE corporation 
-            SET 
-              le_type = ?, 
-              le_name = ?, 
-              le_tax = ?, 
-              b_name = ?, 
-              b_num = ?
-            WHERE 
-              customer_id = ?;
-          `;
-
-          const updateCorporationValues = [
-            req.body.le_type,
-            req.body.le_name,
-            req.body.le_tax,
-            req.body.b_name,
-            req.body.b_num,
-            customerId,
-          ];
-
-          db.query(
-            updateCorporationQuery,
-            updateCorporationValues,
-            (err, data) => {
-              if (err) {
-                res.status(500).json({
-                  msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลนิติบุคคล",
-                });
-                return;
-              }
-            }
-          );
+      });
+    // ถ้าเป็นนิติบุคคล
+    if (req.body.type === "นิติบุคคล") {
+      const [checkdata] = await db
+        .promise()
+        .query("SELECT customer_id FROM corporation WHERE customer_id =?", [
+          customerId,
+        ]);
+      const updateCorporationQuery =
+        checkdata.length === 0
+          ? `
+                    INSERT INTO corporation (le_type, le_name, le_tax, b_name, b_num, customer_id)
+                    VALUES (?, ?, ?, ?, ?, ?);
+                  `
+          : `
+                    UPDATE corporation 
+                    SET 
+                      le_type = ?, 
+                      le_name = ?, 
+                      le_tax = ?, 
+                      b_name = ?, 
+                      b_num = ?
+                    WHERE 
+                      customer_id = ?;
+                  `;
+      const updateCorporationValues = [
+        req.body.le_type,
+        req.body.le_name,
+        req.body.le_tax,
+        req.body.b_name,
+        req.body.b_num,
+        customerId,
+      ];
+      db.query(updateCorporationQuery, updateCorporationValues, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({
+            msg: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลนิติบุคคล",
+          });
         }
       });
+    }
 
     // ลบเบอร์โทรศัพท์เก่าและเพิ่มเบอร์โทรศัพท์ใหม่
     const deletePhoneQuery = `DELETE FROM customer_tel WHERE customer_id = ?`;

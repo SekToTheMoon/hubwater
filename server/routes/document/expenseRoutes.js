@@ -3,7 +3,6 @@ const router = express.Router();
 const { db, pool } = require("../../database");
 const fs = require("fs");
 const path = require("path");
-const { getTransactionID } = require("../../utils/generateId");
 const { uploadExpense } = require("../../middleware/diskStorage");
 const moment = require("moment");
 router.get("/out", function (req, res) {
@@ -72,7 +71,6 @@ router.post("/out/insert", uploadExpense.array("img"), async (req, res) => {
   await connection.beginTransaction();
 
   try {
-    // const idNext = await getTransactionID("OT", "expense", req.body.out_date); ใช้ไม่ได้เนื่องจาก prefix ไม่ตรงกับชื่อ col ตาราง ออกแบบโง่ชิปหาย
     const [rows] = await db
       .promise()
       .query(
