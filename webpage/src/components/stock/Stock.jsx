@@ -2,16 +2,49 @@ import { useState, useEffect, useRef } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { useParams } from "react-router-dom";
 import Barcode from "react-barcode";
+import { useReactToPrint } from "react-to-print";
 import { generatePDF } from "../../utils/generatePDF";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+const getPageMargins = () => {
+  `
+@media all {
+.page-break {
+  display: none;
+}
+}
 
+@media print {
+html, body {
+  height: initial !important;
+  overflow: initial !important;
+  -webkit-print-color-adjust: exact;
+}
+}
+
+@media print {
+.page-break {
+  margin-top: 1rem;
+  display: block;
+  page-break-before: auto;
+}
+}
+
+@page {
+size: auto;
+margin: 20mm;
+}
+`;
+};
+<style>{getPageMargins()}</style>;
 function Stock() {
   const axios = useAxiosPrivate();
 
+  const contentRef = useRef();
+  const reactToPrintFn = useReactToPrint({ contentRef });
   const [lot, setLot] = useState([]);
   const { id } = useParams();
   const [values, setValues] = useState({
@@ -408,13 +441,12 @@ function Stock() {
                   ✕
                 </button>
                 <h3 className="font-bold text-lg">Barcode</h3>
-                <div id="barcode">
-                  {" "}
+                <div ref={contentRef}>
                   <Barcode width={1} height={40} value={generateBarcode} />
                 </div>
 
                 <button
-                  onClick={() => generatePDF("barcode")}
+                  onClick={reactToPrintFn}
                   className="btn btn-primary mt-4"
                 >
                   Print
