@@ -270,7 +270,11 @@ function Submenu({ open, menu }) {
 
 function UserSection({ open, signOut }) {
   return (
-    <div className={`${open ? "mt-auto" : ""} border-t flex p-4 `}>
+    <div
+      className={`${
+        open ? "mt-auto" : ""
+      } border-t border-base-content flex p-4 `}
+    >
       <div className={`${open ? "avatar" : "hidden"}`}>
         <div className="w-10 rounded-full">
           <img

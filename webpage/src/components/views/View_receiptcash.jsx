@@ -60,6 +60,7 @@ function View_receiptCash() {
       setEmployee(response.data.employee_name);
       setValues({
         ...values,
+        receipt_date: moment(rfDetail.rf_date).format("YYYY-MM-DD"),
         receipt_total: parseFloat(rfDetail.rf_total),
         receipt_detail: rfDetail.rf_detail,
         receipt_vat: rfDetail.rf_vat,
@@ -89,7 +90,7 @@ function View_receiptCash() {
         <h1 className="ml-32 text-2xl text-slate-500">ใบเสร็จรับเงิน</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
-          <div className="mx-auto w-2/3 pr-12 2xl:max-w-5xl ">
+          <div className="mx-auto">
             <div className="flex justify-end mt-3">
               <button
                 className="btn btn-info text-base-100"
@@ -223,10 +224,10 @@ function View_receiptCash() {
                       </div>
                     </td>
                     <td className="hidden md:table-cell">{item.lot_number}</td>
-                    <td>{item.listr_amount}</td>
+                    <td>{item.listrf_amount}</td>
                     <td className="hidden sm:table-cell">{item.unit_name}</td>
                     <td>{item.product_price}</td>
-                    <td>{item.listr_total}</td>
+                    <td>{item.listrf_total}</td>
                   </tr>
                 ))}
               </tbody>

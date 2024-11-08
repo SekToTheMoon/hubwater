@@ -7,10 +7,12 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useSocket from "../services/socket";
+import selectStatusColor from "../utils/selectStatusColor";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
 import MobileDocTable from "./component/MobileDocTable";
+import { numberFormat } from "../utils/numberFormat";
 function Quotation() {
   const axios = useAxiosPrivate();
   const { auth } = useAuth();
@@ -279,7 +281,7 @@ function Quotation() {
                       </td>
                       <td className="group relative ">
                         <span
-                          className="cursor-pointer hover:underline "
+                          className="cursor-pointer hover:underline hover:text-secondary"
                           onClick={() =>
                             navigate(
                               `view/${quotation.qt_id}?version=${quotation.qt_num}`
@@ -309,16 +311,16 @@ function Quotation() {
                       <td>{quotation.customer_fname}</td>
                       <td className="text-right pr-2">
                         {quotation.qt_vat
-                          ? Intl.NumberFormat().format(
-                              (quotation.qt_total * 1.07).toFixed(2)
-                            )
-                          : Intl.NumberFormat().format(quotation.qt_total)}
+                          ? numberFormat(quotation.qt_total * 1.07)
+                          : numberFormat(quotation.qt_total)}
                       </td>
                       <td>{quotation.employee_fname}</td>
                       <td className="flex gap-2">
                         <select
                           value={quotation.qt_status}
-                          className="select select-bordered w-36 max-w-36 "
+                          className={`select select-bordered w-36 max-w-36 ${selectStatusColor(
+                            quotation.qt_status
+                          )}`}
                           onChange={(e) => handleSelectChange(e, quotation)}
                         >
                           {statusQuotation[quotation.qt_status][roll].map(

@@ -11,6 +11,7 @@ import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
 import MobileDocTable from "./component/MobileDocTable";
+import { numberFormat } from "../utils/numberFormat";
 function ReceiptCash() {
   const axios = useAxiosPrivate();
 
@@ -296,7 +297,7 @@ function ReceiptCash() {
                         {receiptCash.rf_date.substring(0, 10)}
                       </td>
                       <td
-                        className="cursor-pointer"
+                        className="cursor-pointer hover:underline hover:text-secondary"
                         onClick={() => navigate(`view/${receiptCash.rf_id}`)}
                       >
                         {receiptCash.rf_id}
@@ -308,10 +309,8 @@ function ReceiptCash() {
                       </td>
                       <td className="text-right">
                         {receiptCash.rf_vat
-                          ? Intl.NumberFormat().format(
-                              (receiptCash.rf_total * 1.07).toFixed(2)
-                            )
-                          : Intl.NumberFormat().format(receiptCash.rf_total)}
+                          ? numberFormat(receiptCash.rf_total * 1.07)
+                          : numberFormat(receiptCash.rf_total)}
                       </td>
                       <td>{receiptCash.employee_fname}</td>
                       <td className="flex gap-2">

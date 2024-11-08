@@ -12,6 +12,7 @@ import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
 import MobileDocTable from "./component/MobileDocTable";
+import { numberFormat } from "../utils/numberFormat";
 
 function Bill() {
   const { auth } = useAuth();
@@ -279,7 +280,7 @@ function Bill() {
                       </td>
                       <td className="group relative ">
                         <span
-                          className="cursor-pointer hover:underline "
+                          className="cursor-pointer hover:underline  hover:text-secondary"
                           onClick={() => navigate(`view/${bill.bn_id}`)}
                         >
                           {bill.bn_id}
@@ -305,10 +306,8 @@ function Bill() {
                       <td>{bill.customer_fname}</td>
                       <td className="text-right pr-2">
                         {bill.bn_vat
-                          ? Intl.NumberFormat().format(
-                              (bill.bn_total * 1.07).toFixed(2)
-                            )
-                          : Intl.NumberFormat().format(bill.bn_total)}
+                          ? numberFormat(bill.bn_total * 1.07)
+                          : numberFormat(bill.bn_total)}
                       </td>
                       <td>{bill.employee_fname}</td>
                       <td className="flex gap-2">

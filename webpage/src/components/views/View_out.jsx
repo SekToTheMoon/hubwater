@@ -67,7 +67,7 @@ function View_out() {
       <div className="rounded-box bg-base-100 p-5 min-h-full">
         <h1 className="ml-16 text-2xl">ดูเอกสารค่าใช้จ่าย</h1>
         <hr className="my-4" />
-        <div className="mx-auto w-2/3 2xl:max-w-5xl">
+        <div className="mx-auto">
           <div className="mt-5 mb-2 2xl:flex justify-between">
             <div className="form-control w-25">
               <label className="label">

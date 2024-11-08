@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import Barcode from "react-barcode";
+import { generatePDF } from "../../utils/generatePDF";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -19,6 +21,7 @@ function Stock() {
     lot_exp_date: new Date(),
     product_id: id,
   });
+  const [generateBarcode, setGenerateBarcode] = useState(null);
   const [errors, setErrors] = useState({});
   const [totalRows, setTotalRows] = useState(0);
   const [perPage, setPerPage] = useState(10);
@@ -392,8 +395,34 @@ function Stock() {
               </dialog>
             )}
 
+            <dialog
+              id="generateBarcodeModal"
+              className="modal"
+              open={generateBarcode ? true : false}
+            >
+              <div className="modal-box">
+                <button
+                  className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                  onClick={() => setGenerateBarcode(null)}
+                >
+                  ✕
+                </button>
+                <h3 className="font-bold text-lg">Barcode</h3>
+                <div id="barcode">
+                  {" "}
+                  <Barcode width={1} height={40} value={generateBarcode} />
+                </div>
+
+                <button
+                  onClick={() => generatePDF("barcode")}
+                  className="btn btn-primary mt-4"
+                >
+                  Print
+                </button>
+              </div>
+            </dialog>
+
             <div className="flex">
-              {" "}
               <label className="input input-bordered flex items-center gap-2">
                 <input
                   type="text"
@@ -448,6 +477,13 @@ function Stock() {
                         : "ไม่ได้ระบุ"}
                     </td>
                     <td>
+                      <button
+                        type="button"
+                        onClick={() => setGenerateBarcode(lot.lot_number)}
+                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
+                      >
+                        barcode
+                      </button>
                       <button
                         type="button"
                         onClick={() => setEditLot(lot)}

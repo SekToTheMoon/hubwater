@@ -1073,4 +1073,24 @@ router.get("/getCategoryProduct", async (req, res) => {
   }
 });
 
+router.get("/getExpProduct", async (req, res) => {
+  try {
+    const [expiredProducts] = await db.promise().query(`
+      SELECT p.product_name, p.product_img, l.lot_number, l.lot_price, le.lot_total_exp
+      FROM product AS p
+      JOIN lot AS l ON p.product_id = l.product_id
+      JOIN lot_exp AS le ON l.lot_number = le.lot_number AND l.product_id = le.product_id
+      WHERE le.lot_exp_date <= CURDATE();
+    `);
+
+    if (expiredProducts.length > 0) {
+      res.status(200).json(expiredProducts);
+    } else {
+      res.status(404).json({ message: "ไม่มีสินค้าที่หมดอายุ" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล", error });
+  }
+});
+
 module.exports = router;

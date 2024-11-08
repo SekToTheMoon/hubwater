@@ -3,6 +3,7 @@ const { db } = require("../database");
 const fs = require("fs");
 const moment = require("moment");
 const thaiBahtText = require("thai-baht-text");
+const { numberFormat } = require("../utils/numberFormat");
 
 exports.createPdf = async (queryData, dataCallback, endCallback) => {
   try {
@@ -18,11 +19,15 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
     if (id.startsWith("QT")) {
       header = `ใบเสนอราคา`;
       tableName = "quotation";
-      idField = "quotation";
+      idField = "qt";
       listname = "listq";
       numberQT = queryData.numberQT;
-      sqlSelect = `SELECT qt_num, qt_date, qt_total, qt_credit, qt_detail, qt_vat, qt_tax, qt_status, employee_id, customer_id FROM quotation WHERE qt_id = ?;`;
-      sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, lot_number,  qt_num ,product_name FROM listq join product on listq.product_id = product.product_id WHERE qt_id = ?;`;
+      sqlSelect = `SELECT qt_num, qt_date, qt_total, qt_credit, qt_detail, qt_vat, qt_tax, qt_status, employee_id, customer_id FROM quotation WHERE qt_id = ? ${
+        numberQT ? "and qt_num = ?" : ""
+      };`;
+      sqlList = `SELECT listq_number, listq_price, listq_amount, listq_total, lot_number,  qt_num ,product_name FROM listq join product on listq.product_id = product.product_id WHERE qt_id = ? ${
+        numberQT ? "and qt_num = ?" : ""
+      };`;
     } else if (id.startsWith("BN")) {
       header = `ใบวางบิล`;
       tableName = "bill";
@@ -140,7 +145,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
       doc.on("data", dataCallback);
       doc.on("end", endCallback);
       // pipe  คือ ส่งออก doc.pipe(res)
-      // doc.pipe(fs.createWriteStream(header + id + `.pdf`));
+      doc.pipe(fs.createWriteStream(header + id + `.pdf`));
       // สร้าง pdf ฝั่ง server เอาไว้ดู
       // Embed the Thai font
 
@@ -342,7 +347,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
       doc.text("ภาษีมูลค่าเพิ่ม 7%", rightSide, y + 60);
 
       doc.text(
-        result[0][`${idField}_vat`] ? `${vat.toFixed(0)} บาท` : "0 บาท",
+        result[0][`${idField}_vat`] ? `${numberFormat(vat)} บาท` : "0 บาท",
         rightSide + 100,
         y + 60,
         {
@@ -353,7 +358,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
       doc.text("จำนวนเงินรวมทั้งสิ้น", rightSide, y + 80);
       doc.text(
         result[0][`${idField}_vat`]
-          ? `${(total * 1.07).toFixed(0)} บาท`
+          ? `${(total * 1.07).toFixed(2)} บาท`
           : result[0][`${idField}_total`] + " บาท",
         rightSide + 100,
         y + 80,
@@ -362,22 +367,22 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
 
       if (result[0][`${idField}_tax`]) {
         doc.text("หักภาษี ณ ที่จ่าย 3%", rightSide, y + 100);
-        doc.text(`${tax.toFixed(0)} บาท`, rightSide + 100, y + 100, {
+        doc.text(`${tax.toFixed(2)} บาท`, rightSide + 100, y + 100, {
           align: "right",
         });
         doc.text("ยอดชำระ", rightSide, y + 120);
-        doc.text(`${finalTotal.toFixed(0)} บาท`, rightSide + 100, y + 120, {
+        doc.text(`${finalTotal.toFixed(2)} บาท`, rightSide + 100, y + 120, {
           align: "right",
         });
-        doc.text(`(${thaiBahtText(finalTotal.toFixed(0))})`, leftSide, y + 120);
+        doc.text(`(${thaiBahtText(finalTotal.toFixed(2))})`, leftSide, y + 120);
       } else if (result[0][`${idField}_vat`]) {
         doc.text(
-          `(${thaiBahtText((total * 1.07).toFixed(0))})`,
+          `(${thaiBahtText((total * 1.07).toFixed(2))})`,
           leftSide,
           y + 80
         );
       } else {
-        doc.text(`(${thaiBahtText(total.toFixed(0))} )`, leftSide, y + 80);
+        doc.text(`(${thaiBahtText(total.toFixed(2))} )`, leftSide, y + 80);
       }
 
       // ส่วนท้ายในใบต่างๆ ----------------------------------------
@@ -699,7 +704,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
         doc.text("ภาษีมูลค่าเพิ่ม 7%", rightSide, y + 60);
 
         doc.text(
-          result[0][`${idField}_vat`] ? `${vat.toFixed(0)} บาท` : "0 บาท",
+          result[0][`${idField}_vat`] ? `${vat.toFixed(2)} บาท` : "0 บาท",
           rightSide + 100,
           y + 60,
           {
@@ -710,7 +715,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
         doc.text("จำนวนเงินรวมทั้งสิ้น", rightSide, y + 80);
         doc.text(
           result[0][`${idField}_vat`]
-            ? `${(total * 1.07).toFixed(0)} บาท`
+            ? `${(total * 1.07).toFixed(2)} บาท`
             : result[0][`${idField}_total`] + " บาท",
           rightSide + 100,
           y + 80,
@@ -719,26 +724,26 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
 
         if (result[0][`${idField}_tax`]) {
           doc.text("หักภาษี ณ ที่จ่าย 3%", rightSide, y + 100);
-          doc.text(`${tax.toFixed(0)} บาท`, rightSide + 100, y + 100, {
+          doc.text(`${tax.toFixed(2)} บาท`, rightSide + 100, y + 100, {
             align: "right",
           });
           doc.text("ยอดชำระ", rightSide, y + 120);
-          doc.text(`${finalTotal.toFixed(0)} บาท`, rightSide + 100, y + 120, {
+          doc.text(`${finalTotal.toFixed(2)} บาท`, rightSide + 100, y + 120, {
             align: "right",
           });
           doc.text(
-            `(${thaiBahtText(finalTotal.toFixed(0))})`,
+            `(${thaiBahtText(finalTotal.toFixed(2))})`,
             leftSide,
             y + 120
           );
         } else if (result[0][`${idField}_vat`]) {
           doc.text(
-            `(${thaiBahtText((total * 1.07).toFixed(0))})`,
+            `(${thaiBahtText((total * 1.07).toFixed(2))})`,
             leftSide,
             y + 80
           );
         } else {
-          doc.text(`(${thaiBahtText(total.toFixed(0))} )`, leftSide, y + 80);
+          doc.text(`(${thaiBahtText(total.toFixed(2))} )`, leftSide, y + 80);
         }
 
         // ส่วนท้ายในใบต่างๆ ----------------------------------------
@@ -871,7 +876,7 @@ exports.createPdf = async (queryData, dataCallback, endCallback) => {
         });
         doc.on("data", dataCallback);
         doc.on("end", endCallback);
-        // doc.pipe(fs.createWriteStream(header + id + `.pdf`));
+        doc.pipe(fs.createWriteStream(header + id + `.pdf`));
 
         doc.registerFont("THSarabunNew", "fonts/THSarabunNew.ttf");
         doc.font("THSarabunNew");

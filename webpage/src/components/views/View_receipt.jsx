@@ -93,7 +93,7 @@ function View_receipt() {
         <h1 className="ml-32 text-2xl text-slate-500">ใบเสร็จรับเงิน</h1>
         <hr className="my-4" />
         <div className="flex items-center ">
-          <div className="mx-auto w-2/3 pr-12 2xl:max-w-5xl ">
+          <div className="mx-auto">
             <div className="flex justify-end mt-3">
               <button
                 className="btn btn-info text-base-100"

@@ -117,7 +117,7 @@ router.get("/getproduct/:id", (req, res) => {
       return res.json(data);
     });
   } else {
-    const sql = `SELECT product_id, product_name, product_price, product_amount, product_reorder, product_detail, product_img, unit_m_id, unit_id, brand_id, type_id
+    const sql = `SELECT product_id, product_name, product_price, product_amount, size, product_reorder, product_detail, product_img, unit_m_id, unit_id, brand_id, type_id
     FROM product
     WHERE product_id =? ;`;
     db.query(sql, [id], (err, data) => {
@@ -149,6 +149,7 @@ router.put(
         product_amount= ?,
         product_reorder= ?,
         product_detail= ?,
+        size= ?,
         unit_m_id= ?,
         unit_id= ?,
         brand_id= ?,
@@ -161,6 +162,7 @@ router.put(
         req.body.product_amount,
         req.body.product_reorder,
         req.body.product_detail,
+        req.body.size,
         req.body.unit_m_id,
         req.body.unit_id,
         req.body.brand_id,

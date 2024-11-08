@@ -112,7 +112,9 @@ function View_quotation() {
               <button
                 className="btn btn-info text-base-100"
                 onClick={() => {
-                  axios.get(`/pdf?id=${id}`);
+                  axios.get(
+                    `/pdf?id=${id}${version ? `&numberQT=${version}` : ""}`
+                  );
                 }}
               >
                 print / download

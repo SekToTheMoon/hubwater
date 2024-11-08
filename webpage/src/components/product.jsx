@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SearchInput from "./component/SearchInput";
+import { numberFormat } from "../utils/numberFormat";
 
 function product() {
   const axios = useAxiosPrivate();
@@ -136,7 +137,7 @@ function product() {
                       <td className="pl-4 py-3 ">{product.product_id}</td>
                       <td className="align-middle">{product.product_name}</td>
                       <td className="align-middle text-right">
-                        {product.product_price}
+                        {numberFormat(product.product_price)}
                       </td>
                       <td className="text-center align-middle">
                         {product.product_amount}

@@ -4,6 +4,9 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { Chart as ChartJS, plugins } from "chart.js/auto";
 import { Pie, Bar, Line, Doughnut } from "react-chartjs-2";
 import moment from "moment";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { numberFormat, numberFormatCurrency } from "../utils/numberFormat";
 function selectTimeline(onChangeFunc) {
   return (
     <select
@@ -39,6 +42,7 @@ function Dashboard() {
   const [buyProductData, setBuyProductData] = useState({ data: [], total: "" });
   const [Commition, setCommition] = useState({ data: [], total: "" });
   const [waitToPay, setWaitToPay] = useState();
+  const [expProduct, setExpProduct] = useState();
   const [TopSale, setTopSale] = useState();
   const [TotalIncomeAndExpense, setTotalIncomeAndExpense] = useState(null);
 
@@ -67,6 +71,18 @@ function Dashboard() {
     endDate: moment(new Date()).format("YYYY-MM-DD"),
   });
 
+  const handleDateErr = () => {
+    toast.error("วันที่เริ่มต้น ต้องน้อยกว่า วันที่สิ้นสุด", {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+    });
+  };
   const handleSubmitTopSale = (e) => {
     e.preventDefault();
 
@@ -78,7 +94,7 @@ function Dashboard() {
         DateRanges.productName
       );
     } else {
-      alert("Please select a valid date range");
+      handleDateErr();
     }
   };
   const handleSubmitSaleProduct = (e) => {
@@ -91,7 +107,7 @@ function Dashboard() {
         saleProductDateRanges.selectCategory
       );
     } else {
-      alert("Please select a valid date range");
+      handleDateErr();
     }
   };
   const handleSubmitCommition = (e) => {
@@ -102,7 +118,7 @@ function Dashboard() {
         commitionDateRanges.endDate
       );
     } else {
-      alert("Please select a valid date range");
+      handleDateErr();
     }
   };
 
@@ -114,7 +130,7 @@ function Dashboard() {
         buyProductDateRanges.endDate
       );
     } else {
-      alert("Please select a valid date range");
+      handleDateErr();
     }
   };
 
@@ -246,6 +262,16 @@ function Dashboard() {
       console.error("Error fetching sales data:", error);
     }
   };
+  const fetchExpProduct = async (startDate, endDate, category) => {
+    let url = `/getExpProduct`;
+    try {
+      const response = await axiosPrivate.get(url);
+      const data = response.data;
+      setExpProduct(data);
+    } catch (error) {
+      console.error("Error fetching sales data:", error);
+    }
+  };
   const fetchExpenseByCategory = async (timeline) => {
     let url = `/getExpenseByCategory?timeline=${timeline}`;
     try {
@@ -357,6 +383,7 @@ function Dashboard() {
       DateRanges.productName
     );
     fetchCategoryProduct();
+    fetchExpProduct();
   }, []);
 
   return (
@@ -372,13 +399,13 @@ function Dashboard() {
                 <div className="flex gap-5 w-full 2xl:flex-col 2xl:pt-7">
                   <p>
                     <span className="text-blue-500">รายได้รวม : </span>
-                    {`${new Intl.NumberFormat().format(
+                    {`${numberFormatCurrency(
                       TotalIncomeAndExpense?.sumIncome
                     )}`}
                   </p>
                   <p>
                     <span className="text-pink-500">ค่าใช้จ่ายรวม : </span>
-                    {`${new Intl.NumberFormat().format(
+                    {`${numberFormatCurrency(
                       TotalIncomeAndExpense?.sumExpense
                     )}`}
                   </p>
@@ -424,16 +451,17 @@ function Dashboard() {
                       <div className="text-right">
                         <div
                           className={`text-sm ${
-                            moment(item.doc_month, "DD-MM-YYYY").format(
-                              "DD-MM-yyyy"
-                            ) > moment().format("DD-MM-yyyy")
+                            moment(item.doc_month, "DD-MM-YYYY").isBefore(
+                              moment(),
+                              "day"
+                            )
                               ? "text-error"
                               : ""
                           }`}
                         >
                           {item.doc_month}
                         </div>
-                        <div>{new Intl.NumberFormat().format(item.total)}</div>
+                        <div>{numberFormat(item.total)}</div>
                       </div>
                     </div>
                   </div>
@@ -538,9 +566,7 @@ function Dashboard() {
                         <div className="hidden sm:block">
                           {item.product_name}
                         </div>
-                        <div>
-                          {new Intl.NumberFormat().format(item.sumLot)} บาท
-                        </div>
+                        <div>{numberFormat(item.sumLot)}</div>
                       </div>
                     </div>
                   </li>
@@ -555,7 +581,7 @@ function Dashboard() {
               รวมทั้งสิ้น :{" "}
               <span className="text-secondary">
                 {buyProductData.total
-                  ? Intl.NumberFormat().format(buyProductData.total.toFixed(2))
+                  ? numberFormat(buyProductData.total)
                   : "0"}
               </span>{" "}
               บาท
@@ -638,9 +664,7 @@ function Dashboard() {
             <p>
               รวมทั้งสิ้น :{" "}
               <span className="text-secondary">
-                {Commition.total
-                  ? Intl.NumberFormat().format(Commition.total?.toFixed(2))
-                  : "0"}
+                {Commition.total ? numberFormat(Commition.total) : "0"}
               </span>{" "}
               บาท
             </p>
@@ -769,14 +793,66 @@ function Dashboard() {
                         </td>
                         <td>{list.product_id + " " + list.product_name}</td>
                         <td className="text-right">
-                          {new Intl.NumberFormat().format(list.product_price)}
+                          {numberFormat(list.product_price)}
                         </td>
                         <td className="text-center">
                           {list.total_quantity_sold}
                         </td>
                         <td className="text-right">
-                          {new Intl.NumberFormat().format(
-                            list.total_sales_amount
+                          {numberFormat(list.total_sales_amount)}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        ยังไม่มีรายงาน
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </figure>
+        </div>
+        <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg lg:col-span-8">
+          <h2 className="card-title my-2">สินค้าหมดอายุ</h2>
+
+          <figure className="h-full mt-3 ">
+            <div className="overflow-auto max-h-96">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>สินค้า</th>
+                    <th>ล๊อต</th>
+                    <th>ราคาทุน</th>
+                    <th>จำนวน</th>
+                    <th>รวมทั้งหมด</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expProduct?.length > 0 ? (
+                    expProduct.map((list, index) => (
+                      <tr key={index}>
+                        <td>
+                          <img
+                            src={`${import.meta.env.VITE_API_URL}/img/product/${
+                              list.product_img
+                            }`}
+                            alt={list.product_name}
+                            className="min-w-10 w-12 aspect-square object-cover"
+                          />
+                        </td>
+                        <td>{list.product_name}</td>
+                        <td>{list.lot_number}</td>
+                        <td className="text-right">
+                          {numberFormat(list.lot_price)}
+                        </td>
+                        <td className="text-center">{list.lot_total_exp}</td>
+                        <td className="text-right">
+                          {numberFormat(
+                            parseFloat(list.lot_price) * list.lot_total_exp
                           )}
                         </td>
                       </tr>
@@ -793,7 +869,6 @@ function Dashboard() {
             </div>
           </figure>
         </div>
-
         <div className="col-span-8 bg-base-100 shadow-xl p-5 rounded-lg md:col-span-8">
           <h2 className="card-title my-2">ยอดขายตามสินค้า</h2>
           <form onSubmit={handleSubmitSaleProduct}>
@@ -881,6 +956,7 @@ function Dashboard() {
           </figure>
         </div>
       </main>
+      <ToastContainer position="top-right" />
     </>
   );
 }

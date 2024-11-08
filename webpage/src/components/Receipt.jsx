@@ -12,6 +12,7 @@ import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
 import MobileDocTable from "./component/MobileDocTable";
+import { numberFormat } from "../utils/numberFormat";
 
 function Receipt() {
   const axios = useAxiosPrivate();
@@ -310,7 +311,7 @@ function Receipt() {
                       </td>
                       <td className="group relative ">
                         <span
-                          className="cursor-pointer hover:underline "
+                          className="cursor-pointer hover:underline hover:text-secondary"
                           onClick={() =>
                             navigate(`view?receipt=${receipt.rc_id}`)
                           }
@@ -334,10 +335,8 @@ function Receipt() {
                       <td>{receipt.customer_fname}</td>
                       <td className="text-right pr-2">
                         {receipt.rc_vat
-                          ? Intl.NumberFormat().format(
-                              (receipt.rc_total * 1.07).toFixed(2)
-                            )
-                          : Intl.NumberFormat().format(receipt.rc_total)}
+                          ? numberFormat(receipt.rc_total * 1.07)
+                          : numberFormat(receipt.rc_total)}
                       </td>
                       <td>{receipt.employee_fname}</td>
                       <td className="flex gap-2">

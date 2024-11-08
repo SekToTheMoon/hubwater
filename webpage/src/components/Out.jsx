@@ -275,7 +275,7 @@ function Out() {
                         {out.out_date.substring(0, 10)}
                       </td>
                       <td
-                        className="cursor-pointer"
+                        className="cursor-pointer hover:underline hover:text-secondary"
                         onClick={() => navigate(`view/${out.out_id}`)}
                       >
                         {out.out_id}
@@ -349,12 +349,11 @@ function Out() {
                     className="space-y-3 p-4 items-start rounded-lg shadow"
                   >
                     <div className="flex justify-between ">
-                      {/* เรียกใช้ htmlTemplate โดยส่ง rowData เป็นพารามิเตอร์ */}
                       <div>
                         <div className="w-full">
                           <Link
                             to={`view/${out.out_id}`}
-                            className="text-secondary font-bold hover:underline"
+                            className="text-secondary font-bold hover:underline hover:text-secondary"
                           >
                             {out.out_id}
                           </Link>

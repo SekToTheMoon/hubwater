@@ -11,6 +11,7 @@ import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
 import MobileDocTable from "./component/MobileDocTable";
+import { numberFormat } from "../utils/numberFormat";
 
 function Invoice() {
   const axios = useAxiosPrivate();
@@ -322,7 +323,7 @@ function Invoice() {
                       </td>
                       <td className="group relative ">
                         <span
-                          className="cursor-pointer hover:underline "
+                          className="cursor-pointer hover:underline hover:text-secondary"
                           onClick={() => navigate(`view/${invoice.iv_id}`)}
                         >
                           {invoice.iv_id}
@@ -352,10 +353,8 @@ function Invoice() {
                       <td>{invoice.customer_fname}</td>
                       <td className="text-right pr-2">
                         {invoice.iv_vat
-                          ? Intl.NumberFormat().format(
-                              (invoice.iv_total * 1.07).toFixed(2)
-                            )
-                          : Intl.NumberFormat().format(invoice.iv_total)}
+                          ? numberFormat(invoice.iv_total * 1.07)
+                          : numberFormat(invoice.iv_total)}
                       </td>
                       <td>{invoice.employee_fname}</td>
                       <td className="flex gap-2">
