@@ -358,7 +358,9 @@ function Quotation() {
                             </li>
                             <li>
                               <button
-                                onClick={() => setQuotationfordel(quotation)}
+                                onClick={() =>
+                                  setQuotationfordel(quotation.qt_id)
+                                }
                               >
                                 ลบ
                               </button>

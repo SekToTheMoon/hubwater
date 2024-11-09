@@ -156,7 +156,7 @@ function Sidebar_() {
             <img
               src={`${import.meta.env.VITE_API_URL}/img/logo/logo.png`}
               className={`overflow-hidden transition-all ${
-                open ? "w-28 object-cover" : "hidden"
+                open ? "w-28 max-h-12 object-cover" : "hidden"
               }`}
               alt="Logo"
             />

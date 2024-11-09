@@ -5,6 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
+import selectStatusColor from "../utils/selectStatusColor";
 import useSocket from "../services/socket";
 import moment from "moment";
 import { handleChangeStatus } from "../utils/changeStatus";
@@ -342,7 +343,9 @@ function Receipt() {
                       <td className="flex gap-2">
                         <select
                           value={receipt.rc_status}
-                          className="select select-bordered pl-2 w-[7.1rem]"
+                          className={`select select-bordered pl-2 w-[7.1rem] ${selectStatusColor(
+                            receipt.rc_status
+                          )}`}
                           onChange={(e) => {
                             if (e.target.value === "เก็บเงิน") {
                               setReceiptMoney({

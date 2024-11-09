@@ -548,21 +548,21 @@ function Dashboard() {
                 {buyProductData.data.map((item, index) => (
                   <li key={index} className="border-b py-2">
                     <div className="flex justify-between items-center p-1">
-                      <div className="flex flex-col">
-                        <div className="text-sm">
+                      <div className="flex flex-col ">
+                        <div className="label-text">
                           {item.lot_number}
-                          <span className="bg-primary text-primary-content ml-2 rounded-md p-1">
+                          <span className="bg-primary label-text-alt text-primary-content ml-2 rounded-md p-1">
                             {item.product_id}
                           </span>
                         </div>
-                        <div className="mt-2">
+                        <div className="mt-2 label-text">
                           {"ราคาทุน : " +
                             item.lot_price +
                             "  จำนวน : " +
                             item.lot_total}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right label-text flex-1">
                         <div className="hidden sm:block">
                           {item.product_name}
                         </div>

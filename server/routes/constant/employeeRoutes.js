@@ -9,7 +9,7 @@ const { getNextID } = require("../../utils/generateId");
 
 router.get("/employee", function (req, res) {
   let fetchUser =
-    "select e.employee_id,CONCAT(e.employee_fname, ' ', e.employee_lname) AS name, GROUP_CONCAT(t.tel) AS tel, e.employee_email from employee e LEFT JOIN employee_tel t ON e.employee_id=t.employee_id";
+    "select e.employee_id,CONCAT(e.employee_fname, ' ', e.employee_lname) AS name, GROUP_CONCAT(t.tel) AS tel, e.employee_email, p.posit_name from employee e LEFT JOIN employee_tel t ON e.employee_id=t.employee_id Join posit p on e.posit_id = p.posit_id";
   let fetchValue = [];
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);

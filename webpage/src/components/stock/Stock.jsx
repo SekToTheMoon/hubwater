@@ -3,12 +3,12 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { useParams } from "react-router-dom";
 import Barcode from "react-barcode";
 import { useReactToPrint } from "react-to-print";
-import { generatePDF } from "../../utils/generatePDF";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as Yup from "yup";
 import moment from "moment";
+import { ScanBarcode } from "lucide-react";
 const getPageMargins = () => {
   `
 @media all {
@@ -433,24 +433,60 @@ function Stock() {
               className="modal"
               open={generateBarcode ? true : false}
             >
-              <div className="modal-box">
+              <div className="modal-box max-w-4xl">
                 <button
                   className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                   onClick={() => setGenerateBarcode(null)}
                 >
                   ✕
                 </button>
-                <h3 className="font-bold text-lg">Barcode</h3>
-                <div ref={contentRef}>
-                  <Barcode width={1} height={40} value={generateBarcode} />
-                </div>
 
-                <button
-                  onClick={reactToPrintFn}
-                  className="btn btn-primary mt-4"
-                >
-                  Print
-                </button>
+                <h3 className="font-bold text-lg">Barcode</h3>
+                <div className="my-2  join">
+                  <input
+                    className="input input-sm input-bordered text-center w-16 join-item"
+                    type="text"
+                    value={generateBarcode?.amount || ""}
+                    onChange={(e) => {
+                      const newAmount = e.target.value;
+                      if (newAmount === "" || Number(newAmount) > 0) {
+                        setGenerateBarcode({
+                          ...generateBarcode,
+                          amount: parseInt(newAmount),
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      if (
+                        generateBarcode.amount === "" ||
+                        generateBarcode.amount === 0 ||
+                        generateBarcode.amount === null
+                      ) {
+                        setGenerateBarcode({ ...generateBarcode, amount: 1 });
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={reactToPrintFn}
+                    className="btn btn-sm btn-primary join-item"
+                  >
+                    Print
+                  </button>
+                </div>
+                <div className="overflow-y-scroll max-h-96">
+                  <div ref={contentRef} className="grid grid-cols-4">
+                    {generateBarcode?.amount
+                      ? [...Array(generateBarcode.amount)].map((_, index) => (
+                          <Barcode
+                            key={index}
+                            width={1}
+                            height={20}
+                            value={generateBarcode.barcode}
+                          />
+                        ))
+                      : ""}
+                  </div>
+                </div>
               </div>
             </dialog>
 
@@ -509,20 +545,28 @@ function Stock() {
                         : "ไม่ได้ระบุ"}
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        onClick={() => setGenerateBarcode(lot.lot_number)}
-                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
-                      >
-                        barcode
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditLot(lot)}
-                        className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
-                      >
-                        แก้ไข
-                      </button>
+                      <div className="flex items-center">
+                        {" "}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGenerateBarcode({
+                              barcode: lot.lot_number,
+                              amount: lot.lot_amount,
+                            })
+                          }
+                          className="ml-2 px-2 py-1 bg-secondary  text-white rounded"
+                        >
+                          <ScanBarcode />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditLot(lot)}
+                          className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
+                        >
+                          แก้ไข
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

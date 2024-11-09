@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import useSocket from "../services/socket";
 import moment from "moment";
+import selectStatusColor from "../utils/selectStatusColor";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
@@ -189,7 +190,7 @@ function ReceiptCash() {
             </Link>
             <SearchInput setSearch={setSearch} handleSearch={handleSearch} />
           </div>
-          <div className="relative hidden shadow-md lg:block">
+          <div className="relative hidden shadow-md  lg:block">
             <table className="w-full text-center table-auto hidden lg:inline-table">
               <thead className="bg-base-200 ">
                 <tr className=" border-b">
@@ -316,7 +317,9 @@ function ReceiptCash() {
                       <td className="flex gap-2">
                         <select
                           value={receiptCash.rf_status}
-                          className="select select-bordered w-36 max-w-36"
+                          className={`select select-bordered w-32 max-w-36 ${selectStatusColor(
+                            receiptCash.rf_status
+                          )}`}
                           onChange={(e) => {
                             if (e.target.value === "เก็บเงิน") {
                               setReceiptCashMoney({
@@ -339,7 +342,7 @@ function ReceiptCash() {
                             )
                           )}
                         </select>
-                        <div className="dropdown dropdown-hover ">
+                        <div className="dropdown dropdown-hover  dropdown-end ">
                           <div tabIndex={0} role="button" className="p-2">
                             ...
                           </div>

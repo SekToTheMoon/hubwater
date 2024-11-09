@@ -100,7 +100,10 @@ function ProductModel({ setValues, list }) {
                         className="w-10 md:w-20 aspect-square object-cover  rounded"
                       />
                     </td>
-                    <td>{product.product_name}</td>
+                    <td>
+                      <p>{product.product_name}</p>
+                      <p>{product.size}</p>
+                    </td>
                     <td>{product.product_price}</td>
                     <td>{product.product_amount}</td>
                     <td>{product.unit_name}</td>

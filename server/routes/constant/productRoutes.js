@@ -105,8 +105,9 @@ router.post(
 router.get("/getproduct/:id", (req, res) => {
   const id = req.params.id;
   if (id === "all") {
-    let sql = `SELECT product_id, product_name, product_price, product_img, product_amount, unit_name
+    let sql = `SELECT product_id, product_name, product_price, product_img, product_amount, unit_name, unit_m_name, size
                    FROM product
+                   JOIN unit_m  ON product.unit_m_id = unit_m.unit_m_id
                    JOIN unit  ON product.unit_id = unit.unit_id WHERE product_name LIKE ?`;
     const search = "%" + req.query.search + "%";
 

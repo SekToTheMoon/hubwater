@@ -5,7 +5,7 @@ import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
-
+import selectStatusColor from "../utils/selectStatusColor";
 import useSocket from "../services/socket";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
@@ -313,7 +313,9 @@ function Bill() {
                       <td className="flex gap-2">
                         <select
                           value={bill.bn_status}
-                          className="select select-bordered w-36 max-w-36"
+                          className={`select select-bordered w-36 max-w-36 ${selectStatusColor(
+                            bill.bn_status
+                          )}`}
                           onChange={(e) => handleSelectChange(e, bill)}
                         >
                           {statusBill[bill.bn_status][roll].map(

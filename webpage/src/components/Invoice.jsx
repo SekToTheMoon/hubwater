@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import useSocket from "../services/socket";
+import selectStatusColor from "../utils/selectStatusColor";
 import { handleChangeStatus } from "../utils/changeStatus";
 import DocumentLink from "./component/DocumentLink";
 import useAuth from "../hooks/useAuth";
@@ -360,7 +361,9 @@ function Invoice() {
                       <td className="flex gap-2">
                         <select
                           value={invoice.iv_status}
-                          className="select select-bordered w-36 max-w-36"
+                          className={`select select-bordered w-36 max-w-36 ${selectStatusColor(
+                            invoice.iv_status
+                          )}`}
                           onChange={(e) => handleSelectChange(e, invoice)}
                         >
                           {statusInvoice[invoice.iv_status][roll].map(

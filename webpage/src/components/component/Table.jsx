@@ -34,7 +34,9 @@ export default function Table({ data, headers, onDelete }) {
                   className="border-b border-base-content/30 hover:bg-base-200/50"
                 >
                   {rowData.map((td, tdIndex) =>
-                    tdIndex > 2 ? (
+                    headers[0] === "รหัสพนักงาน" && tdIndex === 4 ? (
+                      ""
+                    ) : tdIndex > 2 ? (
                       <td
                         key={index + tdIndex}
                         className="hidden xl:px-4 xl:table-cell xl:py-3"
@@ -56,7 +58,9 @@ export default function Table({ data, headers, onDelete }) {
                         แก้ไข
                       </Link>
                       <button
-                        className="btn btn-error btn-sm text-error-content opacity-80"
+                        className={`btn btn-error btn-sm text-error-content opacity-80 ${
+                          rowData[4] === "หัวหน้า" ? "hidden" : ""
+                        }`}
                         onClick={() => onDelete(rowData[0])}
                       >
                         ลบ

@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import statusOptions from "../constants/statusOptions";
 import useSocket from "../services/socket";
 import moment from "moment";
+import selectStatusColor from "../utils/selectStatusColor";
 import { handleChangeStatus } from "../utils/changeStatus";
 import useAuth from "../hooks/useAuth";
 import SearchInput from "./component/SearchInput";
@@ -287,7 +288,9 @@ function Out() {
                       <td className="flex gap-2">
                         <select
                           value={out.out_status}
-                          className="select select-bordered w-1/2 max-w-xs"
+                          className={`select select-bordered w-36 max-w-36 ${selectStatusColor(
+                            out.out_status
+                          )}`}
                           onChange={(e) => {
                             if (e.target.value === "จ่ายเงิน") {
                               setOutMoney({
