@@ -102,7 +102,7 @@ function ProductModel({ setValues, list }) {
                     </td>
                     <td>
                       <p>{product.product_name}</p>
-                      <p>{product.size}</p>
+                      <p>{product.size + " " + product.unit_m_name}</p>
                     </td>
                     <td>{product.product_price}</td>
                     <td>{product.product_amount}</td>

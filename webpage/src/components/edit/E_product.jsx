@@ -31,7 +31,7 @@ function E_product() {
 
   const validationSchema = Yup.object({
     product_name: Yup.string()
-      .max(20, "ความยาวไม่เกิน 20 ตัวอักษร")
+      .max(25, "ความยาวไม่เกิน 25 ตัวอักษร")
       .required("กรุณากรอกชื่อ สินค้า"),
     product_price: Yup.string()
       .matches(/^\d+$/, "กรอกเป็นตัวเลขเท่านั้น")
